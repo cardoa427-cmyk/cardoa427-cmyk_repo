@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>adri-cardo-repo</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Fredoka & Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        display: ['Fredoka', 'sans-serif'],
+                        body: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        pastel: {
+                            pink: '#FFD6E8',
+                            'pink-dark': '#FF94C2',
+                            purple: '#E8D5FF',
+                            'purple-dark': '#C084FC',
+                            rose: '#FFE4E6',
+                            cream: '#FFF9F5',
+                            accent: '#F472B6',
+                            lavender: '#A855F7',
+                            softblack: '#4A3B52'
+                        }
+                    },
+                    boxShadow: {
+                        'soft': '0 10px 30px -5px rgba(244, 114, 182, 0.15)',
+                        'glow': '0 0 25px rgba(192, 132, 252, 0.35)',
+                        'inner-soft': 'inset 0 2px 4px 0 rgba(255, 255, 255, 0.6)'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #FFF0F6;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #F472B6;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #C084FC;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 214, 232, 0.6);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 10px 30px -10px rgba(232, 213, 255, 0.5);
+        }
+
+        .glass-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 18px 35px -10px rgba(244, 114, 182, 0.25);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(2deg); }
+        }
+
+        .animate-float {
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 0.8; }
+        }
+
+        .animate-pulse-glow {
+            animation: pulse-glow 3s ease-in-out infinite;
+        }
+    </style>
+</head>
+
+<body class="bg-gradient-to-br from-pink-100 via-purple-50 to-rose-100 font-body text-pastel-softblack min-h-full flex flex-col relative overflow-x-hidden selection:bg-pastel-pink-dark selection:text-white"
+      x-data="repoApp()" x-init="init()">
+
+    <div class="fixed top-[-100px] left-[-100px] w-96 h-96 bg-pink-300/40 rounded-full blur-3xl pointer-events-none animate-pulse-glow"></div>
+    <div class="fixed bottom-[-100px] right-[-100px] w-[500px] h-[500px] bg-purple-300/40 rounded-full blur-3xl pointer-events-none animate-pulse-glow" style="animation-delay: 1.5s;"></div>
+    <div class="fixed top-[40%] right-[10%] w-72 h-72 bg-rose-200/40 rounded-full blur-3xl pointer-events-none animate-pulse-glow" style="animation-delay: 0.7s;"></div>
+
+    <header class="sticky top-0 z-30 glass-panel border-b border-pink-100/80 px-4 sm:px-8 py-3.5 transition-all">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+            <div class="flex items-center space-x-3 cursor-pointer" @click="resetFilters()">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-pink-400 to-purple-400 flex items-center justify-center text-white shadow-md shadow-pink-300/50 animate-float">
+                    <i class="fa-solid fa-heart text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-display font-bold text-xl sm:text-2xl text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-purple-500 to-rose-500">
+                        adri-cardo-repo
+                    </h1>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <div class="hidden lg:flex items-center px-3 py-1.5 rounded-full bg-white/70 border border-pink-200 text-xs text-purple-600 font-medium">
+                    <span class="w-2 h-2 rounded-full bg-pink-400 mr-2 animate-ping"></span>
+                    <span x-text="projects.length"></span>&nbsp;projects-saved
+                </div>
+
+                <button @click="openBackupModal()" 
+                        class="px-3.5 py-2 rounded-2xl bg-white/80 hover:bg-white text-purple-600 hover:text-purple-700 text-sm font-semibold border border-pink-200 transition-all flex items-center space-x-2 shadow-sm">
+                    <i class="fa-solid fa-cloud-arrow-up text-pink-400"></i>
+                    <span class="hidden md:inline">data</span>
+                </button>
+
+                <button @click="openModal('add')" 
+                        class="px-4 py-2 rounded-2xl bg-gradient-to-r from-pink-400 via-purple-400 to-rose-400 hover:from-pink-500 hover:to-rose-500 text-white font-display font-medium text-sm transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-pink-300/50 flex items-center space-x-2 transform active:scale-95">
+                    <i class="fa-solid fa-plus text-xs"></i>
+                    <span>new-project</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-8 py-8 flex-1 w-full space-y-6 z-10">
+
+        <section class="space-y-4">
+            <div class="flex flex-col lg:flex-row gap-4 justify-between items-stretch lg:items-center">
+                
+                <div class="relative flex-1">
+                    <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-pink-400 text-sm"></i>
+                    <input type="text" 
+                           x-model="searchQuery" 
+                           placeholder="search-projects-by-title-stack-or-tag..."
+                           class="w-full pl-11 pr-10 py-3 rounded-2xl bg-white/80 border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-pink-300 text-sm placeholder-pink-300 shadow-sm transition-all">
+                    <button x-show="searchQuery !== ''" 
+                            @click="searchQuery = ''" 
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-pink-500 text-xs p-1">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2">
+                    
+                    <div class="flex items-center bg-white/80 p-1 rounded-2xl border border-pink-200 shadow-sm overflow-x-auto max-w-full">
+                        <button @click="selectedCategory = 'all'" 
+                                :class="selectedCategory === 'all' ? 'bg-gradient-to-r from-pink-400 to-purple-400 text-white font-medium shadow-sm' : 'text-gray-600 hover:text-pink-500'" 
+                                class="px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all">
+                            all
+                        </button>
+                        <template x-for="cat in categories" :key="cat">
+                            <button @click="selectedCategory = cat" 
+                                    :class="selectedCategory === cat ? 'bg-gradient-to-r from-pink-400 to-purple-400 text-white font-medium shadow-sm' : 'text-gray-600 hover:text-pink-500'" 
+                                    class="px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all"
+                                    x-text="cat">
+                            </button>
+                        </template>
+                    </div>
+
+                    <select x-model="selectedStatus" 
+                            class="px-3.5 py-2.5 rounded-2xl bg-white/80 border border-pink-200 text-xs text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-pink-300 cursor-pointer shadow-sm">
+                        <option value="all">all-statuses</option>
+                        <option value="completed">completed ✨</option>
+                        <option value="in-progress">in-progress 🚀</option>
+                        <option value="planned">planned 💭</option>
+                    </select>
+
+                    <button @click="showFavoritesOnly = !showFavoritesOnly" 
+                            :class="showFavoritesOnly ? 'bg-pink-100 text-pink-600 border-pink-300' : 'bg-white/80 text-gray-600 border-pink-200'" 
+                            class="px-3.5 py-2.5 rounded-2xl border text-xs font-semibold flex items-center space-x-1.5 transition-all shadow-sm hover:border-pink-300">
+                        <i class="fa-solid fa-heart" :class="showFavoritesOnly ? 'text-pink-500' : 'text-gray-300'"></i>
+                        <span>favorites</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between text-xs text-gray-500 px-1">
+                <div>
+                    showing <span class="font-bold text-pink-600" x-text="filteredProjects.length"></span> of <span x-text="projects.length"></span> projects
+                    <template x-if="searchQuery || selectedCategory !== 'all' || selectedStatus !== 'all' || showFavoritesOnly">
+                        <span class="inline-flex items-center ml-2 text-pink-500 cursor-pointer hover:underline font-medium" @click="resetFilters()">
+                            (reset-filters)
+                        </span>
+                    </template>
+                </div>
+                
+                <div class="flex items-center space-x-2">
+                    <span class="text-gray-400">sort:</span>
+                    <select x-model="sortBy" class="bg-transparent text-xs font-semibold text-gray-600 border-none focus:outline-none cursor-pointer">
+                        <option value="newest">newest-first</option>
+                        <option value="oldest">oldest-first</option>
+                        <option value="title">alphabetical</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div x-show="filteredProjects.length === 0" 
+                 class="glass-card rounded-3xl p-12 text-center max-w-lg mx-auto my-8 border border-pink-200">
+                <div class="w-20 h-20 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-4 text-pink-400 text-3xl">
+                    <i class="fa-solid fa-folder-open"></i>
+                </div>
+                <h3 class="font-display font-bold text-xl text-gray-700 mb-2">no-projects-yet</h3>
+                <p class="text-sm text-gray-500 mb-6">your-repository-is-currently-empty.-click-below-to-add-your-first-project.</p>
+                <button @click="openModal('add')" 
+                        class="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-pink-400 to-purple-400 text-white font-medium text-sm shadow-md hover:shadow-lg transition-all">
+                    + add-first-project
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <template x-for="project in filteredProjects" :key="project.id">
+                    <div class="glass-card rounded-3xl p-5 flex flex-col justify-between transition-all duration-300 relative group border border-white">
+                        
+                        <div>
+                            <div class="relative w-full h-44 rounded-2xl overflow-hidden mb-4 bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">
+                                <template x-if="project.imageUrl">
+                                    <img :src="project.imageUrl" :alt="project.title" 
+                                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                         @error="$el.src = getPlaceholderImage(project.category)">
+                                </template>
+                                <template x-if="!project.imageUrl">
+                                    <div class="text-center p-4">
+                                        <i :class="getCategoryIcon(project.category)" class="text-4xl text-pink-300 mb-2 block"></i>
+                                        <span class="text-xs text-pink-400 font-display font-medium" x-text="project.category"></span>
+                                    </div>
+                                </template>
+
+                                <button @click.stop="toggleFavorite(project.id)" 
+                                        class="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center text-pink-500 hover:scale-110 transition-transform shadow-sm">
+                                    <i :class="project.isFavorite ? 'fa-solid text-pink-500' : 'fa-regular text-gray-400'" class="fa-heart text-sm"></i>
+                                </button>
+
+                                <span class="absolute bottom-3 left-3 px-3 py-1 rounded-full bg-white/90 backdrop-blur-md text-[11px] font-bold text-purple-600 shadow-sm" x-text="project.category">
+                                </span>
+                            </div>
+
+                            <div class="flex items-start justify-between gap-2 mb-2">
+                                <h3 class="font-display font-bold text-lg text-gray-800 line-clamp-1 group-hover:text-pink-600 transition-colors" x-text="project.title"></h3>
+                                
+                                <span :class="{
+                                    'bg-emerald-100 text-emerald-700 border-emerald-200': project.status === 'completed',
+                                    'bg-amber-100 text-amber-700 border-amber-200': project.status === 'in-progress',
+                                    'bg-purple-100 text-purple-700 border-purple-200': project.status === 'planned'
+                                }" class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold border shrink-0" x-text="project.status">
+                                </span>
+                            </div>
+
+                            <p class="text-xs text-gray-600 line-clamp-2 leading-relaxed mb-4" x-text="project.description"></p>
+
+                            <div class="flex flex-wrap gap-1.5 mb-4">
+                                <template x-for="tech in project.tags" :key="tech">
+                                    <span class="px-2.5 py-0.5 rounded-lg bg-pink-50/80 text-pink-600 border border-pink-100 text-[11px] font-medium" x-text="tech"></span>
+                                </template>
+                            </div>
+                        </div>
+
+                        <div class="pt-3 border-t border-pink-100/60 flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <template x-if="project.demoUrl">
+                                    <a :href="project.demoUrl" target="_blank" rel="noopener" 
+                                       class="w-8 h-8 rounded-xl bg-pink-100 text-pink-600 hover:bg-pink-500 hover:text-white flex items-center justify-center text-xs transition-colors"
+                                       title="live-demo">
+                                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                    </a>
+                                </template>
+                                <template x-if="project.repoUrl">
+                                    <a :href="project.repoUrl" target="_blank" rel="noopener" 
+                                       class="w-8 h-8 rounded-xl bg-purple-100 text-purple-600 hover:bg-purple-500 hover:text-white flex items-center justify-center text-xs transition-colors"
+                                       title="code-repository">
+                                        <i class="fa-brands fa-github"></i>
+                                    </a>
+                                </template>
+                            </div>
+
+                            <div class="flex items-center space-x-1">
+                                <button @click="openViewModal(project)" 
+                                        class="px-3 py-1.5 rounded-xl bg-white hover:bg-pink-50 text-pink-600 border border-pink-200 text-xs font-semibold transition-all">
+                                    details
+                                </button>
+                                
+                                <button @click="openModal('edit', project)" 
+                                        class="p-1.5 text-gray-400 hover:text-purple-600 transition-colors"
+                                        title="edit-project">
+                                    <i class="fa-solid fa-pen-to-square text-xs"></i>
+                                </button>
+                                
+                                <button @click="confirmDelete(project)" 
+                                        class="p-1.5 text-gray-400 hover:text-rose-500 transition-colors"
+                                        title="delete-project">
+                                    <i class="fa-solid fa-trash-can text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </template>
+            </div>
+        </section>
+    </main>
+
+    <!-- ADD / EDIT PROJECT MODAL -->
+    <div x-show="isModalOpen" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 scale-95"
+         x-transition:enter-end="opacity-100 scale-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 scale-100"
+         x-transition:leave-end="opacity-0 scale-95"
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-purple-950/30 backdrop-blur-sm overflow-y-auto"
+         style="display: none;">
+        
+        <div class="glass-card rounded-3xl w-full max-w-lg p-6 sm:p-8 border border-white my-8 relative shadow-2xl" @click.away="closeModal()">
+            <button @click="closeModal()" class="absolute top-5 right-5 text-gray-400 hover:text-pink-500 text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <h3 class="font-display font-bold text-2xl text-gray-800 mb-1" x-text="modalMode === 'add' ? '✨ add-new-project' : '✏️ edit-project'"></h3>
+            <p class="text-xs text-gray-500 mb-6">fill-in-details-to-showcase-your-project-inside-adri-cardo-repo.</p>
+
+            <form @submit.prevent="saveProject()" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">project-title *</label>
+                    <input type="text" x-model="form.title" required placeholder="e.g.-dreamy-note-organizer" 
+                           class="w-full px-4 py-2.5 rounded-2xl bg-white/90 border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 text-sm">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">category</label>
+                        <select x-model="form.category" class="w-full px-4 py-2.5 rounded-2xl bg-white/90 border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 text-sm">
+                            <template x-for="cat in categories" :key="cat">
+                                <option :value="cat" x-text="cat"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">status</label>
+                        <select x-model="form.status" class="w-full px-4 py-2.5 rounded-2xl bg-white/90 border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 text-sm">
+                            <option value="completed">completed ✨</option>
+                            <option value="in-progress">in-progress 🚀</option>
+                            <option value="planned">planned 💭</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">short-summary *</label>
+                    <textarea x-model="form.description" required rows="2" placeholder="briefly-describe-what-this-project-does..."
+                              class="w-full px-4 py-2.5 rounded-2xl bg-white/90 border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 text-sm resize-none"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">detailed-description-and-notes</label>
+                    <textarea x-model="form.longNotes" rows="3" placeholder="key-features-setup-instructions-or-thoughts..."
+                              class="w-full px-4 py-2.5 rounded-2xl bg-white/90 border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 text-sm resize-none"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">tech-stack-(comma-separated)</label>
+                    <input type="text" x-model="form.tagsInput" placeholder="react,-tailwind,-node.js,-firebase" 
+                           class="w-full px-4 py-2.5 rounded-2xl bg-white/90 border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 text-sm">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">image-banner-url-(optional)</label>
+                    <input type="url" x-model="form.imageUrl" placeholder="https://images.unsplash.com/photo-..." 
+                           class="w-full px-4 py-2.5 rounded-2xl bg-white/90 border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 text-sm">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">live-demo-url</label>
+                        <input type="url" x-model="form.demoUrl" placeholder="https://my-app.vercel.app" 
+                               class="w-full px-4 py-2.5 rounded-2xl bg-white/90 border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">github-/-code-link</label>
+                        <input type="url" x-model="form.repoUrl" placeholder="https://github.com/user/repo" 
+                               class="w-full px-4 py-2.5 rounded-2xl bg-white/90 border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 text-sm">
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-2 pt-2">
+                    <input type="checkbox" id="modalFavorite" x-model="form.isFavorite" class="w-4 h-4 text-pink-500 rounded border-pink-300 focus:ring-pink-300">
+                    <label for="modalFavorite" class="text-xs font-semibold text-gray-700 cursor-pointer">mark-as-favorite ❤️</label>
+                </div>
+
+                <div class="pt-4 flex items-center justify-end space-x-3">
+                    <button type="button" @click="closeModal()" class="px-5 py-2.5 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-semibold transition-all">
+                        cancel
+                    </button>
+                    <button type="submit" class="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-pink-400 to-purple-400 hover:from-pink-500 hover:to-purple-500 text-white font-display font-medium text-xs shadow-md hover:shadow-lg transition-all">
+                        save-project
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- VIEW PROJECT DETAIL MODAL -->
+    <div x-show="isViewModalOpen" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 scale-95"
+         x-transition:enter-end="opacity-100 scale-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 scale-100"
+         x-transition:leave-end="opacity-0 scale-95"
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-purple-950/30 backdrop-blur-sm overflow-y-auto"
+         style="display: none;">
+        
+        <div class="glass-card rounded-3xl w-full max-w-2xl p-6 sm:p-8 border border-white my-8 relative shadow-2xl max-h-[90vh] overflow-y-auto" @click.away="closeViewModal()">
+            <button @click="closeViewModal()" class="absolute top-5 right-5 text-gray-400 hover:text-pink-500 text-lg z-10">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <template x-if="activeProject">
+                <div class="space-y-6">
+                    <div class="w-full h-56 rounded-2xl overflow-hidden bg-gradient-to-br from-pink-100 to-purple-100 relative">
+                        <img :src="activeProject.imageUrl || getPlaceholderImage(activeProject.category)" 
+                             :alt="activeProject.title" 
+                             class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                        
+                        <div class="absolute bottom-4 left-4 right-4 flex justify-between items-end text-white">
+                            <div>
+                                <span class="px-2.5 py-1 rounded-full bg-pink-500/80 backdrop-blur-md text-[10px] font-bold tracking-wide uppercase mb-1 inline-block" x-text="activeProject.category"></span>
+                                <h2 class="font-display font-bold text-2xl" x-text="activeProject.title"></h2>
+                            </div>
+                            <span :class="{
+                                'bg-emerald-500/80': activeProject.status === 'completed',
+                                'bg-amber-500/80': activeProject.status === 'in-progress',
+                                'bg-purple-500/80': activeProject.status === 'planned'
+                            }" class="px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md" x-text="activeProject.status"></span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">built-with</h4>
+                        <div class="flex flex-wrap gap-2">
+                            <template x-for="tech in activeProject.tags" :key="tech">
+                                <span class="px-3 py-1 rounded-xl bg-purple-50 text-purple-600 border border-purple-100 text-xs font-semibold" x-text="tech"></span>
+                            </template>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">summary</h4>
+                        <p class="text-sm text-gray-700 leading-relaxed bg-pink-50/50 p-4 rounded-2xl border border-pink-100" x-text="activeProject.description"></p>
+                    </div>
+
+                    <template x-if="activeProject.longNotes">
+                        <div>
+                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">project-notes-and-details</h4>
+                            <div class="text-xs text-gray-600 leading-relaxed bg-white/80 p-4 rounded-2xl border border-pink-100 whitespace-pre-line" x-text="activeProject.longNotes"></div>
+                        </div>
+                    </template>
+
+                    <div class="text-xs text-gray-400 border-t border-pink-100 pt-3 flex justify-between">
+                        <span>created: <strong x-text="formatDate(activeProject.createdAt)"></strong></span>
+                        <span x-show="activeProject.isFavorite" class="text-pink-500 font-medium">❤️ marked-as-favorite</span>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-2">
+                        <div class="flex items-center space-x-3">
+                            <template x-if="activeProject.demoUrl">
+                                <a :href="activeProject.demoUrl" target="_blank" rel="noopener" 
+                                   class="px-4 py-2 rounded-2xl bg-pink-500 hover:bg-pink-600 text-white text-xs font-semibold shadow-md flex items-center space-x-2 transition-all">
+                                    <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                    <span>visit-live-site</span>
+                                </a>
+                            </template>
+                            <template x-if="activeProject.repoUrl">
+                                <a :href="activeProject.repoUrl" target="_blank" rel="noopener" 
+                                   class="px-4 py-2 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold shadow-md flex items-center space-x-2 transition-all">
+                                    <i class="fa-brands fa-github"></i>
+                                    <span>source-code</span>
+                                </a>
+                            </template>
+                        </div>
+
+                        <button @click="closeViewModal(); openModal('edit', activeProject)" 
+                                class="px-4 py-2 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold transition-all">
+                            edit-details
+                        </button>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- BACKUP / RESTORE DATA MODAL -->
+    <div x-show="isBackupModalOpen" 
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-purple-950/30 backdrop-blur-sm"
+         style="display: none;">
+        <div class="glass-card rounded-3xl w-full max-w-md p-6 sm:p-8 border border-white relative shadow-2xl" @click.away="isBackupModalOpen = false">
+            <button @click="isBackupModalOpen = false" class="absolute top-5 right-5 text-gray-400 hover:text-pink-500 text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <h3 class="font-display font-bold text-xl text-gray-800 mb-2">📁 data-management</h3>
+            <p class="text-xs text-gray-500 mb-6">backup-your-project-repository-or-restore-standard-demo-datasets.</p>
+
+            <div class="space-y-3">
+                <button @click="exportJSON()" class="w-full p-3 rounded-2xl bg-pink-50 hover:bg-pink-100 border border-pink-200 text-pink-700 text-xs font-bold flex items-center justify-between transition-colors">
+                    <span>export-repository-(json)</span>
+                    <i class="fa-solid fa-download"></i>
+                </button>
+
+                <div class="relative">
+                    <input type="file" id="importFileInput" @change="importJSON($event)" class="hidden" accept=".json">
+                    <label for="importFileInput" class="w-full p-3 rounded-2xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700 text-xs font-bold flex items-center justify-between cursor-pointer transition-colors">
+                        <span>import-backup-file</span>
+                        <i class="fa-solid fa-upload"></i>
+                    </label>
+                </div>
+
+                <button @click="resetToDefaultData()" class="w-full p-3 rounded-2xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 text-xs font-bold flex items-center justify-between transition-colors">
+                    <span>restore-default-samples</span>
+                    <i class="fa-solid fa-rotate-left"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CUSTOM CONFIRMATION MODAL -->
+    <div x-show="deleteTarget !== null" 
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-purple-950/20 backdrop-blur-sm"
+         style="display: none;">
+        <div class="glass-card rounded-3xl w-full max-w-sm p-6 text-center border border-white shadow-2xl">
+            <div class="w-12 h-12 rounded-full bg-rose-100 text-rose-500 flex items-center justify-center mx-auto mb-3 text-lg">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h4 class="font-display font-bold text-gray-800 text-lg mb-1">delete-project?</h4>
+            <p class="text-xs text-gray-500 mb-5">are-you-sure-you-want-to-remove <span class="font-bold text-gray-700" x-text="deleteTarget?.title"></span> from-your-repository?</p>
+            
+            <div class="flex items-center justify-center space-x-3">
+                <button @click="deleteTarget = null" class="px-4 py-2 rounded-2xl bg-gray-100 text-gray-600 text-xs font-semibold hover:bg-gray-200">
+                    cancel
+                </button>
+                <button @click="executeDelete()" class="px-4 py-2 rounded-2xl bg-rose-500 text-white text-xs font-semibold hover:bg-rose-600 shadow-md">
+                    yes,-delete
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div x-show="toast.visible" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 translate-y-4"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 translate-y-0"
+         x-transition:leave-end="opacity-0 translate-y-4"
+         class="fixed bottom-6 right-6 z-50 px-4 py-3 rounded-2xl bg-gray-900/90 backdrop-blur-md text-white text-xs font-medium shadow-xl flex items-center space-x-2"
+         style="display: none;">
+        <i class="fa-solid fa-sparkles text-pink-400"></i>
+        <span x-text="toast.message"></span>
+    </div>
+
+    <footer class="mt-auto border-t border-pink-100/60 py-6 text-center text-xs text-pink-400">
+        <p>adri-cardo-repo &bull; crafted-with-soft-pastel-colors-warm-gradients-and-love 💕</p>
+    </footer>
+
+    <script>
+        function repoApp() {
+            return {
+                projects: [],
+                searchQuery: '',
+                selectedCategory: 'all',
+                selectedStatus: 'all',
+                showFavoritesOnly: false,
+                sortBy: 'newest',
+                
+                categories: ['web-dev', 'mobile-apps', 'cozy-games', 'ui-ux-design', 'tools-and-bots'],
+
+                isModalOpen: false,
+                isViewModalOpen: false,
+                isBackupModalOpen: false,
+                modalMode: 'add',
+                activeProject: null,
+                deleteTarget: null,
+
+                toast: {
+                    visible: false,
+                    message: ''
+                },
+
+                form: {
+                    id: null,
+                    title: '',
+                    category: 'web-dev',
+                    status: 'in-progress',
+                    description: '',
+                    longNotes: '',
+                    tagsInput: '',
+                    imageUrl: '',
+                    demoUrl: '',
+                    repoUrl: '',
+                    isFavorite: false
+                },
+
+                init() {
+                    const saved = localStorage.getItem('adri_cardo_repo_data');
+                    if (saved) {
+                        try {
+                            this.projects = JSON.parse(saved);
+                        } catch (e) {
+                            this.loadDefaultProjects();
+                        }
+                    } else {
+                        this.loadDefaultProjects();
+                    }
+                },
+
+                saveToLocalStorage() {
+                    localStorage.setItem('adri_cardo_repo_data', JSON.stringify(this.projects));
+                },
+
+                loadDefaultProjects() {
+                    this.projects = [];
+                    this.saveToLocalStorage();
+                },
+
+                get filteredProjects() {
+                    return this.projects.filter(p => {
+                        const q = this.searchQuery.toLowerCase();
+                        const titleMatch = p.title.toLowerCase().includes(q);
+                        const descMatch = p.description.toLowerCase().includes(q);
+                        const tagsMatch = p.tags.some(t => t.toLowerCase().includes(q));
+                        const matchesSearch = !q || titleMatch || descMatch || tagsMatch;
+
+                        const matchesCategory = this.selectedCategory === 'all' || p.category === this.selectedCategory;
+                        const matchesStatus = this.selectedStatus === 'all' || p.status === this.selectedStatus;
+                        const matchesFav = !this.showFavoritesOnly || p.isFavorite;
+
+                        return matchesSearch && matchesCategory && matchesStatus && matchesFav;
+                    }).sort((a, b) => {
+                        if (this.sortBy === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
+                        if (this.sortBy === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
+                        if (this.sortBy === 'title') return a.title.localeCompare(b.title);
+                        return 0;
+                    });
+                },
+
+                resetFilters() {
+                    this.searchQuery = '';
+                    this.selectedCategory = 'all';
+                    this.selectedStatus = 'all';
+                    this.showFavoritesOnly = false;
+                },
+
+                openModal(mode, project = null) {
+                    this.modalMode = mode;
+                    if (mode === 'edit' && project) {
+                        this.form = {
+                            id: project.id,
+                            title: project.title,
+                            category: project.category,
+                            status: project.status,
+                            description: project.description,
+                            longNotes: project.longNotes || '',
+                            tagsInput: project.tags.join(', '),
+                            imageUrl: project.imageUrl || '',
+                            demoUrl: project.demoUrl || '',
+                            repoUrl: project.repoUrl || '',
+                            isFavorite: project.isFavorite
+                        };
+                    } else {
+                        this.form = {
+                            id: null,
+                            title: '',
+                            category: 'web-dev',
+                            status: 'in-progress',
+                            description: '',
+                            longNotes: '',
+                            tagsInput: '',
+                            imageUrl: '',
+                            demoUrl: '',
+                            repoUrl: '',
+                            isFavorite: false
+                        };
+                    }
+                    this.isModalOpen = true;
+                },
+
+                closeModal() {
+                    this.isModalOpen = false;
+                },
+
+                openViewModal(project) {
+                    this.activeProject = project;
+                    this.isViewModalOpen = true;
+                },
+
+                closeViewModal() {
+                    this.isViewModalOpen = false;
+                    this.activeProject = null;
+                },
+
+                openBackupModal() {
+                    this.isBackupModalOpen = true;
+                },
+
+                saveProject() {
+                    if (!this.form.title.trim() || !this.form.description.trim()) return;
+
+                    const tagsArray = this.form.tagsInput
+                        ? this.form.tagsInput.split(',').map(t => t.trim()).filter(Boolean)
+                        : [this.form.category];
+
+                    if (this.modalMode === 'add') {
+                        const newProj = {
+                            id: Date.now().toString(),
+                            title: this.form.title,
+                            category: this.form.category,
+                            status: this.form.status,
+                            description: this.form.description,
+                            longNotes: this.form.longNotes,
+                            tags: tagsArray,
+                            imageUrl: this.form.imageUrl,
+                            demoUrl: this.form.demoUrl,
+                            repoUrl: this.form.repoUrl,
+                            isFavorite: this.form.isFavorite,
+                            createdAt: new Date().toISOString()
+                        };
+                        this.projects.unshift(newProj);
+                        this.showToast('✨ project-created-successfully!');
+                    } else {
+                        const idx = this.projects.findIndex(p => p.id === this.form.id);
+                        if (idx !== -1) {
+                            this.projects[idx] = {
+                                ...this.projects[idx],
+                                title: this.form.title,
+                                category: this.form.category,
+                                status: this.form.status,
+                                description: this.form.description,
+                                longNotes: this.form.longNotes,
+                                tags: tagsArray,
+                                imageUrl: this.form.imageUrl,
+                                demoUrl: this.form.demoUrl,
+                                repoUrl: this.form.repoUrl,
+                                isFavorite: this.form.isFavorite
+                            };
+                            this.showToast('✏️ project-details-updated!');
+                        }
+                    }
+
+                    this.saveToLocalStorage();
+                    this.closeModal();
+                },
+
+                toggleFavorite(id) {
+                    const idx = this.projects.findIndex(p => p.id === id);
+                    if (idx !== -1) {
+                        this.projects[idx].isFavorite = !this.projects[idx].isFavorite;
+                        this.saveToLocalStorage();
+                        this.showToast(this.projects[idx].isFavorite ? 'added-to-favorites ❤️' : 'removed-from-favorites');
+                    }
+                },
+
+                confirmDelete(project) {
+                    this.deleteTarget = project;
+                },
+
+                executeDelete() {
+                    if (this.deleteTarget) {
+                        this.projects = this.projects.filter(p => p.id !== this.deleteTarget.id);
+                        this.saveToLocalStorage();
+                        this.showToast('project-removed');
+                        this.deleteTarget = null;
+                    }
+                },
+
+                exportJSON() {
+                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.projects, null, 2));
+                    const dlAnchor = document.createElement('a');
+                    dlAnchor.setAttribute("href", dataStr);
+                    dlAnchor.setAttribute("download", "adri_cardo_repo_backup.json");
+                    document.body.appendChild(dlAnchor);
+                    dlAnchor.click();
+                    dlAnchor.remove();
+                    this.showToast('backup-json-exported! 📁');
+                },
+
+                importJSON(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const imported = JSON.parse(e.target.result);
+                            if (Array.isArray(imported)) {
+                                this.projects = imported;
+                                this.saveToLocalStorage();
+                                this.showToast('repository-successfully-restored!');
+                                this.isBackupModalOpen = false;
+                            } else {
+                                this.showToast('invalid-backup-json-format.');
+                            }
+                        } catch (err) {
+                            this.showToast('error-reading-backup-file.');
+                        }
+                    };
+                    reader.readAsText(file);
+                },
+
+                resetToDefaultData() {
+                    this.loadDefaultProjects();
+                    this.showToast('default-projects-restored ✨');
+                    this.isBackupModalOpen = false;
+                },
+
+                showToast(msg) {
+                    this.toast.message = msg;
+                    this.toast.visible = true;
+                    setTimeout(() => {
+                        this.toast.visible = false;
+                    }, 3000);
+                },
+
+                formatDate(isoStr) {
+                    if (!isoStr) return '';
+                    return new Date(isoStr).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                    });
+                },
+
+                getCategoryIcon(cat) {
+                    switch (cat) {
+                        case 'web-dev': return 'fa-solid fa-laptop-code';
+                        case 'mobile-apps': return 'fa-solid fa-mobile-screen-button';
+                        case 'cozy-games': return 'fa-solid fa-gamepad';
+                        case 'ui-ux-design': return 'fa-solid fa-palette';
+                        case 'tools-and-bots': return 'fa-solid fa-robot';
+                        default: return 'fa-solid fa-folder-open';
+                    }
+                },
+
+                getPlaceholderImage(category) {
+                    switch (category) {
+                        case 'web-dev': return 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&w=800&q=80';
+                        case 'mobile-apps': return 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=800&q=80';
+                        case 'cozy-games': return 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=800&q=80';
+                        case 'ui-ux-design': return 'https://images.unsplash.com/photo-1581291518633-83b4ebd1d83e?auto=format&fit=crop&w=800&q=80';
+                        default: return 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?auto=format&fit=crop&w=800&q=80';
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
