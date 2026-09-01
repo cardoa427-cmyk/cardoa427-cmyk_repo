@@ -101,6 +101,10 @@
         .animate-pulse-glow {
             animation: pulse-glow 3s ease-in-out infinite;
         }
+
+        canvas {
+            touch-action: none;
+        }
     </style>
 </head>
 
@@ -121,26 +125,19 @@
                     <h1 class="font-display font-bold text-xl sm:text-2xl text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-purple-500 to-rose-500">
                         adri-cardo-repo
                     </h1>
+                    <p class="text-xs text-purple-600/80 font-medium">place to hold random projects that should be here</p>
                 </div>
             </div>
 
             <div class="flex items-center space-x-2 sm:space-x-3">
-                <div class="hidden lg:flex items-center px-3 py-1.5 rounded-full bg-white/70 border border-pink-200 text-xs text-purple-600 font-medium">
+                <button @click="openModal('add')" class="px-3.5 py-1.5 rounded-full bg-gradient-to-r from-pink-400 to-purple-400 text-white text-xs font-semibold shadow-md hover:shadow-lg transition-all flex items-center gap-1.5">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>new-project</span>
+                </button>
+                <div class="flex items-center px-3.5 py-1.5 rounded-full bg-white/70 border border-pink-200 text-xs text-purple-600 font-medium">
                     <span class="w-2 h-2 rounded-full bg-pink-400 mr-2 animate-ping"></span>
                     <span x-text="projects.length"></span>&nbsp;projects-saved
                 </div>
-
-                <button @click="openBackupModal()" 
-                        class="px-3.5 py-2 rounded-2xl bg-white/80 hover:bg-white text-purple-600 hover:text-purple-700 text-sm font-semibold border border-pink-200 transition-all flex items-center space-x-2 shadow-sm">
-                    <i class="fa-solid fa-cloud-arrow-up text-pink-400"></i>
-                    <span class="hidden md:inline">data</span>
-                </button>
-
-                <button @click="openModal('add')" 
-                        class="px-4 py-2 rounded-2xl bg-gradient-to-r from-pink-400 via-purple-400 to-rose-400 hover:from-pink-500 hover:to-rose-500 text-white font-display font-medium text-sm transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-pink-300/50 flex items-center space-x-2 transform active:scale-95">
-                    <i class="fa-solid fa-plus text-xs"></i>
-                    <span>new-project</span>
-                </button>
             </div>
         </div>
     </header>
@@ -148,13 +145,13 @@
     <main class="max-w-7xl mx-auto px-4 sm:px-8 py-8 flex-1 w-full space-y-6 z-10">
 
         <section class="space-y-4">
-            <div class="flex flex-col lg:flex-row gap-4 justify-between items-stretch lg:items-center">
+            <div class="flex flex-col sm:flex-row gap-4 justify-between items-stretch sm:items-center">
                 
                 <div class="relative flex-1">
                     <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-pink-400 text-sm"></i>
                     <input type="text" 
                            x-model="searchQuery" 
-                           placeholder="search-projects-by-title-stack-or-tag..."
+                           placeholder="search-projects-by-title-or-tag..."
                            class="w-full pl-11 pr-10 py-3 rounded-2xl bg-white/80 border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-pink-300 text-sm placeholder-pink-300 shadow-sm transition-all">
                     <button x-show="searchQuery !== ''" 
                             @click="searchQuery = ''" 
@@ -163,23 +160,7 @@
                     </button>
                 </div>
 
-                <div class="flex flex-wrap items-center gap-2">
-                    
-                    <div class="flex items-center bg-white/80 p-1 rounded-2xl border border-pink-200 shadow-sm overflow-x-auto max-w-full">
-                        <button @click="selectedCategory = 'all'" 
-                                :class="selectedCategory === 'all' ? 'bg-gradient-to-r from-pink-400 to-purple-400 text-white font-medium shadow-sm' : 'text-gray-600 hover:text-pink-500'" 
-                                class="px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all">
-                            all
-                        </button>
-                        <template x-for="cat in categories" :key="cat">
-                            <button @click="selectedCategory = cat" 
-                                    :class="selectedCategory === cat ? 'bg-gradient-to-r from-pink-400 to-purple-400 text-white font-medium shadow-sm' : 'text-gray-600 hover:text-pink-500'" 
-                                    class="px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all"
-                                    x-text="cat">
-                            </button>
-                        </template>
-                    </div>
-
+                <div class="flex items-center gap-2">
                     <select x-model="selectedStatus" 
                             class="px-3.5 py-2.5 rounded-2xl bg-white/80 border border-pink-200 text-xs text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-pink-300 cursor-pointer shadow-sm">
                         <option value="all">all-statuses</option>
@@ -187,33 +168,17 @@
                         <option value="in-progress">in-progress 🚀</option>
                         <option value="planned">planned 💭</option>
                     </select>
-
-                    <button @click="showFavoritesOnly = !showFavoritesOnly" 
-                            :class="showFavoritesOnly ? 'bg-pink-100 text-pink-600 border-pink-300' : 'bg-white/80 text-gray-600 border-pink-200'" 
-                            class="px-3.5 py-2.5 rounded-2xl border text-xs font-semibold flex items-center space-x-1.5 transition-all shadow-sm hover:border-pink-300">
-                        <i class="fa-solid fa-heart" :class="showFavoritesOnly ? 'text-pink-500' : 'text-gray-300'"></i>
-                        <span>favorites</span>
-                    </button>
                 </div>
             </div>
 
             <div class="flex items-center justify-between text-xs text-gray-500 px-1">
                 <div>
                     showing <span class="font-bold text-pink-600" x-text="filteredProjects.length"></span> of <span x-text="projects.length"></span> projects
-                    <template x-if="searchQuery || selectedCategory !== 'all' || selectedStatus !== 'all' || showFavoritesOnly">
+                    <template x-if="searchQuery || selectedStatus !== 'all'">
                         <span class="inline-flex items-center ml-2 text-pink-500 cursor-pointer hover:underline font-medium" @click="resetFilters()">
                             (reset-filters)
                         </span>
                     </template>
-                </div>
-                
-                <div class="flex items-center space-x-2">
-                    <span class="text-gray-400">sort:</span>
-                    <select x-model="sortBy" class="bg-transparent text-xs font-semibold text-gray-600 border-none focus:outline-none cursor-pointer">
-                        <option value="newest">newest-first</option>
-                        <option value="oldest">oldest-first</option>
-                        <option value="title">alphabetical</option>
-                    </select>
                 </div>
             </div>
         </section>
@@ -224,12 +189,8 @@
                 <div class="w-20 h-20 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-4 text-pink-400 text-3xl">
                     <i class="fa-solid fa-folder-open"></i>
                 </div>
-                <h3 class="font-display font-bold text-xl text-gray-700 mb-2">no-projects-yet</h3>
-                <p class="text-sm text-gray-500 mb-6">your-repository-is-currently-empty.-click-below-to-add-your-first-project.</p>
-                <button @click="openModal('add')" 
-                        class="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-pink-400 to-purple-400 text-white font-medium text-sm shadow-md hover:shadow-lg transition-all">
-                    + add-first-project
-                </button>
+                <h3 class="font-display font-bold text-xl text-gray-700 mb-2">no-projects-found</h3>
+                <p class="text-sm text-gray-500">no-matching-projects-in-your-repository.</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -241,22 +202,22 @@
                                 <template x-if="project.imageUrl">
                                     <img :src="project.imageUrl" :alt="project.title" 
                                          class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                         @error="$el.src = getPlaceholderImage(project.category)">
+                                         @error="$el.src = 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?auto=format&fit=crop&w=800&q=80'">
                                 </template>
                                 <template x-if="!project.imageUrl">
                                     <div class="text-center p-4">
-                                        <i :class="getCategoryIcon(project.category)" class="text-4xl text-pink-300 mb-2 block"></i>
-                                        <span class="text-xs text-pink-400 font-display font-medium" x-text="project.category"></span>
+                                        <i class="fa-solid fa-code text-4xl text-pink-300 mb-2 block"></i>
                                     </div>
                                 </template>
 
-                                <button @click.stop="toggleFavorite(project.id)" 
-                                        class="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center text-pink-500 hover:scale-110 transition-transform shadow-sm">
-                                    <i :class="project.isFavorite ? 'fa-solid text-pink-500' : 'fa-regular text-gray-400'" class="fa-heart text-sm"></i>
-                                </button>
-
-                                <span class="absolute bottom-3 left-3 px-3 py-1 rounded-full bg-white/90 backdrop-blur-md text-[11px] font-bold text-purple-600 shadow-sm" x-text="project.category">
-                                </span>
+                                <template x-if="project.isPlayable">
+                                    <button @click="openGameWindow(project)" class="absolute inset-0 bg-purple-900/40 opacity-0 group-hover:opacity-100 backdrop-blur-xs transition-opacity flex flex-col items-center justify-center text-white font-display font-bold text-sm">
+                                        <div class="w-12 h-12 rounded-full bg-pink-500 text-white flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform mb-1">
+                                            <i class="fa-solid fa-gamepad text-xl"></i>
+                                        </div>
+                                        <span>Click to Play Game!</span>
+                                    </button>
+                                </template>
                             </div>
 
                             <div class="flex items-start justify-between gap-2 mb-2">
@@ -273,21 +234,26 @@
                             <p class="text-xs text-gray-600 line-clamp-2 leading-relaxed mb-4" x-text="project.description"></p>
 
                             <div class="flex flex-wrap gap-1.5 mb-4">
+                                <template x-if="project.isPlayable">
+                                    <span class="px-2.5 py-0.5 rounded-lg bg-emerald-100 text-emerald-700 border border-emerald-200 text-[11px] font-bold flex items-center gap-1">
+                                        <i class="fa-solid fa-gamepad text-[10px]"></i> Playable Game
+                                    </span>
+                                </template>
                                 <template x-for="tech in project.tags" :key="tech">
                                     <span class="px-2.5 py-0.5 rounded-lg bg-pink-50/80 text-pink-600 border border-pink-100 text-[11px] font-medium" x-text="tech"></span>
-                                </template>
-                                <template x-if="project.filePathways && project.filePathways.length > 0">
-                                    <span class="px-2.5 py-0.5 rounded-lg bg-purple-50 text-purple-600 border border-purple-100 text-[11px] font-medium flex items-center gap-1">
-                                        <i class="fa-regular fa-file-code text-[10px]"></i>
-                                        <span x-text="project.filePathways.length + ' files'"></span>
-                                    </span>
                                 </template>
                             </div>
                         </div>
 
                         <div class="pt-3 border-t border-pink-100/60 flex items-center justify-between">
                             <div class="flex items-center space-x-2">
-                                <template x-if="project.demoUrl">
+                                <template x-if="project.isPlayable">
+                                    <button @click="openGameWindow(project)" 
+                                            class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-pink-400 to-purple-400 text-white hover:from-pink-500 hover:to-purple-500 font-display font-bold text-xs flex items-center gap-1.5 shadow-md">
+                                        <i class="fa-solid fa-play text-[10px]"></i> Play
+                                    </button>
+                                </template>
+                                <template x-if="!project.isPlayable && project.demoUrl">
                                     <a :href="project.demoUrl" target="_blank" rel="noopener" 
                                        class="w-8 h-8 rounded-xl bg-pink-100 text-pink-600 hover:bg-pink-500 hover:text-white flex items-center justify-center text-xs transition-colors"
                                        title="live-demo">
@@ -302,25 +268,6 @@
                                     </a>
                                 </template>
                             </div>
-
-                            <div class="flex items-center space-x-1">
-                                <button @click="openViewModal(project)" 
-                                        class="px-3 py-1.5 rounded-xl bg-white hover:bg-pink-50 text-pink-600 border border-pink-200 text-xs font-semibold transition-all">
-                                    details
-                                </button>
-                                
-                                <button @click="openModal('edit', project)" 
-                                        class="p-1.5 text-gray-400 hover:text-purple-600 transition-colors"
-                                        title="edit-project">
-                                    <i class="fa-solid fa-pen-to-square text-xs"></i>
-                                </button>
-                                
-                                <button @click="confirmDelete(project)" 
-                                        class="p-1.5 text-gray-400 hover:text-rose-500 transition-colors"
-                                        title="delete-project">
-                                    <i class="fa-solid fa-trash-can text-xs"></i>
-                                </button>
-                            </div>
                         </div>
 
                     </div>
@@ -329,7 +276,107 @@
         </section>
     </main>
 
-    <!-- ADD / EDIT PROJECT MODAL -->
+    <!-- PLAYABLE GAME WINDOW MODAL -->
+    <div x-show="isGameOpen" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 scale-95"
+         x-transition:enter-end="opacity-100 scale-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 scale-100"
+         x-transition:leave-end="opacity-0 scale-95"
+         class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-purple-950/80 backdrop-blur-md overflow-hidden"
+         style="display: none;">
+        
+        <div class="glass-card rounded-3xl w-full max-w-5xl h-[92vh] flex flex-col border border-white relative shadow-2xl overflow-hidden bg-gradient-to-br from-pink-900/40 via-purple-900/60 to-slate-900">
+            
+            <!-- Game Window Header with Return Button -->
+            <div class="px-5 py-3.5 bg-white/10 backdrop-blur-md border-b border-white/10 flex items-center justify-between z-10">
+                <div class="flex items-center space-x-3">
+                    <button @click="closeGameWindow()" 
+                            class="px-4 py-2 rounded-2xl bg-white text-pink-600 hover:bg-pink-50 font-display font-bold text-xs shadow-lg transition-all flex items-center space-x-2">
+                        <i class="fa-solid fa-arrow-left text-sm"></i>
+                        <span>Return to Repository</span>
+                    </button>
+
+                    <div class="hidden sm:flex items-center space-x-2 border-l border-white/20 pl-4">
+                        <i class="fa-solid fa-gamepad text-pink-300"></i>
+                        <span class="font-display font-bold text-white text-sm" x-text="activeGameProject?.title || 'Mini Game Window'"></span>
+                    </div>
+                </div>
+
+                <!-- Scoreboard & Status Display -->
+                <div class="flex items-center space-x-3 sm:space-x-4 font-display text-white text-xs sm:text-sm">
+                    <template x-if="activeGameProject?.id === 'raycaster-game'">
+                        <div class="flex items-center space-x-2">
+                            <div class="bg-red-950/60 border border-red-500/40 px-2.5 py-1 rounded-xl text-xs">
+                                HP: <span class="font-bold text-red-400" x-text="gameHp">100</span>%
+                            </div>
+                            <div class="bg-cyan-950/60 border border-cyan-500/40 px-2.5 py-1 rounded-xl text-xs">
+                                WATER: <span class="font-bold text-cyan-300" x-text="gameAmmo">100</span>%
+                            </div>
+                            <div class="bg-purple-950/60 border border-purple-500/40 px-2.5 py-1 rounded-xl text-xs">
+                                PESTS: <span class="font-bold text-purple-300" x-text="gameScore">0</span>
+                            </div>
+                        </div>
+                    </template>
+                    <template x-if="activeGameProject?.id !== 'raycaster-game'">
+                        <div class="flex space-x-3">
+                            <div class="bg-black/30 px-3 py-1.5 rounded-xl border border-white/10">
+                                Score: <span class="font-bold text-pink-300 text-base" x-text="gameScore">0</span>
+                            </div>
+                            <div class="bg-black/30 px-3 py-1.5 rounded-xl border border-white/10">
+                                High Score: <span class="font-bold text-purple-300 text-base" x-text="gameHighScore">0</span>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Canvas Game View Area -->
+            <div class="flex-1 relative bg-slate-950 flex items-center justify-center overflow-hidden">
+                <canvas id="gameCanvas" class="w-full h-full object-contain"></canvas>
+                <div id="damage-flash" class="absolute inset-0 bg-red-600/30 pointer-events-none opacity-0 transition-opacity duration-100"></div>
+
+                <!-- Touch Controls Overlay for Mobile/Tablet -->
+                <div class="absolute bottom-4 left-4 right-4 flex justify-between items-center pointer-events-none sm:hidden">
+                    <div class="flex gap-2 pointer-events-auto">
+                        <button id="btn-left" class="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md text-white border border-white/30 text-lg active:bg-pink-500/50 flex items-center justify-center">
+                            <i class="fa-solid fa-arrow-left"></i>
+                        </button>
+                        <button id="btn-up" class="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md text-white border border-white/30 text-lg active:bg-pink-500/50 flex items-center justify-center">
+                            <i class="fa-solid fa-arrow-up"></i>
+                        </button>
+                        <button id="btn-down" class="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md text-white border border-white/30 text-lg active:bg-pink-500/50 flex items-center justify-center">
+                            <i class="fa-solid fa-arrow-down"></i>
+                        </button>
+                        <button id="btn-right" class="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md text-white border border-white/30 text-lg active:bg-pink-500/50 flex items-center justify-center">
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    <div class="flex gap-2 pointer-events-auto">
+                        <button id="btn-grapple" class="w-14 h-14 rounded-full bg-cyan-500/80 backdrop-blur-md text-white border border-white/40 font-display font-bold text-xs active:bg-cyan-600 flex items-center justify-center shadow-lg">
+                            HOOK
+                        </button>
+                        <button id="btn-fire" class="w-16 h-16 rounded-full bg-pink-500/80 backdrop-blur-md text-white border border-white/40 font-display font-bold text-xs active:bg-pink-600 flex items-center justify-center shadow-lg">
+                            FIRE
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Window Footer Instructions -->
+            <div class="px-4 py-2 bg-white/5 border-t border-white/10 text-center text-[11px] text-pink-200/80">
+                <template x-if="activeGameProject?.id === 'raycaster-game'">
+                    <span><b>WASD</b>: Walk | <b>ARROWS</b>: Turn / Look | <b>SPACE</b>: Water Gun | <b>E</b>: Grapple Hook | <b>SHIFT</b>: Sprint | <b>R</b>: Restart</span>
+                </template>
+                <template x-if="activeGameProject?.id !== 'raycaster-game'">
+                    <span>Keyboard: <kbd class="px-1.5 py-0.5 bg-white/10 rounded">Left/Right Arrows</kbd> or <kbd class="px-1.5 py-0.5 bg-white/10 rounded">A/D</kbd> to move | <kbd class="px-1.5 py-0.5 bg-white/10 rounded">Space/Up</kbd> to Jump</span>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT / ADD PROJECT MODAL -->
     <div x-show="isModalOpen" 
          x-transition:enter="transition ease-out duration-300"
          x-transition:enter-start="opacity-0 scale-95"
@@ -345,8 +392,8 @@
                 <i class="fa-solid fa-xmark"></i>
             </button>
 
-            <h3 class="font-display font-bold text-2xl text-gray-800 mb-1" x-text="modalMode === 'add' ? '✨ add-new-project' : '✏️ edit-project'"></h3>
-            <p class="text-xs text-gray-500 mb-6">fill-in-details-to-showcase-your-project-inside-adri-cardo-repo.</p>
+            <h3 class="font-display font-bold text-2xl text-gray-800 mb-1" x-text="form.id ? '✏️ edit-project' : '✨ new-project'"></h3>
+            <p class="text-xs text-gray-500 mb-6">update-details-for-this-project.</p>
 
             <form @submit.prevent="saveProject()" class="space-y-4">
                 <div>
@@ -355,23 +402,13 @@
                            class="w-full px-4 py-2.5 rounded-2xl bg-white/90 border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 text-sm">
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1">category</label>
-                        <select x-model="form.category" class="w-full px-4 py-2.5 rounded-2xl bg-white/90 border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 text-sm">
-                            <template x-for="cat in categories" :key="cat">
-                                <option :value="cat" x-text="cat"></option>
-                            </template>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1">status</label>
-                        <select x-model="form.status" class="w-full px-4 py-2.5 rounded-2xl bg-white/90 border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 text-sm">
-                            <option value="completed">completed ✨</option>
-                            <option value="in-progress">in-progress 🚀</option>
-                            <option value="planned">planned 💭</option>
-                        </select>
-                    </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">status</label>
+                    <select x-model="form.status" class="w-full px-4 py-2.5 rounded-2xl bg-white/90 border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 text-sm">
+                        <option value="completed">completed ✨</option>
+                        <option value="in-progress">in-progress 🚀</option>
+                        <option value="planned">planned 💭</option>
+                    </select>
                 </div>
 
                 <div>
@@ -434,17 +471,12 @@
                     </div>
                 </div>
 
-                <div class="flex items-center space-x-2 pt-2">
-                    <input type="checkbox" id="modalFavorite" x-model="form.isFavorite" class="w-4 h-4 text-pink-500 rounded border-pink-300 focus:ring-pink-300">
-                    <label for="modalFavorite" class="text-xs font-semibold text-gray-700 cursor-pointer">mark-as-favorite ❤️</label>
-                </div>
-
                 <div class="pt-4 flex items-center justify-end space-x-3">
                     <button type="button" @click="closeModal()" class="px-5 py-2.5 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-semibold transition-all">
                         cancel
                     </button>
                     <button type="submit" class="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-pink-400 to-purple-400 hover:from-pink-500 hover:to-purple-500 text-white font-display font-medium text-xs shadow-md hover:shadow-lg transition-all">
-                        save-project
+                        save-changes
                     </button>
                 </div>
             </form>
@@ -470,14 +502,13 @@
             <template x-if="activeProject">
                 <div class="space-y-6">
                     <div class="w-full h-56 rounded-2xl overflow-hidden bg-gradient-to-br from-pink-100 to-purple-100 relative">
-                        <img :src="activeProject.imageUrl || getPlaceholderImage(activeProject.category)" 
+                        <img :src="activeProject.imageUrl || 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?auto=format&fit=crop&w=800&q=80'" 
                              :alt="activeProject.title" 
                              class="w-full h-full object-cover">
                         <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
                         
                         <div class="absolute bottom-4 left-4 right-4 flex justify-between items-end text-white">
                             <div>
-                                <span class="px-2.5 py-1 rounded-full bg-pink-500/80 backdrop-blur-md text-[10px] font-bold tracking-wide uppercase mb-1 inline-block" x-text="activeProject.category"></span>
                                 <h2 class="font-display font-bold text-2xl" x-text="activeProject.title"></h2>
                             </div>
                             <span :class="{
@@ -487,6 +518,19 @@
                             }" class="px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md" x-text="activeProject.status"></span>
                         </div>
                     </div>
+
+                    <template x-if="activeProject.isPlayable">
+                        <div class="p-4 rounded-2xl bg-gradient-to-r from-pink-500 to-purple-500 text-white flex items-center justify-between">
+                            <div>
+                                <h4 class="font-display font-bold text-base">🎮 Playable Game Project</h4>
+                                <p class="text-xs text-pink-100">Launch the game window directly inside your website!</p>
+                            </div>
+                            <button @click="closeViewModal(); openGameWindow(activeProject)" 
+                                    class="px-5 py-2 rounded-xl bg-white text-pink-600 font-display font-bold text-xs shadow-md hover:bg-pink-50 transition-all">
+                                Launch Game Window
+                            </button>
+                        </div>
+                    </template>
 
                     <div>
                         <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">built-with</h4>
@@ -537,7 +581,6 @@
 
                     <div class="text-xs text-gray-400 border-t border-pink-100 pt-3 flex justify-between">
                         <span>created: <strong x-text="formatDate(activeProject.createdAt)"></strong></span>
-                        <span x-show="activeProject.isFavorite" class="text-pink-500 font-medium">❤️ marked-as-favorite</span>
                     </div>
 
                     <div class="flex items-center justify-between pt-2">
@@ -565,40 +608,6 @@
                     </div>
                 </div>
             </template>
-        </div>
-    </div>
-
-    <!-- BACKUP / RESTORE DATA MODAL -->
-    <div x-show="isBackupModalOpen" 
-         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-purple-950/30 backdrop-blur-sm"
-         style="display: none;">
-        <div class="glass-card rounded-3xl w-full max-w-md p-6 sm:p-8 border border-white relative shadow-2xl" @click.away="isBackupModalOpen = false">
-            <button @click="isBackupModalOpen = false" class="absolute top-5 right-5 text-gray-400 hover:text-pink-500 text-lg">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-
-            <h3 class="font-display font-bold text-xl text-gray-800 mb-2">📁 data-management</h3>
-            <p class="text-xs text-gray-500 mb-6">backup-your-project-repository-or-restore-standard-demo-datasets.</p>
-
-            <div class="space-y-3">
-                <button @click="exportJSON()" class="w-full p-3 rounded-2xl bg-pink-50 hover:bg-pink-100 border border-pink-200 text-pink-700 text-xs font-bold flex items-center justify-between transition-colors">
-                    <span>export-repository-(json)</span>
-                    <i class="fa-solid fa-download"></i>
-                </button>
-
-                <div class="relative">
-                    <input type="file" id="importFileInput" @change="importJSON($event)" class="hidden" accept=".json">
-                    <label for="importFileInput" class="w-full p-3 rounded-2xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700 text-xs font-bold flex items-center justify-between cursor-pointer transition-colors">
-                        <span>import-backup-file</span>
-                        <i class="fa-solid fa-upload"></i>
-                    </label>
-                </div>
-
-                <button @click="resetToDefaultData()" class="w-full p-3 rounded-2xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 text-xs font-bold flex items-center justify-between transition-colors">
-                    <span>restore-default-samples</span>
-                    <i class="fa-solid fa-rotate-left"></i>
-                </button>
-            </div>
         </div>
     </div>
 
@@ -638,28 +647,25 @@
         <span x-text="toast.message"></span>
     </div>
 
-    <footer class="mt-auto border-t border-pink-100/60 py-6 text-center text-xs text-pink-400">
-        <p>adri-cardo-repo &bull; crafted-with-soft-pastel-colors-warm-gradients-and-love 💕</p>
-    </footer>
-
     <script>
         function repoApp() {
             return {
                 projects: [],
                 searchQuery: '',
-                selectedCategory: 'all',
                 selectedStatus: 'all',
-                showFavoritesOnly: false,
-                sortBy: 'newest',
-                
-                categories: ['web-dev', 'mobile-apps', 'cozy-games', 'ui-ux-design', 'tools-and-bots'],
 
                 isModalOpen: false,
                 isViewModalOpen: false,
-                isBackupModalOpen: false,
-                modalMode: 'add',
+                isGameOpen: false,
                 activeProject: null,
+                activeGameProject: null,
                 deleteTarget: null,
+
+                gameScore: 0,
+                gameHighScore: 0,
+                gameHp: 100,
+                gameAmmo: 100,
+                gameLoopId: null,
 
                 toast: {
                     visible: false,
@@ -669,7 +675,6 @@
                 form: {
                     id: null,
                     title: '',
-                    category: 'web-dev',
                     status: 'in-progress',
                     description: '',
                     longNotes: '',
@@ -679,29 +684,53 @@
                     repoUrl: '',
                     filePathways: [],
                     newFilePath: '',
-                    isFavorite: false
+                    isPlayable: false
                 },
 
                 init() {
+                    const defaultProjects = [
+                        {
+                            id: 'raycaster-game',
+                            title: 'Retro Raycaster - Water vs Pests',
+                            status: 'completed',
+                            description: 'doom like game',
+                            longNotes: '',
+                            tags: ['3D Raycaster', 'HTML5 Canvas', 'Web Audio Synthesizer', 'JavaScript', 'Alpine.js'],
+                            imageUrl: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=800&q=80',
+                            demoUrl: '#',
+                            repoUrl: 'https://github.com/adri-cardo/retro-raycaster-pests',
+                            filePathways: ['src/raycaster.js', 'src/entities.js', 'src/audio_synth.js', 'index.html'],
+                            createdAt: new Date().toISOString(),
+                            isPlayable: true
+                        }
+                    ];
+
                     const saved = localStorage.getItem('adri_cardo_repo_data');
                     if (saved) {
                         try {
-                            this.projects = JSON.parse(saved);
+                            const parsed = JSON.parse(saved);
+                            const raycasterOnly = parsed.filter(p => p.id === 'raycaster-game');
+                            if (raycasterOnly.length > 0) {
+                                raycasterOnly[0].description = 'doom like game';
+                                raycasterOnly[0].longNotes = '';
+                                this.projects = raycasterOnly;
+                            } else {
+                                this.projects = defaultProjects;
+                            }
                         } catch (e) {
-                            this.loadDefaultProjects();
+                            this.projects = defaultProjects;
                         }
                     } else {
-                        this.loadDefaultProjects();
+                        this.projects = defaultProjects;
                     }
+                    this.saveToLocalStorage();
+
+                    const hs = localStorage.getItem('adri_cardo_game_hs');
+                    if (hs) this.gameHighScore = parseInt(hs) || 0;
                 },
 
                 saveToLocalStorage() {
                     localStorage.setItem('adri_cardo_repo_data', JSON.stringify(this.projects));
-                },
-
-                loadDefaultProjects() {
-                    this.projects = [];
-                    this.saveToLocalStorage();
                 },
 
                 get filteredProjects() {
@@ -709,52 +738,468 @@
                         const q = this.searchQuery.toLowerCase();
                         const titleMatch = p.title.toLowerCase().includes(q);
                         const descMatch = p.description.toLowerCase().includes(q);
-                        const tagsMatch = p.tags.some(t => t.toLowerCase().includes(q));
+                        const tagsMatch = p.tags && p.tags.some(t => t.toLowerCase().includes(q));
                         const matchesSearch = !q || titleMatch || descMatch || tagsMatch;
 
-                        const matchesCategory = this.selectedCategory === 'all' || p.category === this.selectedCategory;
                         const matchesStatus = this.selectedStatus === 'all' || p.status === this.selectedStatus;
-                        const matchesFav = !this.showFavoritesOnly || p.isFavorite;
 
-                        return matchesSearch && matchesCategory && matchesStatus && matchesFav;
-                    }).sort((a, b) => {
-                        if (this.sortBy === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
-                        if (this.sortBy === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
-                        if (this.sortBy === 'title') return a.title.localeCompare(b.title);
-                        return 0;
+                        return matchesSearch && matchesStatus;
                     });
                 },
 
                 resetFilters() {
                     this.searchQuery = '';
-                    this.selectedCategory = 'all';
                     this.selectedStatus = 'all';
-                    this.showFavoritesOnly = false;
+                },
+
+                openGameWindow(project) {
+                    this.activeGameProject = project;
+                    this.isGameOpen = true;
+                    this.gameScore = 0;
+                    this.gameHp = 100;
+                    this.gameAmmo = 100;
+                    
+                    this.$nextTick(() => {
+                        if (project.id === 'raycaster-game') {
+                            this.initRaycasterCanvas();
+                        } else {
+                            this.initGameCanvas();
+                        }
+                    });
+                    this.showToast('🎮 Game Launched! Click "Return to Repository" anytime.');
+                },
+
+                closeGameWindow() {
+                    this.isGameOpen = false;
+                    if (this.gameLoopId) {
+                        cancelAnimationFrame(this.gameLoopId);
+                        this.gameLoopId = null;
+                    }
+                    this.showToast('⬅ Returned back to Repository');
+                },
+
+                initRaycasterCanvas() {
+                    const canvas = document.getElementById('gameCanvas');
+                    if (!canvas) return;
+                    const ctx = canvas.getContext('2d', { alpha: false });
+
+                    const screenWidth = 640;
+                    const screenHeight = 400;
+                    canvas.width = screenWidth;
+                    canvas.height = screenHeight;
+
+                    // Audio Synthesizer
+                    let audioCtx = null;
+                    const initAudio = () => {
+                        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+                    };
+
+                    const playWaterSound = () => {
+                        if (!audioCtx) return;
+                        try {
+                            const osc = audioCtx.createOscillator();
+                            const gain = audioCtx.createGain();
+                            osc.type = 'sine';
+                            osc.frequency.setValueAtTime(650, audioCtx.currentTime);
+                            osc.frequency.exponentialRampToValueAtTime(120, audioCtx.currentTime + 0.14);
+                            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.14);
+                            osc.connect(gain);
+                            gain.connect(audioCtx.destination);
+                            osc.start();
+                            osc.stop(audioCtx.currentTime + 0.14);
+                        } catch(e) {}
+                    };
+
+                    const playHitSound = () => {
+                        if (!audioCtx) return;
+                        try {
+                            const bufferSize = audioCtx.sampleRate * 0.12;
+                            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                            const data = buffer.getChannelData(0);
+                            for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.3));
+                            const noise = audioCtx.createBufferSource();
+                            noise.buffer = buffer;
+                            const filter = audioCtx.createBiquadFilter();
+                            filter.type = 'lowpass';
+                            filter.frequency.setValueAtTime(1400, audioCtx.currentTime);
+                            filter.frequency.linearRampToValueAtTime(200, audioCtx.currentTime + 0.12);
+                            const gain = audioCtx.createGain();
+                            gain.gain.setValueAtTime(0.6, audioCtx.currentTime);
+                            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
+                            noise.connect(filter);
+                            filter.connect(gain);
+                            gain.connect(audioCtx.destination);
+                            noise.start();
+                        } catch(e) {}
+                    };
+
+                    const playGrappleSound = () => {
+                        if (!audioCtx) return;
+                        try {
+                            const osc = audioCtx.createOscillator();
+                            const gain = audioCtx.createGain();
+                            osc.type = 'sawtooth';
+                            osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+                            osc.frequency.exponentialRampToValueAtTime(1100, audioCtx.currentTime + 0.18);
+                            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.18);
+                            osc.connect(gain);
+                            gain.connect(audioCtx.destination);
+                            osc.start();
+                            osc.stop(audioCtx.currentTime + 0.18);
+                        } catch(e) {}
+                    };
+
+                    const playDamageSound = () => {
+                        if (!audioCtx) return;
+                        try {
+                            const osc = audioCtx.createOscillator();
+                            const gain = audioCtx.createGain();
+                            osc.type = 'triangle';
+                            osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                            osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.25);
+                            gain.gain.setValueAtTime(0.8, audioCtx.currentTime);
+                            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+                            osc.connect(gain);
+                            gain.connect(audioCtx.destination);
+                            osc.start();
+                            osc.stop(audioCtx.currentTime + 0.25);
+                        } catch(e) {}
+                    };
+
+                    const mapWidth = 24;
+                    const mapHeight = 24;
+                    const worldMap = [
+                        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                        [1,0,0,0,0,0,2,2,2,2,2,0,0,0,0,3,0,3,0,3,0,0,0,1],
+                        [1,0,0,0,0,0,2,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                        [1,0,0,0,0,0,2,0,0,0,2,0,0,0,0,3,0,0,0,3,0,0,0,1],
+                        [1,0,0,0,0,0,2,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                        [1,0,0,0,0,0,2,2,0,2,2,0,0,0,0,3,0,3,0,3,0,0,0,1],
+                        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                        [1,4,4,4,4,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                        [1,4,0,4,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                        [1,4,0,0,0,0,5,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                        [1,4,0,4,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                        [1,4,0,4,4,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                        [1,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                        [1,4,4,4,4,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+                    ];
+
+                    const wallColors = { 1: '#2e1c0c', 2: '#6e4726', 3: '#2d4023', 4: '#8b5a2b', 5: '#1e4d25' };
+
+                    const isWall = (x, y) => {
+                        let mx = Math.floor(x), my = Math.floor(y);
+                        if (mx < 0 || mx >= mapWidth || my < 0 || my >= mapHeight) return true;
+                        return worldMap[mx][my] > 0;
+                    };
+
+                    let posX = 22.0, posY = 11.5;
+                    let dirX = -1.0, dirY = 0.0;
+                    let planeX = 0.0, planeY = 0.66;
+                    let pitch = 0, camZ = 0;
+
+                    let ammo = 100, kills = 0, health = 100;
+                    let weaponRecoilY = 0, shootAnimTimer = 0;
+
+                    let zBuffer = new Array(screenWidth);
+                    let waterProjectiles = [], enemyProjectiles = [];
+                    let grapple = { active: false, target: null };
+
+                    let sprites = [
+                        { x: 18.5, y: 10.5, alive: true, health: 4, type: 'bear', color: '#5c3818', size: 1.2 },
+                        { x: 12.5, y: 6.5,  alive: true, health: 4, type: 'bear', color: '#4a2c11', size: 1.2 },
+                        { x: 7.5,  y: 7.5,  alive: true, health: 4, type: 'bear', color: '#6b411d', size: 1.2 },
+                        { x: 15.5, y: 15.5, alive: true, health: 3, type: 'cockroach', color: '#3d1e0d', size: 0.95, shootTimer: 1.0 },
+                        { x: 5.5,  y: 18.5, alive: true, health: 3, type: 'cockroach', color: '#4d2612', size: 0.95, shootTimer: 1.5 },
+                        { x: 3.5,  y: 3.5,  alive: true, health: 3, type: 'cockroach', color: '#3d1e0d', size: 0.95, shootTimer: 0.5 },
+                        { x: 10.5, y: 19.5, alive: true, health: 3, type: 'cockroach', color: '#4d2612', size: 0.95, shootTimer: 2.0 }
+                    ];
+
+                    const keys = { w: false, s: false, a: false, d: false, ArrowLeft: false, ArrowRight: false, ArrowUp: false, ArrowDown: false, Shift: false };
+
+                    const triggerGrapple = () => {
+                        if (health <= 0) return;
+                        if (grapple.active) { grapple.active = false; grapple.target = null; return; }
+                        let bestTarget = null, bestDist = 14.0;
+                        for (let spr of sprites) {
+                            if (!spr.alive) continue;
+                            let dx = spr.x - posX, dy = spr.y - posY;
+                            let dist = Math.sqrt(dx * dx + dy * dy);
+                            if (dist > 0.6 && dist < bestDist) {
+                                let normX = dx / dist, normY = dy / dist;
+                                let dot = normX * dirX + normY * dirY;
+                                if (dot > 0.6) {
+                                    let blocked = false;
+                                    for (let step = 0.5; step < dist; step += 0.5) {
+                                        if (isWall(posX + normX * step, posY + normY * step)) { blocked = true; break; }
+                                    }
+                                    if (!blocked) { bestDist = dist; bestTarget = spr; }
+                                }
+                            }
+                        }
+                        if (bestTarget) { grapple.active = true; grapple.target = bestTarget; playGrappleSound(); }
+                    };
+
+                    const shootWeapon = () => {
+                        if (ammo <= 0 || health <= 0) return;
+                        ammo = Math.max(0, ammo - 2);
+                        this.gameAmmo = ammo;
+                        shootAnimTimer = 0.15;
+                        weaponRecoilY = 15;
+                        let recoilDist = 0.08;
+                        if (!isWall(posX - dirX * recoilDist, posY)) posX -= dirX * recoilDist;
+                        if (!isWall(posX, posY - dirY * recoilDist)) posY -= dirY * recoilDist;
+                        playWaterSound();
+                        waterProjectiles.push({ x: posX + dirX * 0.4, y: posY + dirY * 0.4, dirX, dirY, speed: 11.0 });
+                    };
+
+                    const triggerDamageFlash = () => {
+                        const flash = document.getElementById('damage-flash');
+                        if (flash) { flash.style.opacity = '1'; setTimeout(() => { flash.style.opacity = '0'; }, 120); }
+                    };
+
+                    // Keyboard Events
+                    const handleKeyDown = (e) => {
+                        if (!this.isGameOpen || this.activeGameProject?.id !== 'raycaster-game') return;
+                        initAudio();
+                        const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+                        if (keys.hasOwnProperty(key)) keys[key] = true;
+                        if (keys.hasOwnProperty(e.key)) keys[e.key] = true;
+                        if (key === 'r') this.openGameWindow(this.activeGameProject);
+                        if (key === 'e') triggerGrapple();
+                        if (e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); shootWeapon(); }
+                    };
+
+                    const handleKeyUp = (e) => {
+                        const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+                        if (keys.hasOwnProperty(key)) keys[key] = false;
+                        if (keys.hasOwnProperty(e.key)) keys[e.key] = false;
+                    };
+
+                    window.addEventListener('keydown', handleKeyDown);
+                    window.addEventListener('keyup', handleKeyUp);
+
+                    // Touch Handlers
+                    this.touchMoveLeft = (v) => { keys.a = v; };
+                    this.touchMoveRight = (v) => { keys.d = v; };
+
+                    let lastTime = performance.now();
+
+                    const gameLoop = (time) => {
+                        if (!this.isGameOpen || this.activeGameProject?.id !== 'raycaster-game') {
+                            window.removeEventListener('keydown', handleKeyDown);
+                            window.removeEventListener('keyup', handleKeyUp);
+                            return;
+                        }
+
+                        let dt = Math.min((time - lastTime) / 1000, 0.1);
+                        lastTime = time;
+
+                        // Movement & Rotation Physics
+                        let moveSpeed = (keys.Shift ? 5.5 : 3.5) * dt;
+                        let rotSpeed = 2.2 * dt;
+
+                        if (keys.w) {
+                            if (!isWall(posX + dirX * moveSpeed, posY)) posX += dirX * moveSpeed;
+                            if (!isWall(posX, posY + dirY * moveSpeed)) posY += dirY * moveSpeed;
+                        }
+                        if (keys.s) {
+                            if (!isWall(posX - dirX * moveSpeed, posY)) posX -= dirX * moveSpeed;
+                            if (!isWall(posX, posY - dirY * moveSpeed)) posY -= dirY * moveSpeed;
+                        }
+                        if (keys.a) {
+                            if (!isWall(posX - planeX * moveSpeed, posY)) posX -= planeX * moveSpeed;
+                            if (!isWall(posX, posY - planeY * moveSpeed)) posY -= planeY * moveSpeed;
+                        }
+                        if (keys.d) {
+                            if (!isWall(posX + planeX * moveSpeed, posY)) posX += planeX * moveSpeed;
+                            if (!isWall(posX, posY + planeY * moveSpeed)) posY += planeY * moveSpeed;
+                        }
+
+                        if (keys.ArrowLeft) {
+                            let oldDirX = dirX;
+                            dirX = dirX * Math.cos(rotSpeed) - dirY * Math.sin(rotSpeed);
+                            dirY = oldDirX * Math.sin(rotSpeed) + dirY * Math.cos(rotSpeed);
+                            let oldPlaneX = planeX;
+                            planeX = planeX * Math.cos(rotSpeed) - planeY * Math.sin(rotSpeed);
+                            planeY = oldPlaneX * Math.sin(rotSpeed) + planeY * Math.cos(rotSpeed);
+                        }
+                        if (keys.ArrowRight) {
+                            let oldDirX = dirX;
+                            dirX = dirX * Math.cos(-rotSpeed) - dirY * Math.sin(-rotSpeed);
+                            dirY = oldDirX * Math.sin(-rotSpeed) + dirY * Math.cos(-rotSpeed);
+                            let oldPlaneX = planeX;
+                            planeX = planeX * Math.cos(-rotSpeed) - planeY * Math.sin(-rotSpeed);
+                            planeY = oldPlaneX * Math.sin(-rotSpeed) + planeY * Math.cos(-rotSpeed);
+                        }
+                        if (keys.ArrowUp) pitch = Math.min(pitch + 120 * dt, 100);
+                        if (keys.ArrowDown) pitch = Math.max(pitch - 120 * dt, -100);
+
+                        // Grapple Cable Movement
+                        if (grapple.active && grapple.target && grapple.target.alive) {
+                            let dx = grapple.target.x - posX, dy = grapple.target.y - posY;
+                            let dist = Math.sqrt(dx * dx + dy * dy);
+                            if (dist > 0.8) {
+                                let pullSpeed = 10.0 * dt;
+                                if (!isWall(posX + (dx / dist) * pullSpeed, posY)) posX += (dx / dist) * pullSpeed;
+                                if (!isWall(posX, posY + (dy / dist) * pullSpeed)) posY += (dy / dist) * pullSpeed;
+                            } else { grapple.active = false; grapple.target = null; }
+                        }
+
+                        // Projectiles & Enemies Logic
+                        waterProjectiles.forEach((p, idx) => {
+                            p.x += p.dirX * p.speed * dt;
+                            p.y += p.dirY * p.speed * dt;
+                            if (isWall(p.x, p.y)) waterProjectiles.splice(idx, 1);
+                            else {
+                                sprites.forEach(spr => {
+                                    if (spr.alive && Math.hypot(spr.x - p.x, spr.y - p.y) < spr.size * 0.45) {
+                                        spr.health--;
+                                        playHitSound();
+                                        waterProjectiles.splice(idx, 1);
+                                        if (spr.health <= 0) {
+                                            spr.alive = false;
+                                            kills++;
+                                            this.gameScore = kills;
+                                        }
+                                    }
+                                });
+                            }
+                        });
+
+                        sprites.forEach(spr => {
+                            if (!spr.alive) return;
+                            let dist = Math.hypot(posX - spr.x, posY - spr.y);
+                            if (dist < 0.7 && health > 0) {
+                                health = Math.max(0, health - 15 * dt);
+                                this.gameHp = Math.round(health);
+                                triggerDamageFlash();
+                                playDamageSound();
+                            }
+                            if (dist < 12) {
+                                let speed = (spr.type === 'bear' ? 1.4 : 2.2) * dt;
+                                let stepX = ((posX - spr.x) / dist) * speed;
+                                let stepY = ((posY - spr.y) / dist) * speed;
+                                if (!isWall(spr.x + stepX, spr.y)) spr.x += stepX;
+                                if (!isWall(spr.x, spr.y + stepY)) spr.y += stepY;
+                            }
+                        });
+
+                        // Render Raycasting Scene
+                        ctx.fillStyle = '#08120b'; ctx.fillRect(0, 0, screenWidth, screenHeight / 2 + pitch);
+                        ctx.fillStyle = '#22170f'; ctx.fillRect(0, screenHeight / 2 + pitch, screenWidth, screenHeight);
+
+                        for (let x = 0; x < screenWidth; x++) {
+                            let cameraX = 2 * x / screenWidth - 1;
+                            let rayDirX = dirX + planeX * cameraX;
+                            let rayDirY = dirY + planeY * cameraX;
+                            let mapX = Math.floor(posX), mapY = Math.floor(posY);
+                            let sideDistX, sideDistY;
+                            let deltaDistX = (rayDirX === 0) ? 1e30 : Math.abs(1 / rayDirX);
+                            let deltaDistY = (rayDirY === 0) ? 1e30 : Math.abs(1 / rayDirY);
+                            let perpWallDist, stepX, stepY, hit = 0, side;
+
+                            if (rayDirX < 0) { stepX = -1; sideDistX = (posX - mapX) * deltaDistX; }
+                            else { stepX = 1; sideDistX = (mapX + 1.0 - posX) * deltaDistX; }
+                            if (rayDirY < 0) { stepY = -1; sideDistY = (posY - mapY) * deltaDistY; }
+                            else { stepY = 1; sideDistY = (mapY + 1.0 - posY) * deltaDistY; }
+
+                            while (hit === 0) {
+                                if (sideDistX < sideDistY) { sideDistX += deltaDistX; mapX += stepX; side = 0; }
+                                else { sideDistY += deltaDistY; mapY += stepY; side = 1; }
+                                if (mapX < 0 || mapX >= mapWidth || mapY < 0 || mapY >= mapHeight || worldMap[mapX][mapY] > 0) hit = 1;
+                            }
+
+                            perpWallDist = (side === 0) ? (sideDistX - deltaDistX) : (sideDistY - deltaDistY);
+                            if (perpWallDist <= 0.0001) perpWallDist = 0.0001;
+                            zBuffer[x] = perpWallDist;
+
+                            let lineHeight = Math.floor(screenHeight / perpWallDist);
+                            let drawStart = Math.max(0, -lineHeight / 2 + screenHeight / 2 + pitch);
+                            let drawEnd = Math.min(screenHeight - 1, lineHeight / 2 + screenHeight / 2 + pitch);
+                            let mapVal = worldMap[mapX][mapY];
+                            ctx.fillStyle = wallColors[mapVal] || '#555555';
+                            ctx.fillRect(x, drawStart, 1, drawEnd - drawStart);
+                        }
+
+                        // Render Sprites (Enemies)
+                        let sortedSprites = sprites.map(spr => ({ spr, dist: Math.hypot(posX - spr.x, posY - spr.y) })).sort((a, b) => b.dist - a.dist);
+                        sortedSprites.forEach(({ spr }) => {
+                            if (!spr.alive) return;
+                            let spriteX = spr.x - posX, spriteY = spr.y - posY;
+                            let invDet = 1.0 / (planeX * dirY - dirX * planeY);
+                            let transformX = invDet * (dirY * spriteX - dirX * spriteY);
+                            let transformY = invDet * (-planeY * spriteX + planeX * spriteY);
+
+                            if (transformY > 0) {
+                                let spriteScreenX = Math.floor((screenWidth / 2) * (1 + transformX / transformY));
+                                let spriteHeight = Math.abs(Math.floor((screenHeight / transformY) * spr.size));
+                                let spriteWidth = Math.abs(Math.floor((screenHeight / transformY) * spr.size));
+                                let drawStartY = -spriteHeight / 2 + screenHeight / 2 + pitch;
+                                let drawStartX = -spriteWidth / 2 + spriteScreenX;
+
+                                for (let stripe = Math.floor(drawStartX); stripe < drawStartX + spriteWidth; stripe++) {
+                                    if (stripe >= 0 && stripe < screenWidth && transformY < zBuffer[stripe]) {
+                                        let stripePercent = (stripe - drawStartX) / spriteWidth;
+                                        ctx.fillStyle = spr.color;
+                                        ctx.fillRect(stripe, Math.max(0, drawStartY), 1, Math.min(screenHeight, drawStartY + spriteHeight) - Math.max(0, drawStartY));
+
+                                        // Eyes
+                                        if ((stripePercent > 0.25 && stripePercent < 0.38) || (stripePercent > 0.62 && stripePercent < 0.75)) {
+                                            ctx.fillStyle = spr.type === 'bear' ? '#ff3333' : '#00ff66';
+                                            ctx.fillRect(stripe, drawStartY + spriteHeight * 0.25, 1, spriteHeight * 0.1);
+                                        }
+                                    }
+                                }
+                            }
+                        });
+
+                        // Draw Water Blaster Weapon
+                        if (weaponRecoilY > 0) weaponRecoilY -= 30 * dt;
+                        ctx.fillStyle = '#00bfff';
+                        ctx.fillRect(screenWidth / 2 - 25, screenHeight - 90 + weaponRecoilY, 50, 90);
+                        ctx.fillStyle = '#ff9900';
+                        ctx.fillRect(screenWidth / 2 - 10, screenHeight - 110 + weaponRecoilY, 20, 20);
+
+                        this.gameLoopId = requestAnimationFrame(gameLoop);
+                    };
+
+                    this.gameLoopId = requestAnimationFrame(gameLoop);
                 },
 
                 openModal(mode, project = null) {
-                    this.modalMode = mode;
                     if (mode === 'edit' && project) {
                         this.form = {
                             id: project.id,
                             title: project.title,
-                            category: project.category,
                             status: project.status,
                             description: project.description,
                             longNotes: project.longNotes || '',
-                            tagsInput: project.tags.join(', '),
+                            tagsInput: project.tags ? project.tags.join(', ') : '',
                             imageUrl: project.imageUrl || '',
                             demoUrl: project.demoUrl || '',
                             repoUrl: project.repoUrl || '',
                             filePathways: project.filePathways ? [...project.filePathways] : [],
                             newFilePath: '',
-                            isFavorite: project.isFavorite
+                            isPlayable: !!project.isPlayable
                         };
                     } else {
                         this.form = {
                             id: null,
                             title: '',
-                            category: 'web-dev',
                             status: 'in-progress',
                             description: '',
                             longNotes: '',
@@ -764,7 +1209,7 @@
                             repoUrl: '',
                             filePathways: [],
                             newFilePath: '',
-                            isFavorite: false
+                            isPlayable: false
                         };
                     }
                     this.isModalOpen = true;
@@ -815,42 +1260,19 @@
                     this.activeProject = null;
                 },
 
-                openBackupModal() {
-                    this.isBackupModalOpen = true;
-                },
-
                 saveProject() {
                     if (!this.form.title.trim() || !this.form.description.trim()) return;
 
                     const tagsArray = this.form.tagsInput
                         ? this.form.tagsInput.split(',').map(t => t.trim()).filter(Boolean)
-                        : [this.form.category];
+                        : [];
 
-                    if (this.modalMode === 'add') {
-                        const newProj = {
-                            id: Date.now().toString(),
-                            title: this.form.title,
-                            category: this.form.category,
-                            status: this.form.status,
-                            description: this.form.description,
-                            longNotes: this.form.longNotes,
-                            tags: tagsArray,
-                            imageUrl: this.form.imageUrl,
-                            demoUrl: this.form.demoUrl,
-                            repoUrl: this.form.repoUrl,
-                            filePathways: [...this.form.filePathways],
-                            isFavorite: this.form.isFavorite,
-                            createdAt: new Date().toISOString()
-                        };
-                        this.projects.unshift(newProj);
-                        this.showToast('✨ project-created-successfully!');
-                    } else {
+                    if (this.form.id) {
                         const idx = this.projects.findIndex(p => p.id === this.form.id);
                         if (idx !== -1) {
                             this.projects[idx] = {
                                 ...this.projects[idx],
                                 title: this.form.title,
-                                category: this.form.category,
                                 status: this.form.status,
                                 description: this.form.description,
                                 longNotes: this.form.longNotes,
@@ -859,23 +1281,31 @@
                                 demoUrl: this.form.demoUrl,
                                 repoUrl: this.form.repoUrl,
                                 filePathways: [...this.form.filePathways],
-                                isFavorite: this.form.isFavorite
+                                isPlayable: this.form.isPlayable
                             };
                             this.showToast('✏️ project-details-updated!');
                         }
+                    } else {
+                        const newProj = {
+                            id: 'project-' + Date.now(),
+                            title: this.form.title,
+                            status: this.form.status,
+                            description: this.form.description,
+                            longNotes: this.form.longNotes,
+                            tags: tagsArray,
+                            imageUrl: this.form.imageUrl,
+                            demoUrl: this.form.demoUrl,
+                            repoUrl: this.form.repoUrl,
+                            filePathways: [...this.form.filePathways],
+                            createdAt: new Date().toISOString(),
+                            isPlayable: this.form.isPlayable
+                        };
+                        this.projects.unshift(newProj);
+                        this.showToast('✨ new-project-created!');
                     }
 
                     this.saveToLocalStorage();
                     this.closeModal();
-                },
-
-                toggleFavorite(id) {
-                    const idx = this.projects.findIndex(p => p.id === id);
-                    if (idx !== -1) {
-                        this.projects[idx].isFavorite = !this.projects[idx].isFavorite;
-                        this.saveToLocalStorage();
-                        this.showToast(this.projects[idx].isFavorite ? 'added-to-favorites ❤️' : 'removed-from-favorites');
-                    }
                 },
 
                 confirmDelete(project) {
@@ -889,46 +1319,6 @@
                         this.showToast('project-removed');
                         this.deleteTarget = null;
                     }
-                },
-
-                exportJSON() {
-                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.projects, null, 2));
-                    const dlAnchor = document.createElement('a');
-                    dlAnchor.setAttribute("href", dataStr);
-                    dlAnchor.setAttribute("download", "adri_cardo_repo_backup.json");
-                    document.body.appendChild(dlAnchor);
-                    dlAnchor.click();
-                    dlAnchor.remove();
-                    this.showToast('backup-json-exported! 📁');
-                },
-
-                importJSON(event) {
-                    const file = event.target.files[0];
-                    if (!file) return;
-
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        try {
-                            const imported = JSON.parse(e.target.result);
-                            if (Array.isArray(imported)) {
-                                this.projects = imported;
-                                this.saveToLocalStorage();
-                                this.showToast('repository-successfully-restored!');
-                                this.isBackupModalOpen = false;
-                            } else {
-                                this.showToast('invalid-backup-json-format.');
-                            }
-                        } catch (err) {
-                            this.showToast('error-reading-backup-file.');
-                        }
-                    };
-                    reader.readAsText(file);
-                },
-
-                resetToDefaultData() {
-                    this.loadDefaultProjects();
-                    this.showToast('default-projects-restored ✨');
-                    this.isBackupModalOpen = false;
                 },
 
                 showToast(msg) {
@@ -946,27 +1336,6 @@
                         month: 'short',
                         day: 'numeric'
                     });
-                },
-
-                getCategoryIcon(cat) {
-                    switch (cat) {
-                        case 'web-dev': return 'fa-solid fa-laptop-code';
-                        case 'mobile-apps': return 'fa-solid fa-mobile-screen-button';
-                        case 'cozy-games': return 'fa-solid fa-gamepad';
-                        case 'ui-ux-design': return 'fa-solid fa-palette';
-                        case 'tools-and-bots': return 'fa-solid fa-robot';
-                        default: return 'fa-solid fa-folder-open';
-                    }
-                },
-
-                getPlaceholderImage(category) {
-                    switch (category) {
-                        case 'web-dev': return 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&w=800&q=80';
-                        case 'mobile-apps': return 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=800&q=80';
-                        case 'cozy-games': return 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=800&q=80';
-                        case 'ui-ux-design': return 'https://images.unsplash.com/photo-1581291518633-83b4ebd1d83e?auto=format&fit=crop&w=800&q=80';
-                        default: return 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?auto=format&fit=crop&w=800&q=80';
-                    }
                 }
             }
         }
