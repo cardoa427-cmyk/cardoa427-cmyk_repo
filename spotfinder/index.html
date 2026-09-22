@@ -234,6 +234,28 @@
         let sortOrder = 'newest'; 
         let visibleItemsCount = 10; 
 
+        // Local Storage Key for offline/fallback persistence
+        const LOCAL_STORAGE_KEY = 'spotfinder_posts_data';
+
+        function loadLocalPosts() {
+            try {
+                const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+                if (saved) {
+                    postsData = JSON.parse(saved);
+                }
+            } catch (err) {
+                console.warn("Could not load from localStorage:", err);
+            }
+        }
+
+        function saveLocalPosts() {
+            try {
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(postsData));
+            } catch (err) {
+                console.warn("Could not save to localStorage:", err);
+            }
+        }
+
         const PLACE_TYPES_CONFIG = {
             'Study': { icon: 'fa-book', label: 'Study', color: 'bg-blue-50 text-blue-700 border-blue-200' },
             'relax': { icon: 'fa-couch', label: 'Relax', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
@@ -243,8 +265,11 @@
         };
 
         async function fetchSpotsFromSupabase() {
+            // Load local posts first so data is immediately visible and persistent
+            loadLocalPosts();
+
             if (!supabaseClient) {
-                console.log("Supabase credentials not configured or placeholder URL detected. Running in local state mode.");
+                console.log("Supabase client not initialized. Using persistent browser storage.");
                 renderApp();
                 return;
             }
@@ -256,12 +281,13 @@
                     .order('created_at', { ascending: false });
 
                 if (error) {
-                    console.error("Error fetching spots from Supabase:", error.message);
+                    console.warn("Error fetching spots from Supabase:", error.message);
+                    renderApp();
                     return;
                 }
 
-                if (data) {
-                    postsData = data.map(item => ({
+                if (data && data.length > 0) {
+                    const dbPosts = data.map(item => ({
                         id: item.id,
                         username: item.username,
                         place_type: item.place_type,
@@ -270,8 +296,14 @@
                         location_link: item.location_link,
                         added_at: item.created_at
                     }));
-                    renderApp();
+
+                    // Merge Supabase posts with any unsaved local posts
+                    const existingIds = new Set(dbPosts.map(p => String(p.id)));
+                    const uniqueLocal = postsData.filter(p => !existingIds.has(String(p.id)));
+                    postsData = [...dbPosts, ...uniqueLocal];
+                    saveLocalPosts();
                 }
+                renderApp();
             } catch (err) {
                 console.warn("Network error connecting to Supabase. Falling back to local mode:", err);
                 renderApp();
@@ -558,22 +590,38 @@
                         .select();
 
                     if (error) {
-                        errorContainer.innerText = `Database Error: ${error.message}`;
-                        errorContainer.classList.remove('hidden');
-                        return;
+                        console.warn("Supabase insert error, saving to browser storage instead:", error.message);
+                        const localSpot = {
+                            id: 'spot-' + Date.now(),
+                            ...newPostRecord,
+                            added_at: new Date().toISOString()
+                        };
+                        postsData.unshift(localSpot);
+                        saveLocalPosts();
+                        renderApp();
+                    } else {
+                        await fetchSpotsFromSupabase();
                     }
-
-                    await fetchSpotsFromSupabase();
                 } catch (err) {
                     console.error("Supabase insert exception:", err);
+                    const localSpot = {
+                        id: 'spot-' + Date.now(),
+                        ...newPostRecord,
+                        added_at: new Date().toISOString()
+                    };
+                    postsData.unshift(localSpot);
+                    saveLocalPosts();
+                    renderApp();
                 }
             } else {
-                // Local state fallback if real Supabase URL is not pasted yet
-                postsData.unshift({
+                // Persistent Local Storage Mode
+                const localSpot = {
                     id: 'spot-' + Date.now(),
                     ...newPostRecord,
                     added_at: new Date().toISOString()
-                });
+                };
+                postsData.unshift(localSpot);
+                saveLocalPosts();
                 renderApp();
             }
 
