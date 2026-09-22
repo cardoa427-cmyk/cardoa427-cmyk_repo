@@ -212,19 +212,19 @@
            Replace SUPABASE_URL with your actual URL from:
            Supabase Dashboard -> Project Settings -> API (e.g. https://xyz.supabase.co)
            ========================================================================== */
-        const SUPABASE_URL = 'https://abcdefghijklm.supabase.co';
-        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY_HERE';
+        const SUPABASE_URL = 'https://gqtburdlpgjmzfirlald.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_XmBt_tpcM89RssSyK6q5wQ_VAtLvT5z';
 
         let supabaseClient = null;
 
         // Check if real credentials have been provided (and not placeholder text)
         const isPlaceholder = !SUPABASE_URL || 
-                              SUPABASE_URL.includes('abcdefghijklm') || 
-                              SUPABASE_URL.includes('YOUR_SUPABASE_URL');
+                              SUPABASE_URL.includes('https://gqtburdlpgjmzfirlald.supabase.co') || 
+                              SUPABASE_URL.includes('https://gqtburdlpgjmzfirlald.supabase.co');
 
         if (typeof supabase !== 'undefined' && !isPlaceholder) {
             try {
-                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                supabaseClient = supabase.createClient(SUPABASE_URL, sb_publishable_XmBt_tpcM89RssSyK6q5wQ_VAtLvT5z);
             } catch (err) {
                 console.warn("Could not initialize Supabase client:", err);
             }
