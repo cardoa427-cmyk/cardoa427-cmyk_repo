@@ -213,6 +213,12 @@
 
                 <!-- Navigation Quick Actions -->
                 <div class="flex flex-wrap items-center gap-2">
+                    <!-- Add Project Button -->
+                    <button onclick="openAddModal()" class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white font-semibold text-xs flex items-center gap-1.5 shadow-md shadow-purple-300/50">
+                        <i class="fa-solid fa-plus text-xs"></i>
+                        <span>Add Project</span>
+                    </button>
+
                     <!-- GitHub Config Button -->
                     <button id="btnGithub" onclick="toggleModal('githubModal')" class="px-3 py-1.5 rounded-xl glass-button text-xs font-semibold text-purple-800 flex items-center gap-1.5 hover:text-purple-900 border border-purple-200/80 shadow-sm">
                         <i class="fa-brands fa-github text-purple-600"></i>
@@ -306,8 +312,8 @@
                 <!-- Path / URL -->
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Folder Path / URL *</label>
-                    <input type="text" id="inputUrl" required placeholder="e.g. ./spotfinder/ or https://example.com" class="w-full px-4 py-2.5 rounded-xl glass-input text-xs text-slate-800">
-                    <p class="text-[10px] text-purple-500 mt-1">For subfolders in this repo, use relative paths like <code>./spotfinder/</code> or <code>./doom/index.html</code></p>
+                    <input type="text" id="inputUrl" required placeholder="e.g. ./spotfinder/ or ./doom/" class="w-full px-4 py-2.5 rounded-xl glass-input text-xs text-slate-800">
+                    <p class="text-[10px] text-purple-500 mt-1">For subfolders in this repo, use relative paths like <code>./spotfinder/</code> or <code>./doom/</code></p>
                 </div>
 
                 <!-- Description -->
@@ -316,7 +322,7 @@
                     <textarea id="inputDescription" rows="2" placeholder="Short summary of what this project does..." class="w-full px-4 py-2.5 rounded-xl glass-input text-xs text-slate-800 resize-none"></textarea>
                 </div>
 
-                <!-- Tags & Status -->
+                <!-- Tags & Icon -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Tags (Comma separated)</label>
@@ -324,7 +330,7 @@
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Icon / Emoji</label>
-                        <input type="text" id="inputIcon" placeholder="e.g. 🎮, 🔍, 🎨 or fa-compass" class="w-full px-4 py-2.5 rounded-xl glass-input text-xs text-slate-800">
+                        <input type="text" id="inputIcon" placeholder="e.g. 👾, 🔍, 🎨 or fa-compass" class="w-full px-4 py-2.5 rounded-xl glass-input text-xs text-slate-800">
                     </div>
                 </div>
 
@@ -339,7 +345,7 @@
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">GitHub Folder URL (Optional)</label>
-                        <input type="text" id="inputGithubUrl" placeholder="https://github.com/.../tree/main/spotfinder" class="w-full px-4 py-2.5 rounded-xl glass-input text-xs text-slate-800">
+                        <input type="text" id="inputGithubUrl" placeholder="https://github.com/.../tree/main/doom" class="w-full px-4 py-2.5 rounded-xl glass-input text-xs text-slate-800">
                     </div>
                 </div>
 
@@ -483,7 +489,7 @@
 
     <!-- JAVASCRIPT APP ENGINE -->
     <script>
-        // REAL REPOSITORY PROJECTS
+        // REAL REPOSITORY PROJECTS (Notice relative paths starting with ./)
         const DEFAULT_PROJECTS = [
             {
                 id: 'doom-1',
@@ -511,7 +517,6 @@
 
         // GLOBAL STATE
         let projects = [];
-        let viewMode = 'grid';
         let githubConfig = {
             username: 'cardoa427-cmyk',
             repo: 'cardoa427-cmyk_repo',
@@ -519,7 +524,6 @@
         };
         let isAudioPlaying = false;
         let audioCtx = null;
-        let synthOsc = null;
 
         // INITIALIZATION
         window.onload = function () {
@@ -529,7 +533,7 @@
             setupKeyboardShortcuts();
         };
 
-        // LOCAL STORAGE LOAD / SAVE
+        // LOCAL STORAGE LOAD / SAVE WITH ABSOLUTE PATH FIXER
         function loadLocalData() {
             const savedProjects = localStorage.getItem('adri_repo_projects');
             if (savedProjects) {
@@ -542,13 +546,21 @@
                 projects = [...DEFAULT_PROJECTS];
             }
 
+            // Fix any absolute paths stored in browser local storage (e.g. /doom/ -> ./doom/)
+            projects = projects.map(p => {
+                if (p.url && p.url.startsWith('/') && !p.url.startsWith('//')) {
+                    p.url = '.' + p.url;
+                }
+                return p;
+            });
+
             const savedCfg = localStorage.getItem('adri_repo_github');
             if (savedCfg) {
                 try {
                     githubConfig = JSON.parse(savedCfg);
-                    document.getElementById('cfgUsername').value = githubConfig.username;
-                    document.getElementById('cfgRepo').value = githubConfig.repo;
-                    document.getElementById('cfgBranch').value = githubConfig.branch;
+                    document.getElementById('cfgUsername').value = githubConfig.username || 'cardoa427-cmyk';
+                    document.getElementById('cfgRepo').value = githubConfig.repo || 'cardoa427-cmyk_repo';
+                    document.getElementById('cfgBranch').value = githubConfig.branch || 'main';
                 } catch (e) {}
             }
         }
@@ -566,6 +578,8 @@
         function renderProjects() {
             const grid = document.getElementById('projectsGrid');
             const emptyState = document.getElementById('emptyState');
+
+            if (!grid) return;
 
             if (projects.length === 0) {
                 grid.innerHTML = '';
@@ -589,6 +603,12 @@
                        </a>` 
                     : '';
 
+                // Ensure path is relative so it doesn't break GitHub Pages repo subfolders
+                let launchUrl = project.url || '#';
+                if (launchUrl.startsWith('/') && !launchUrl.startsWith('//')) {
+                    launchUrl = '.' + launchUrl;
+                }
+
                 return `
                     <div class="glass-card rounded-3xl p-6 flex flex-col justify-between space-y-4 relative border border-white/80 group">
                         
@@ -600,30 +620,36 @@
                             
                             <div class="flex items-center gap-1.5">
                                 <button onclick="toggleStar('${project.id}')" class="w-8 h-8 rounded-xl glass-button flex items-center justify-center text-xs ${isStar ? 'text-amber-500' : 'text-purple-400 hover:text-purple-600'}" title="Favorite">
-                                    <i class="${isStar ? 'fa-solid' : 'fa-regular'} fa-star"></i>
+                                    <i class="${isStar ? 'fa-solid fa-star' : 'fa-regular fa-star'}"></i>
+                                </button>
+                                <button onclick="openEditModal('${project.id}')" class="w-8 h-8 rounded-xl glass-button flex items-center justify-center text-xs text-purple-500 hover:text-purple-800" title="Edit">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </button>
+                                <button onclick="deleteProject('${project.id}')" class="w-8 h-8 rounded-xl glass-button flex items-center justify-center text-xs text-rose-400 hover:text-rose-600" title="Delete">
+                                    <i class="fa-solid fa-trash-can"></i>
                                 </button>
                             </div>
                         </div>
 
-                        <!-- Content -->
-                        <div class="space-y-2">
+                        <!-- Info -->
+                        <div class="space-y-1.5">
                             <div class="flex items-center justify-between gap-2">
-                                <h3 class="font-display font-bold text-xl text-slate-800 tracking-tight group-hover:text-purple-700 transition-colors">${project.title}</h3>
+                                <h3 class="font-display font-bold text-lg text-slate-800 tracking-tight">${escapeHtml(project.title)}</h3>
                                 ${statusBadge}
                             </div>
-                            <p class="text-xs text-slate-600 leading-relaxed min-h-[32px]">
-                                ${project.description || 'No description added.'}
+                            <p class="text-xs text-slate-600 leading-relaxed min-h-[2.5rem]">
+                                ${escapeHtml(project.description || 'No description provided.')}
                             </p>
                         </div>
 
-                        <!-- Bottom Launch Footer -->
-                        <div class="pt-4 border-t border-purple-100/60 flex items-center justify-between gap-2">
-                            <span class="text-[11px] font-mono text-purple-500 truncate max-w-[140px]" title="${project.url}">
-                                ${project.url}
+                        <!-- Action Bar -->
+                        <div class="pt-2 border-t border-purple-100/60 flex items-center justify-between gap-2">
+                            <span class="text-[11px] font-mono text-purple-600/80 font-medium truncate max-w-[120px]">
+                                ${escapeHtml(launchUrl)}
                             </span>
-                            <div class="flex items-center gap-1.5">
+                            <div class="flex items-center gap-2">
                                 ${githubBtn}
-                                <a href="${project.url}" target="_blank" rel="noopener" class="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white font-semibold text-xs flex items-center gap-1.5 shadow-md shadow-purple-300/50 transition-all hover:scale-105">
+                                <a href="${launchUrl}" class="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white font-semibold text-xs flex items-center gap-1.5 shadow-md shadow-purple-300/50 transition-all hover:scale-105">
                                     <span>Launch</span>
                                     <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
                                 </a>
@@ -634,43 +660,51 @@
             }).join('');
         }
 
-        // HELPER FUNCTIONS FOR ICONS & BADGES
-        function renderIcon(iconStr) {
-            if (!iconStr) return '📁';
-            if (iconStr.startsWith('fa-')) {
-                return `<i class="fa-solid ${iconStr} text-purple-600"></i>`;
+        // HELPERS
+        function renderIcon(icon) {
+            if (!icon) return '🚀';
+            if (icon.startsWith('fa-')) {
+                return `<i class="fa-solid ${icon}"></i>`;
             }
-            return iconStr;
+            return icon;
         }
 
         function getStatusBadgeHTML(status) {
             if (status === 'Live') {
-                return `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-200/60">Live</span>`;
+                return `<span class="px-2 py-0.5 text-[10px] font-semibold bg-emerald-100 text-emerald-700 rounded-full border border-emerald-200">Live</span>`;
             } else if (status === 'In Development') {
-                return `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 border border-amber-200/60">In Dev</span>`;
+                return `<span class="px-2 py-0.5 text-[10px] font-semibold bg-amber-100 text-amber-700 rounded-full border border-amber-200">In Dev</span>`;
             } else {
-                return `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">Archived</span>`;
+                return `<span class="px-2 py-0.5 text-[10px] font-semibold bg-slate-100 text-slate-600 rounded-full border border-slate-200">Archived</span>`;
             }
         }
 
-        // STAR TOGGLE
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
         function toggleStar(id) {
-            const index = projects.findIndex(p => p.id === id);
-            if (index !== -1) {
-                projects[index].starred = !projects[index].starred;
-                saveLocalData();
-                showToast(projects[index].starred ? 'Starred project!' : 'Unstarred project.');
-            }
+            projects = projects.map(p => p.id === id ? { ...p, starred: !p.starred } : p);
+            saveLocalData();
+            showToast('Favorites updated', 'fa-star');
         }
 
-        // MODALS
+        // MODAL MANAGEMENT
         function toggleModal(modalId) {
             const modal = document.getElementById(modalId);
-            if (modal.classList.contains('opacity-0')) {
+            if (!modal) return;
+            const isHidden = modal.classList.contains('opacity-0');
+
+            if (isHidden) {
                 modal.classList.remove('opacity-0', 'pointer-events-none');
                 modal.children[0].classList.remove('scale-95');
                 modal.children[0].classList.add('scale-100');
-
                 if (modalId === 'dataModal') {
                     document.getElementById('jsonArea').value = JSON.stringify(projects, null, 2);
                 }
@@ -681,126 +715,160 @@
 
         function closeModal(modalId) {
             const modal = document.getElementById(modalId);
+            if (!modal) return;
+            modal.classList.add('opacity-0', 'pointer-events-none');
             modal.children[0].classList.remove('scale-100');
             modal.children[0].classList.add('scale-95');
-            modal.classList.add('opacity-0', 'pointer-events-none');
         }
 
-        // GITHUB CONFIG SAVE
+        // ADD / EDIT FORM
+        function openAddModal() {
+            document.getElementById('projectId').value = '';
+            document.getElementById('modalTitle').textContent = 'Add New Project';
+            document.getElementById('projectForm').reset();
+            toggleModal('projectModal');
+        }
+
+        function openEditModal(id) {
+            const project = projects.find(p => p.id === id);
+            if (!project) return;
+
+            document.getElementById('projectId').value = project.id;
+            document.getElementById('modalTitle').textContent = 'Edit Project';
+            document.getElementById('inputTitle').value = project.title || '';
+            document.getElementById('inputUrl').value = project.url || '';
+            document.getElementById('inputDescription').value = project.description || '';
+            document.getElementById('inputIcon').value = project.icon || '';
+            document.getElementById('selectStatus').value = project.status || 'Live';
+            document.getElementById('inputGithubUrl').value = project.githubUrl || '';
+
+            toggleModal('projectModal');
+        }
+
+        function saveProject(e) {
+            e.preventDefault();
+            const id = document.getElementById('projectId').value;
+            let urlVal = document.getElementById('inputUrl').value.trim();
+
+            // Ensure path is relative
+            if (urlVal.startsWith('/') && !urlVal.startsWith('//')) {
+                urlVal = '.' + urlVal;
+            }
+
+            const projectData = {
+                id: id || 'project-' + Date.now(),
+                title: document.getElementById('inputTitle').value.trim(),
+                url: urlVal,
+                description: document.getElementById('inputDescription').value.trim(),
+                icon: document.getElementById('inputIcon').value.trim() || '🚀',
+                status: document.getElementById('selectStatus').value,
+                githubUrl: document.getElementById('inputGithubUrl').value.trim(),
+                starred: false,
+                createdAt: new Date().toISOString()
+            };
+
+            if (id) {
+                projects = projects.map(p => p.id === id ? { ...p, ...projectData, starred: p.starred } : p);
+            } else {
+                projects.unshift(projectData);
+            }
+
+            saveLocalData();
+            closeModal('projectModal');
+            showToast(id ? 'Project updated!' : 'New project added!', 'fa-circle-check');
+        }
+
+        function deleteProject(id) {
+            if (confirm('Are you sure you want to remove this project?')) {
+                projects = projects.filter(p => p.id !== id);
+                saveLocalData();
+                showToast('Project removed', 'fa-trash');
+            }
+        }
+
+        // GITHUB & DATA UTILS
         function saveGithubConfig() {
-            githubConfig.username = document.getElementById('cfgUsername').value.trim();
-            githubConfig.repo = document.getElementById('cfgRepo').value.trim();
-            githubConfig.branch = document.getElementById('cfgBranch').value.trim();
-
+            githubConfig = {
+                username: document.getElementById('cfgUsername').value.trim(),
+                repo: document.getElementById('cfgRepo').value.trim(),
+                branch: document.getElementById('cfgBranch').value.trim()
+            };
             localStorage.setItem('adri_repo_github', JSON.stringify(githubConfig));
-            showToast('GitHub configuration saved!');
             closeModal('githubModal');
+            showToast('GitHub config saved!', 'fa-circle-check');
         }
 
-        // JSON IMPORT / EXPORT
         function copyJsonData() {
             const area = document.getElementById('jsonArea');
             area.select();
-            document.execCommand('copy');
-            showToast('JSON copied to clipboard!');
+            navigator.clipboard.writeText(area.value);
+            showToast('JSON copied to clipboard!', 'fa-copy');
         }
 
         function importJsonData() {
             try {
-                const val = document.getElementById('jsonArea').value;
-                const parsed = JSON.parse(val);
-                if (Array.isArray(parsed)) {
-                    projects = parsed;
+                const data = JSON.parse(document.getElementById('jsonArea').value);
+                if (Array.isArray(data)) {
+                    projects = data.map(p => {
+                        if (p.url && p.url.startsWith('/') && !p.url.startsWith('//')) {
+                            p.url = '.' + p.url;
+                        }
+                        return p;
+                    });
                     saveLocalData();
-                    showToast('Projects data imported successfully!');
                     closeModal('dataModal');
+                    showToast('Projects restored successfully!', 'fa-circle-check');
                 } else {
-                    showToast('Invalid JSON structure (Must be array)');
+                    alert('Invalid JSON format. Must be an array.');
                 }
-            } catch (err) {
-                showToast('Error parsing JSON text!');
+            } catch (e) {
+                alert('Invalid JSON syntax.');
             }
         }
 
         function resetToDefaults() {
-            projects = [...DEFAULT_PROJECTS];
-            saveLocalData();
-            showToast('Reset to default repository list.');
-            closeModal('dataModal');
-        }
-
-        // KEYBOARD SHORTCUTS
-        function setupKeyboardShortcuts() {
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') {
-                    closeModal('githubModal');
-                    closeModal('dataModal');
-                    closeModal('quickHelpModal');
-                }
-            });
+            if (confirm('Reset to initial repository projects?')) {
+                projects = [...DEFAULT_PROJECTS];
+                saveLocalData();
+                closeModal('dataModal');
+                showToast('Reset to default projects', 'fa-rotate-left');
+            }
         }
 
         // TOAST NOTIFICATIONS
-        function showToast(msg) {
+        function showToast(msg, icon = 'fa-circle-check') {
             const toast = document.getElementById('toast');
-            document.getElementById('toastMsg').innerText = msg;
+            document.getElementById('toastMsg').textContent = msg;
+            document.getElementById('toastIcon').innerHTML = `<i class="fa-solid ${icon}"></i>`;
+            
             toast.classList.remove('translate-y-20', 'opacity-0');
             toast.classList.add('translate-y-0', 'opacity-100');
 
             setTimeout(() => {
                 toast.classList.remove('translate-y-0', 'opacity-100');
                 toast.classList.add('translate-y-20', 'opacity-0');
-            }, 3000);
+            }, 2500);
         }
 
-        // DREAMY SYNTH AMBIENT SOUND (Web Audio API)
+        // AUDIO AMBIANCE SYNTH
         function toggleAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-
-            const btn = document.getElementById('btnSound');
             const icon = document.getElementById('soundIcon');
-
             if (!isAudioPlaying) {
-                if (audioCtx.state === 'suspended') {
-                    audioCtx.resume();
-                }
-
-                synthOsc = audioCtx.createOscillator();
-                const gainNode = audioCtx.createGain();
-
-                synthOsc.type = 'sine';
-                synthOsc.frequency.setValueAtTime(220, audioCtx.currentTime);
-
-                gainNode.gain.setValueAtTime(0.01, audioCtx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.08, audioCtx.currentTime + 2);
-
-                synthOsc.connect(gainNode);
-                gainNode.connect(audioCtx.destination);
-
-                synthOsc.start();
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 isAudioPlaying = true;
-
-                btn.classList.add('bg-purple-200', 'border-purple-400');
-                icon.className = 'fa-solid fa-volume-high text-purple-700 animate-bounce';
-                showToast('Ambient dreamy chime turned ON 🎵');
+                icon.className = 'fa-solid fa-volume-high text-purple-600 animate-pulse';
+                showToast('Ambient sound active', 'fa-music');
             } else {
-                if (synthOsc) {
-                    synthOsc.stop();
-                }
                 isAudioPlaying = false;
-                btn.classList.remove('bg-purple-200', 'border-purple-400');
                 icon.className = 'fa-solid fa-music text-purple-500';
-                showToast('Ambient sound turned OFF');
+                showToast('Ambient sound muted', 'fa-volume-xmark');
             }
         }
 
-        // SKY BACKGROUND CANVAS (Stars & Floating Pastel Sparkles)
+        // BACKGROUND SKY CANVAS PARTICLES
         function initSkyCanvas() {
             const canvas = document.getElementById('skyCanvas');
             const ctx = canvas.getContext('2d');
-
             let width = canvas.width = window.innerWidth;
             let height = canvas.height = window.innerHeight;
 
@@ -809,54 +877,45 @@
                 height = canvas.height = window.innerHeight;
             });
 
-            const particles = [];
-            const particleCount = 45;
+            const particles = Array.from({ length: 35 }, () => ({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                size: Math.random() * 2.5 + 1,
+                speedX: (Math.random() - 0.5) * 0.3,
+                speedY: (Math.random() - 0.5) * 0.3,
+                alpha: Math.random() * 0.5 + 0.2
+            }));
 
-            for (let i = 0; i < particleCount; i++) {
-                particles.push({
-                    x: Math.random() * width,
-                    y: Math.random() * height,
-                    radius: Math.random() * 2.5 + 0.5,
-                    alpha: Math.random() * 0.7 + 0.2,
-                    speedY: (Math.random() * -0.3) - 0.1,
-                    speedX: (Math.random() - 0.5) * 0.2,
-                    color: ['#c084fc', '#f472b6', '#818cf8', '#ffffff'][Math.floor(Math.random() * 4)]
-                });
-            }
-
-            function animateSky() {
+            function animate() {
                 ctx.clearRect(0, 0, width, height);
-
                 particles.forEach(p => {
-                    ctx.save();
-                    ctx.globalAlpha = p.alpha;
-                    ctx.fillStyle = p.color;
-                    ctx.beginPath();
-                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-                    ctx.fill();
-
-                    if (p.radius > 1.8) {
-                        ctx.shadowColor = p.color;
-                        ctx.shadowBlur = 8;
-                        ctx.fill();
-                    }
-                    ctx.restore();
-
-                    p.y += p.speedY;
                     p.x += p.speedX;
+                    p.y += p.speedY;
 
-                    if (p.y < -10) {
-                        p.y = height + 10;
-                        p.x = Math.random() * width;
-                    }
-                    if (p.x < -10) p.x = width + 10;
-                    if (p.x > width + 10) p.x = -10;
+                    if (p.x < 0) p.x = width;
+                    if (p.x > width) p.x = 0;
+                    if (p.y < 0) p.y = height;
+                    if (p.y > height) p.y = 0;
+
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(168, 85, 247, ${p.alpha})`;
+                    ctx.fill();
                 });
-
-                requestAnimationFrame(animateSky);
+                requestAnimationFrame(animate);
             }
+            animate();
+        }
 
-            animateSky();
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeModal('projectModal');
+                    closeModal('githubModal');
+                    closeModal('dataModal');
+                    closeModal('quickHelpModal');
+                }
+            });
         }
     </script>
 </body>
