@@ -169,8 +169,7 @@
     <div id="controls-hint">
         <b>WASD</b> : Walk Forward / Back / Strafe<br>
         <b>ARROW KEYS</b> : Turn Left/Right & Pitch Up/Down<br>
-        <b>SPACE</b> : Fire Water Gun<br>
-        <b>E</b> : Grappling Hook (Pull to Enemy)<br>
+        <b>SPACE / CLICK</b> : Fire Water Gun<br>
         <b>SHIFT</b> : Sprint<br>
         <b>R</b> : Restart Level
     </div>
@@ -191,7 +190,6 @@
         </div>
         <div class="action-buttons">
             <div class="control-btn" id="btn-fire">FIRE</div>
-            <div class="control-btn" id="btn-grapple" style="background: rgba(0, 255, 255, 0.4); border-color: #00ffff; font-size: 11px; margin-top: 6px;">HOOK</div>
         </div>
         <div class="look-pad">
             <div class="control-btn" id="btn-look-up">↑</div>
@@ -287,14 +285,14 @@
         } catch(e) {}
     }
 
-    function playGrappleSound() {
+    function playPlayerDamageSound() {
         if (!audioCtx) return;
         try {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(300, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(1100, audioCtx.currentTime + 0.18);
+            osc.frequency.setValueAtTime(140, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.18);
 
             gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.18);
@@ -303,25 +301,6 @@
             gain.connect(audioCtx.destination);
             osc.start();
             osc.stop(audioCtx.currentTime + 0.18);
-        } catch(e) {}
-    }
-
-    function playPlayerDamageSound() {
-        if (!audioCtx) return;
-        try {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.25);
-
-            gain.gain.setValueAtTime(0.8, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
-
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.25);
         } catch(e) {}
     }
 
@@ -355,19 +334,26 @@
     ];
 
     const wallColors = {
-        1: '#2e1c0c', // Dark Forest Bark / Perimeter Trees
-        2: '#6e4726', // Wooden Hut Log Wall
-        3: '#2d4023', // Mossy Ancient Tree Pillar
-        4: '#8b5a2b', // Mud / Clay Hut Wall
-        5: '#1e4d25'  // Dense Leaves / Forest Hedge
+        1: '#2e1c0c',
+        2: '#6e4726',
+        3: '#2d4023',
+        4: '#8b5a2b',
+        5: '#1e4d25'
     };
 
-    // Helper for safe map bounds and wall checking
     function isWall(x, y) {
         let mapX = Math.floor(x);
         let mapY = Math.floor(y);
         if (mapX < 0 || mapX >= mapWidth || mapY < 0 || mapY >= mapHeight) return true;
         return worldMap[mapX][mapY] > 0;
+    }
+
+    function canMoveTo(x, y) {
+        let margin = 0.25;
+        return !isWall(x - margin, y - margin) &&
+               !isWall(x + margin, y - margin) &&
+               !isWall(x - margin, y + margin) &&
+               !isWall(x + margin, y + margin);
     }
 
     let posX = 22.0;
@@ -386,7 +372,7 @@
     let playerHealth = 100;
 
     let shootAnimTimer = 0;
-    let shootSlowTimer = 0;
+    let shootCooldown = 0;
     let weaponRecoilY = 0;
     let waterSquirtEffect = false;
 
@@ -396,31 +382,19 @@
     let waterProjectiles = [];
     let enemyProjectiles = [];
 
-    // Grapple Hook State
-    let grapple = {
-        active: false,
-        target: null
-    };
-
     let sprites = [
-        // Bears (Chasers)
         { x: 18.5, y: 10.5, alive: true, health: 4, type: 'bear', color: '#5c3818', size: 1.2 },
         { x: 12.5, y: 6.5,  alive: true, health: 4, type: 'bear', color: '#4a2c11', size: 1.2 },
         { x: 7.5,  y: 7.5,  alive: true, health: 4, type: 'bear', color: '#6b411d', size: 1.2 },
-        
-        // Fast Cockroaches (Kiting, irregular movement, spitting green acid)
         { x: 15.5, y: 15.5, alive: true, health: 3, type: 'cockroach', color: '#3d1e0d', size: 0.95, shootTimer: 1.0, skitterTimer: 0, skitterDirX: 0, skitterDirY: 0 },
         { x: 5.5,  y: 18.5, alive: true, health: 3, type: 'cockroach', color: '#4d2612', size: 0.95, shootTimer: 1.5, skitterTimer: 0, skitterDirX: 0, skitterDirY: 0 },
         { x: 3.5,  y: 3.5,  alive: true, health: 3, type: 'cockroach', color: '#3d1e0d', size: 0.95, shootTimer: 0.5, skitterTimer: 0, skitterDirX: 0, skitterDirY: 0 },
         { x: 10.5, y: 19.5, alive: true, health: 3, type: 'cockroach', color: '#4d2612', size: 0.95, shootTimer: 2.0, skitterTimer: 0, skitterDirX: 0, skitterDirY: 0 }
     ];
 
-    let oldTime = 0;
+    let oldTime = performance.now();
 
-    const keys = {
-        ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false,
-        w: false, s: false, a: false, d: false, ' ': false, Shift: false, r: false, e: false
-    };
+    const keyState = {};
 
     function restartLevel() {
         posX = 22.0;
@@ -439,23 +413,17 @@
         playerHealth = 100;
 
         shootAnimTimer = 0;
-        shootSlowTimer = 0;
+        shootCooldown = 0;
         weaponRecoilY = 0;
         waterSquirtEffect = false;
-
-        grapple.active = false;
-        grapple.target = null;
 
         waterProjectiles = [];
         enemyProjectiles = [];
 
         sprites = [
-            // Bears (Chasers)
             { x: 18.5, y: 10.5, alive: true, health: 4, type: 'bear', color: '#5c3818', size: 1.2 },
             { x: 12.5, y: 6.5,  alive: true, health: 4, type: 'bear', color: '#4a2c11', size: 1.2 },
             { x: 7.5,  y: 7.5,  alive: true, health: 4, type: 'bear', color: '#6b411d', size: 1.2 },
-            
-            // Fast Cockroaches (Kiting, irregular movement, spitting green acid)
             { x: 15.5, y: 15.5, alive: true, health: 3, type: 'cockroach', color: '#3d1e0d', size: 0.95, shootTimer: 1.0, skitterTimer: 0, skitterDirX: 0, skitterDirY: 0 },
             { x: 5.5,  y: 18.5, alive: true, health: 3, type: 'cockroach', color: '#4d2612', size: 0.95, shootTimer: 1.5, skitterTimer: 0, skitterDirX: 0, skitterDirY: 0 },
             { x: 3.5,  y: 3.5,  alive: true, health: 3, type: 'cockroach', color: '#3d1e0d', size: 0.95, shootTimer: 0.5, skitterTimer: 0, skitterDirX: 0, skitterDirY: 0 },
@@ -467,163 +435,299 @@
         document.getElementById('ammo-val').innerText = ammo;
     }
 
+    // Auto-focus window on click so keyboard controls remain active
+    window.addEventListener('click', () => {
+        window.focus();
+        initAudio();
+    });
+
     window.addEventListener('keydown', (e) => {
         initAudio();
-        const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-        if (keys.hasOwnProperty(e.key)) keys[e.key] = true;
-        if (keys.hasOwnProperty(key)) keys[key] = true;
-        
-        if (key === 'r') {
-            restartLevel();
-        }
+        const code = e.code;
+        const key = e.key;
 
-        if (key === 'e') {
-            triggerGrapple();
-        }
+        keyState[code] = true;
+        keyState[key] = true;
+        if (key) keyState[key.toLowerCase()] = true;
+        if (key === ' ' || code === 'Space') keyState['Space'] = true;
 
-        if (e.key === ' ' || e.key === 'Spacebar') {
+        // Prevent page scrolling when playing with Space or Arrow keys
+        if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(code) ||
+            [' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd', 'W', 'A', 'S', 'D'].includes(key)) {
             e.preventDefault();
-            shootWeapon();
+        }
+
+        if (key === 'r' || key === 'R' || code === 'KeyR') {
+            restartLevel();
         }
     });
 
     window.addEventListener('keyup', (e) => {
-        const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-        if (keys.hasOwnProperty(e.key)) keys[e.key] = false;
-        if (keys.hasOwnProperty(key)) keys[key] = false;
+        const code = e.code;
+        const key = e.key;
+
+        keyState[code] = false;
+        keyState[key] = false;
+        if (key) keyState[key.toLowerCase()] = false;
+        if (key === ' ' || code === 'Space') keyState['Space'] = false;
     });
 
-    // Touch control bindings
-    const setupTouchBtn = (id, keySim, action) => {
+    canvas.addEventListener('mousedown', (e) => {
+        initAudio();
+        shootWeapon();
+    });
+
+    const setupTouchBtn = (id, keyCode) => {
         const btn = document.getElementById(id);
         if (!btn) return;
         
         btn.addEventListener('touchstart', (e) => {
             e.preventDefault();
             initAudio();
-            if (action) action();
-            else if (keySim) keys[keySim] = true;
+            keyState[keyCode] = true;
+            if (keyCode === 'Space') shootWeapon();
         }, {passive: false});
         
         btn.addEventListener('touchend', (e) => {
             e.preventDefault();
-            if (keySim) keys[keySim] = false;
+            keyState[keyCode] = false;
         }, {passive: false});
 
         btn.addEventListener('touchcancel', (e) => {
             e.preventDefault();
-            if (keySim) keys[keySim] = false;
+            keyState[keyCode] = false;
         }, {passive: false});
     };
 
-    setupTouchBtn('btn-up', 'w');
-    setupTouchBtn('btn-down', 's');
-    setupTouchBtn('btn-left', 'a');
-    setupTouchBtn('btn-right', 'd');
+    setupTouchBtn('btn-up', 'KeyW');
+    setupTouchBtn('btn-down', 'KeyS');
+    setupTouchBtn('btn-left', 'KeyA');
+    setupTouchBtn('btn-right', 'KeyD');
     setupTouchBtn('btn-look-up', 'ArrowUp');
     setupTouchBtn('btn-look-down', 'ArrowDown');
     setupTouchBtn('btn-look-left', 'ArrowLeft');
     setupTouchBtn('btn-look-right', 'ArrowRight');
-    setupTouchBtn('btn-fire', null, shootWeapon);
-    setupTouchBtn('btn-grapple', null, triggerGrapple);
+    setupTouchBtn('btn-fire', 'Space');
 
-    function triggerGrapple() {
+    function shootWeapon() {
+        if (ammo <= 0 || playerHealth <= 0 || shootCooldown > 0) return;
+
+        ammo = Math.max(0, ammo - 2);
+        document.getElementById('ammo-val').innerText = Math.floor(ammo);
+        shootAnimTimer = 0.2;
+        weaponRecoilY = 18;
+        waterSquirtEffect = true;
+        shootCooldown = 0.15;
+
+        playWaterSound();
+
+        // Spawn high velocity water projectile
+        waterProjectiles.push({
+            x: posX + dirX * 0.4,
+            y: posY + dirY * 0.4,
+            vx: dirX * 14.0,
+            vy: dirY * 14.0,
+            life: 0.8
+        });
+    }
+
+    function update(dt) {
         if (playerHealth <= 0) return;
 
-        // If grapple is already pulling, pressing E cancels it
-        if (grapple.active) {
-            grapple.active = false;
-            grapple.target = null;
-            return;
+        // Weapon Cooldown & Recoil Recovery
+        if (shootCooldown > 0) shootCooldown -= dt;
+
+        // Slow ammo recovery when empty/low so player is never softlocked
+        if (ammo < 100) {
+            ammo = Math.min(100, ammo + dt * 4);
+            document.getElementById('ammo-val').innerText = Math.floor(ammo);
         }
 
-        let bestTarget = null;
-        let bestDist = 14.0; // Max grapple reach distance
+        if (weaponRecoilY > 0) {
+            weaponRecoilY = Math.max(0, weaponRecoilY - dt * 80);
+        }
+        if (shootAnimTimer > 0) {
+            shootAnimTimer -= dt;
+            if (shootAnimTimer <= 0) waterSquirtEffect = false;
+        }
 
+        // Spacebar shooting trigger with cross-browser key state checks
+        if (keyState['Space'] || keyState['space'] || keyState[' '] || keyState['Spacebar']) {
+            shootWeapon();
+        }
+
+        // Movement & Looking speeds
+        let isSprint = keyState['ShiftLeft'] || keyState['ShiftRight'] || keyState['shift'];
+        let moveSpeed = (isSprint ? 6.0 : 3.5) * dt;
+        let rotSpeed = 2.4 * dt;
+
+        // Pitch controls (Up / Down)
+        if (keyState['ArrowUp'] || keyState['arrowup']) pitch = Math.min(180, pitch + 300 * dt);
+        if (keyState['ArrowDown'] || keyState['arrowdown']) pitch = Math.max(-180, pitch - 300 * dt);
+
+        // Turning Left/Right
+        let rot = 0;
+        if (keyState['ArrowLeft'] || keyState['arrowleft']) rot += rotSpeed;
+        if (keyState['ArrowRight'] || keyState['arrowright']) rot -= rotSpeed;
+
+        if (rot !== 0) {
+            let oldDirX = dirX;
+            dirX = dirX * Math.cos(rot) - dirY * Math.sin(rot);
+            dirY = oldDirX * Math.sin(rot) + dirY * Math.cos(rot);
+            let oldPlaneX = planeX;
+            planeX = planeX * Math.cos(rot) - planeY * Math.sin(rot);
+            planeY = oldPlaneX * Math.sin(rot) + planeY * Math.cos(rot);
+        }
+
+        // WASD Walking & Strafe
+        let moveX = 0;
+        let moveY = 0;
+
+        let isW = keyState['KeyW'] || keyState['w'];
+        let isS = keyState['KeyS'] || keyState['s'];
+        let isA = keyState['KeyA'] || keyState['a'];
+        let isD = keyState['KeyD'] || keyState['d'];
+
+        if (isW) { moveX += dirX; moveY += dirY; }
+        if (isS) { moveX -= dirX; moveY -= dirY; }
+        if (isA) { moveX -= planeX; moveY -= planeY; }
+        if (isD) { moveX += planeX; moveY += planeY; }
+
+        let moveLen = Math.sqrt(moveX * moveX + moveY * moveY);
+        if (moveLen > 0) {
+            moveX = (moveX / moveLen) * moveSpeed;
+            moveY = (moveY / moveLen) * moveSpeed;
+
+            if (canMoveTo(posX + moveX, posY)) posX += moveX;
+            if (canMoveTo(posX, posY + moveY)) posY += moveY;
+
+            walkPhase += dt * 10;
+            camZ = Math.sin(walkPhase) * 6;
+        } else {
+            camZ = 0;
+        }
+
+        // Update Water Projectiles
+        for (let i = waterProjectiles.length - 1; i >= 0; i--) {
+            let p = waterProjectiles[i];
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+            p.life -= dt;
+
+            if (p.life <= 0 || isWall(p.x, p.y)) {
+                waterProjectiles.splice(i, 1);
+                continue;
+            }
+
+            // Hit test against enemies
+            for (let spr of sprites) {
+                if (!spr.alive) continue;
+                let dx = spr.x - p.x;
+                let dy = spr.y - p.y;
+                if (Math.sqrt(dx * dx + dy * dy) < spr.size * 0.5) {
+                    spr.health -= 1;
+                    playHitSound();
+                    waterProjectiles.splice(i, 1);
+                    if (spr.health <= 0) {
+                        spr.alive = false;
+                        kills++;
+                        document.getElementById('kills-val').innerText = kills;
+                    }
+                    break;
+                }
+            }
+        }
+
+        // Update Enemy AI & Acid Projectiles
         for (let spr of sprites) {
             if (!spr.alive) continue;
 
-            let dx = spr.x - posX;
-            let dy = spr.y - posY;
+            let dx = posX - spr.x;
+            let dy = posY - spr.y;
             let dist = Math.sqrt(dx * dx + dy * dy);
 
-            if (dist > 0.6 && dist < bestDist) {
-                // Vector dot product to check if enemy is in front cone of view (~45 degrees)
-                let normX = dx / dist;
-                let normY = dy / dist;
-                let dot = normX * dirX + normY * dirY;
+            if (spr.type === 'bear') {
+                if (dist < 10.0) {
+                    let speed = 1.8 * dt;
+                    let nx = (dx / dist) * speed;
+                    let ny = (dy / dist) * speed;
+                    if (canMoveTo(spr.x + nx, spr.y)) spr.x += nx;
+                    if (canMoveTo(spr.x, spr.y + ny)) spr.y += ny;
 
-                if (dot > 0.60) {
-                    // Check line of sight (no wall blocking)
-                    let blocked = false;
-                    for (let step = 0.5; step < dist; step += 0.5) {
-                        if (isWall(posX + normX * step, posY + normY * step)) {
-                            blocked = true;
-                            break;
-                        }
+                    if (dist < 0.8) {
+                        damagePlayer(15);
                     }
-                    if (!blocked) {
-                        bestDist = dist;
-                        bestTarget = spr;
+                }
+            } else if (spr.type === 'cockroach') {
+                spr.skitterTimer -= dt;
+                if (spr.skitterTimer <= 0) {
+                    spr.skitterTimer = Math.random() * 1.5 + 0.5;
+                    let angle = Math.random() * Math.PI * 2;
+                    spr.skitterDirX = Math.cos(angle);
+                    spr.skitterDirY = Math.sin(angle);
+                }
+
+                if (dist < 12.0) {
+                    let speed = 2.4 * dt;
+                    if (canMoveTo(spr.x + spr.skitterDirX * speed, spr.y)) spr.x += spr.skitterDirX * speed;
+                    if (canMoveTo(spr.x, spr.y + spr.skitterDirY * speed)) spr.y += spr.skitterDirY * speed;
+
+                    spr.shootTimer -= dt;
+                    if (spr.shootTimer <= 0) {
+                        spr.shootTimer = 2.2;
+                        playSpitSound();
+                        enemyProjectiles.push({
+                            x: spr.x,
+                            y: spr.y,
+                            vx: (dx / dist) * 5.5,
+                            vy: (dy / dist) * 5.5,
+                            life: 3.0
+                        });
                     }
                 }
             }
         }
 
-        if (bestTarget) {
-            grapple.active = true;
-            grapple.target = bestTarget;
-            playGrappleSound();
+        // Update Enemy Acid Projectiles
+        for (let i = enemyProjectiles.length - 1; i >= 0; i--) {
+            let ep = enemyProjectiles[i];
+            ep.x += ep.vx * dt;
+            ep.y += ep.vy * dt;
+            ep.life -= dt;
+
+            if (ep.life <= 0 || isWall(ep.x, ep.y)) {
+                enemyProjectiles.splice(i, 1);
+                continue;
+            }
+
+            let dx = posX - ep.x;
+            let dy = posY - ep.y;
+            if (Math.sqrt(dx * dx + dy * dy) < 0.6) {
+                damagePlayer(10);
+                enemyProjectiles.splice(i, 1);
+            }
         }
     }
 
-    function shootWeapon() {
-        if (ammo <= 0 || playerHealth <= 0) return;
+    let damageFlashTimer = 0;
+    function damagePlayer(amount) {
+        playerHealth = Math.max(0, playerHealth - amount);
+        document.getElementById('health-val').innerText = playerHealth;
+        playPlayerDamageSound();
 
-        ammo = Math.max(0, ammo - 2);
-        document.getElementById('ammo-val').innerText = ammo;
-        shootAnimTimer = 0.15;
-        shootSlowTimer = 0.3; // Slight player slowdown while firing
-        waterSquirtEffect = true;
-        weaponRecoilY = 15;
-
-        // Player Knockback (pushes back a fraction of a unit)
-        let recoilDist = 0.08;
-        if (!isWall(posX - dirX * recoilDist, posY)) posX -= dirX * recoilDist;
-        if (!isWall(posX, posY - dirY * recoilDist)) posY -= dirY * recoilDist;
-
-        playWaterSound();
-
-        waterProjectiles.push({
-            x: posX + dirX * 0.4,
-            y: posY + dirY * 0.4,
-            dirX: dirX,
-            dirY: dirY,
-            speed: 11.0,
-            radius: 0.35,
-            lifetime: 2.0
-        });
-    }
-
-    function triggerDamageFlash() {
         const flash = document.getElementById('damage-flash');
         flash.style.opacity = '1';
-        setTimeout(() => { flash.style.opacity = '0'; }, 120);
+        setTimeout(() => { flash.style.opacity = '0'; }, 150);
     }
 
-    function draw() {
-        // Forest Canopy Sky
-        ctx.fillStyle = '#08120b';
-        ctx.fillRect(0, 0, screenWidth, screenHeight / 2 + pitch + camZ);
-        
-        // Dark Canopy Fringe Accent
-        ctx.fillStyle = '#112214';
-        ctx.fillRect(0, Math.max(0, screenHeight / 2 + pitch + camZ - 35), screenWidth, 35);
+    function render() {
+        // Clear background (Ceiling & Floor)
+        ctx.fillStyle = '#0a0d14';
+        ctx.fillRect(0, 0, screenWidth, screenHeight / 2 + pitch);
+        ctx.fillStyle = '#1c150d';
+        ctx.fillRect(0, screenHeight / 2 + pitch, screenWidth, screenHeight / 2 - pitch);
 
-        // Forest Dirt and Gravel Ground
-        ctx.fillStyle = '#22170f';
-        ctx.fillRect(0, screenHeight / 2 + pitch + camZ, screenWidth, screenHeight);
-
+        // Raycasting Walls
         for (let x = 0; x < screenWidth; x++) {
             let cameraX = 2 * x / screenWidth - 1;
             let rayDirX = dirX + planeX * cameraX;
@@ -633,8 +737,9 @@
             let mapY = Math.floor(posY);
 
             let sideDistX, sideDistY;
-            let deltaDistX = (rayDirX === 0) ? 1e30 : Math.abs(1 / rayDirX);
-            let deltaDistY = (rayDirY === 0) ? 1e30 : Math.abs(1 / rayDirY);
+
+            let deltaDistX = Math.abs(1 / rayDirX);
+            let deltaDistY = Math.abs(1 / rayDirY);
             let perpWallDist;
 
             let stepX, stepY;
@@ -656,6 +761,7 @@
                 sideDistY = (mapY + 1.0 - posY) * deltaDistY;
             }
 
+            // DDA stepping
             while (hit === 0) {
                 if (sideDistX < sideDistY) {
                     sideDistX += deltaDistX;
@@ -666,120 +772,37 @@
                     mapY += stepY;
                     side = 1;
                 }
-                if(mapX < 0 || mapX >= mapWidth || mapY < 0 || mapY >= mapHeight) {
-                    hit = 1;
-                    continue;
-                }
                 if (worldMap[mapX][mapY] > 0) hit = 1;
             }
 
-            if (side === 0) perpWallDist = (sideDistX - deltaDistX);
-            else          perpWallDist = (sideDistY - deltaDistY);
-
-            // Prevent division by zero or near-zero values
-            if (perpWallDist <= 0.0001) perpWallDist = 0.0001;
+            if (side === 0) perpWallDist = (mapX - posX + (1 - stepX) / 2) / rayDirX;
+            else perpWallDist = (mapY - posY + (1 - stepY) / 2) / rayDirY;
 
             zBuffer[x] = perpWallDist;
 
             let lineHeight = Math.floor(screenHeight / perpWallDist);
             let drawStart = -lineHeight / 2 + screenHeight / 2 + pitch + camZ;
-            if (drawStart < 0) drawStart = 0;
             let drawEnd = lineHeight / 2 + screenHeight / 2 + pitch + camZ;
-            if (drawEnd >= screenHeight) drawEnd = screenHeight - 1;
 
-            let mapVal = worldMap[mapX][mapY];
-            
-            // Calculate wall texture coordinate for procedural forest & hut details
-            let wallX;
-            if (side === 0) wallX = posY + perpWallDist * rayDirY;
-            else           wallX = posX + perpWallDist * rayDirX;
-            wallX -= Math.floor(wallX);
+            let wallType = worldMap[mapX][mapY];
+            let baseColor = wallColors[wallType] || '#333333';
 
-            let baseColor = wallColors[mapVal] || '#ffffff';
+            // Darken side walls for 3D depth
+            ctx.fillStyle = baseColor;
+            if (side === 1) ctx.fillStyle = adjustBrightness(baseColor, -30);
 
-            if (side === 1) {
-                ctx.fillStyle = shadeColor(baseColor, -25);
-            } else {
-                ctx.fillStyle = baseColor;
-            }
-
-            ctx.fillRect(x, drawStart, 1, drawEnd - drawStart);
-
-            // Procedural Bark Grain, Wooden Planks, and Moss Texture Stripes
-            let texPattern = Math.floor(wallX * 16) % 4;
-            if (mapVal === 1 && (texPattern === 0 || texPattern === 2)) {
-                // Vertical bark ridges for trees
-                ctx.fillStyle = side === 1 ? 'rgba(10, 5, 0, 0.45)' : 'rgba(20, 10, 0, 0.35)';
-                ctx.fillRect(x, drawStart, 1, drawEnd - drawStart);
-            } else if (mapVal === 2 && texPattern === 1) {
-                // Wooden log hut seams
-                ctx.fillStyle = 'rgba(35, 18, 5, 0.4)';
-                ctx.fillRect(x, drawStart, 1, drawEnd - drawStart);
-            } else if (mapVal === 3 && (wallX > 0.4 && wallX < 0.6)) {
-                // Moss strip on tree pillars
-                ctx.fillStyle = side === 1 ? 'rgba(30, 80, 20, 0.4)' : 'rgba(50, 120, 30, 0.45)';
-                ctx.fillRect(x, drawStart, 1, drawEnd - drawStart);
-            }
+            ctx.fillRect(x, Math.max(0, drawStart), 1, Math.min(screenHeight, drawEnd) - Math.max(0, drawStart));
         }
 
-        renderSprites();
-        renderWaterProjectiles();
-        renderEnemyProjectiles();
-        drawGrappleCable();
-        drawWeapon();
-    }
-
-    function drawGrappleCable() {
-        if (!grapple.active || !grapple.target || !grapple.target.alive) return;
-
-        let spriteX = grapple.target.x - posX;
-        let spriteY = grapple.target.y - posY;
-
-        let invDet = 1.0 / (planeX * dirY - dirX * planeY);
-        let transformX = invDet * (dirY * spriteX - dirX * spriteY);
-        let transformY = invDet * (-planeY * spriteX + planeX * spriteY);
-
-        if (transformY > 0.1) {
-            let targetScreenX = Math.floor((screenWidth / 2) * (1 + transformX / transformY));
-            let targetScreenY = Math.floor(screenHeight / 2 + pitch + camZ);
-
-            let startX = screenWidth / 2 + 25;
-            let startY = screenHeight - weaponRecoilY + (camZ * 0.7) - 130;
-
-            ctx.save();
-            ctx.strokeStyle = '#00ffff';
-            ctx.lineWidth = 4;
-            ctx.shadowColor = '#00ffff';
-            ctx.shadowBlur = 10;
-
-            // Draw primary cyan hook line
-            ctx.beginPath();
-            ctx.moveTo(startX, startY);
-            ctx.lineTo(targetScreenX, targetScreenY);
-            ctx.stroke();
-
-            // Draw glowing rope segments
-            ctx.fillStyle = '#ffffff';
-            for (let t = 0; t <= 1.0; t += 0.15) {
-                let px = startX + (targetScreenX - startX) * t;
-                let py = startY + (targetScreenY - startY) * t;
-                ctx.beginPath();
-                ctx.arc(px, py, 3, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            ctx.restore();
-        }
-    }
-
-    function renderSprites() {
-        let sortedSprites = sprites.map((spr, index) => {
-            let dist = ((posX - spr.x) * (posX - spr.x) + (posY - spr.y) * (posY - spr.y));
-            return { spr, dist, index };
+        // Sort Sprites Far-to-Near
+        let sortedSprites = sprites.map(s => {
+            return {
+                ...s,
+                dist: ((posX - s.x) * (posX - s.x) + (posY - s.y) * (posY - s.y))
+            };
         }).sort((a, b) => b.dist - a.dist);
 
-        for (let i = 0; i < sortedSprites.length; i++) {
-            let spr = sortedSprites[i].spr;
+        for (let spr of sortedSprites) {
             if (!spr.alive) continue;
 
             let spriteX = spr.x - posX;
@@ -789,544 +812,142 @@
             let transformX = invDet * (dirY * spriteX - dirX * spriteY);
             let transformY = invDet * (-planeY * spriteX + planeX * spriteY);
 
-            if (transformY > 0) {
-                let spriteScreenX = Math.floor((screenWidth / 2) * (1 + transformX / transformY));
-                let spriteHeight = Math.abs(Math.floor((screenHeight / transformY) * spr.size));
-                let spriteWidth = Math.abs(Math.floor((screenHeight / transformY) * spr.size));
+            if (transformY <= 0.1) continue;
 
-                let drawStartY = -spriteHeight / 2 + screenHeight / 2 + pitch + camZ;
-                let drawEndY = spriteHeight / 2 + screenHeight / 2 + pitch + camZ;
+            let spriteScreenX = Math.floor((screenWidth / 2) * (1 + transformX / transformY));
+            let spriteHeight = Math.abs(Math.floor(screenHeight / transformY)) * spr.size;
 
-                let drawStartX = -spriteWidth / 2 + spriteScreenX;
-                let drawEndX = spriteWidth / 2 + spriteScreenX;
+            let drawStartY = Math.floor(-spriteHeight / 2 + screenHeight / 2 + pitch + camZ);
+            let drawEndY = Math.floor(spriteHeight / 2 + screenHeight / 2 + pitch + camZ);
 
-                for (let stripe = Math.floor(drawStartX); stripe < drawEndX; stripe++) {
-                    if (stripe >= 0 && stripe < screenWidth) {
-                        if (transformY < zBuffer[stripe]) {
-                            let stripePercent = (stripe - drawStartX) / spriteWidth;
+            let spriteWidth = Math.abs(Math.floor(screenHeight / transformY)) * spr.size;
+            let drawStartX = Math.floor(-spriteWidth / 2 + spriteScreenX);
+            let drawEndX = Math.floor(spriteWidth / 2 + spriteScreenX);
 
-                            if (spr.type === 'bear') {
-                                // Draw Bear Body
-                                ctx.fillStyle = spr.color;
-                                let yStart = Math.max(0, drawStartY);
-                                let yEnd = Math.min(screenHeight, drawEndY);
-                                ctx.fillRect(stripe, yStart, 1, yEnd - yStart);
+            for (let stripe = drawStartX; stripe < drawEndX; stripe++) {
+                if (stripe >= 0 && stripe < screenWidth && transformY < zBuffer[stripe]) {
+                    ctx.fillStyle = spr.color;
+                    ctx.fillRect(stripe, drawStartY, 1, drawEndY - drawStartY);
 
-                                // Bear Ears
-                                let earYStart = drawStartY - (spriteHeight * 0.15);
-                                let earYEnd = drawStartY + (spriteHeight * 0.1);
-                                if ((stripePercent > 0.1 && stripePercent < 0.3) || (stripePercent > 0.7 && stripePercent < 0.9)) {
-                                    if (earYStart < screenHeight && earYEnd > 0) {
-                                        ctx.fillStyle = '#3a200a';
-                                        ctx.fillRect(stripe, Math.max(0, earYStart), 1, Math.min(screenHeight, earYEnd) - Math.max(0, earYStart));
-                                    }
-                                }
-
-                                // Bear Snout & Nose
-                                if (stripePercent > 0.35 && stripePercent < 0.65) {
-                                    let snoutYStart = drawStartY + (spriteHeight * 0.35);
-                                    let snoutYEnd = drawStartY + (spriteHeight * 0.6);
-                                    ctx.fillStyle = '#8a582b';
-                                    ctx.fillRect(stripe, Math.max(0, snoutYStart), 1, Math.min(screenHeight, snoutYEnd) - Math.max(0, snoutYStart));
-
-                                    if (stripePercent > 0.45 && stripePercent < 0.55) {
-                                        let noseYStart = drawStartY + (spriteHeight * 0.38);
-                                        let noseYEnd = drawStartY + (spriteHeight * 0.46);
-                                        ctx.fillStyle = '#111111';
-                                        ctx.fillRect(stripe, Math.max(0, noseYStart), 1, Math.min(screenHeight, noseYEnd) - Math.max(0, noseYStart));
-                                    }
-                                }
-
-                                // Bear Eyes
-                                if ((stripePercent > 0.28 && stripePercent < 0.36) || (stripePercent > 0.64 && stripePercent < 0.72)) {
-                                    let eyeYStart = drawStartY + (spriteHeight * 0.25);
-                                    let eyeYEnd = drawStartY + (spriteHeight * 0.32);
-                                    ctx.fillStyle = '#ffffff';
-                                    ctx.fillRect(stripe, Math.max(0, eyeYStart), 1, Math.min(screenHeight, eyeYEnd) - Math.max(0, eyeYStart));
-                                    ctx.fillStyle = '#000000';
-                                    ctx.fillRect(stripe, Math.max(0, eyeYStart + 1), 1, Math.min(screenHeight, eyeYEnd - 1) - Math.max(0, eyeYStart + 1));
-                                }
-
-                            } else if (spr.type === 'cockroach') {
-                                // Draw Cockroach Body (Flat, chitinous carapace)
-                                let bodyYStart = drawStartY + (spriteHeight * 0.2);
-                                let bodyYEnd = drawEndY - (spriteHeight * 0.1);
-
-                                // Carapace Center Shell
-                                ctx.fillStyle = (stripePercent > 0.25 && stripePercent < 0.75) ? '#5a2a12' : '#3a1c0d';
-                                ctx.fillRect(stripe, Math.max(0, bodyYStart), 1, Math.min(screenHeight, bodyYEnd) - Math.max(0, bodyYStart));
-
-                                // Shiny Back Highlight
-                                if (stripePercent > 0.42 && stripePercent < 0.58) {
-                                    ctx.fillStyle = '#8c451e';
-                                    let shinyYStart = bodyYStart + (spriteHeight * 0.1);
-                                    let shinyYEnd = bodyYEnd - (spriteHeight * 0.1);
-                                    ctx.fillRect(stripe, Math.max(0, shinyYStart), 1, Math.min(screenHeight, shinyYEnd) - Math.max(0, shinyYStart));
-                                }
-
-                                // Antennae (Thin extending outwards at top)
-                                if ((stripePercent > 0.15 && stripePercent < 0.2) || (stripePercent > 0.8 && stripePercent < 0.85)) {
-                                    let antYStart = drawStartY - (spriteHeight * 0.25);
-                                    let antYEnd = drawStartY + (spriteHeight * 0.2);
-                                    ctx.fillStyle = '#1f0d05';
-                                    ctx.fillRect(stripe, Math.max(0, antYStart), 1, Math.min(screenHeight, antYEnd) - Math.max(0, antYStart));
-                                }
-
-                                // Twitchy Legs on Sides
-                                if (stripePercent < 0.2 || stripePercent > 0.8) {
-                                    let legY1 = drawStartY + (spriteHeight * 0.3);
-                                    let legY2 = drawStartY + (spriteHeight * 0.5);
-                                    let legY3 = drawStartY + (spriteHeight * 0.7);
-                                    ctx.fillStyle = '#1a0903';
-                                    ctx.fillRect(stripe, Math.max(0, legY1), 1, Math.min(screenHeight, legY1 + 4) - Math.max(0, legY1));
-                                    ctx.fillRect(stripe, Math.max(0, legY2), 1, Math.min(screenHeight, legY2 + 4) - Math.max(0, legY2));
-                                    ctx.fillRect(stripe, Math.max(0, legY3), 1, Math.min(screenHeight, legY3 + 4) - Math.max(0, legY3));
-                                }
-
-                                // Glowing Green Eyes / Spit Mouthpart
-                                if (stripePercent > 0.38 && stripePercent < 0.62) {
-                                    let eyeYStart = drawStartY + (spriteHeight * 0.22);
-                                    let eyeYEnd = drawStartY + (spriteHeight * 0.32);
-                                    ctx.fillStyle = '#39ff14'; // Toxic Green Glow
-                                    ctx.fillRect(stripe, Math.max(0, eyeYStart), 1, Math.min(screenHeight, eyeYEnd) - Math.max(0, eyeYStart));
-                                }
-                            }
-                        }
+                    // Draw eyes
+                    if (stripe === Math.floor(spriteScreenX)) {
+                        ctx.fillStyle = spr.type === 'bear' ? '#ff3333' : '#00ffcc';
+                        ctx.fillRect(stripe - 2, drawStartY + spriteHeight * 0.25, 5, 5);
                     }
                 }
             }
         }
-    }
 
-    function renderWaterProjectiles() {
-        for (let proj of waterProjectiles) {
-            let spriteX = proj.x - posX;
-            let spriteY = proj.y - posY;
-
+        // Render Enemy Acid Projectiles
+        for (let ep of enemyProjectiles) {
+            let epX = ep.x - posX;
+            let epY = ep.y - posY;
             let invDet = 1.0 / (planeX * dirY - dirX * planeY);
-            let transformX = invDet * (dirY * spriteX - dirX * spriteY);
-            let transformY = invDet * (-planeY * spriteX + planeX * spriteY);
+            let transformX = invDet * (dirY * epX - dirX * epY);
+            let transformY = invDet * (-planeY * epX + planeX * epY);
 
             if (transformY > 0.1) {
-                let spriteScreenX = Math.floor((screenWidth / 2) * (1 + transformX / transformY));
-                let radiusPx = Math.abs(Math.floor((screenHeight / transformY) * proj.radius));
-                let drawY = screenHeight / 2 + pitch + camZ;
+                let screenX = Math.floor((screenWidth / 2) * (1 + transformX / transformY));
+                let size = Math.abs(Math.floor(screenHeight / transformY)) * 0.2;
+                let screenY = Math.floor(screenHeight / 2 + pitch + camZ);
 
-                let stripeStart = Math.floor(spriteScreenX - radiusPx);
-                let stripeEnd = Math.floor(spriteScreenX + radiusPx);
-
-                for (let stripe = stripeStart; stripe <= stripeEnd; stripe++) {
-                    if (stripe >= 0 && stripe < screenWidth) {
-                        if (transformY < zBuffer[stripe]) {
-                            let xDist = (stripe - spriteScreenX) / radiusPx;
-                            let yHeight = Math.sqrt(Math.max(0, 1 - xDist * xDist)) * radiusPx;
-
-                            let yStart = Math.max(0, drawY - yHeight);
-                            let yEnd = Math.min(screenHeight, drawY + yHeight);
-
-                            ctx.fillStyle = '#00bfff';
-                            ctx.fillRect(stripe, yStart, 1, yEnd - yStart);
-
-                            if (Math.abs(xDist) < 0.5) {
-                                ctx.fillStyle = '#e0ffff';
-                                ctx.fillRect(stripe, Math.max(0, drawY - yHeight * 0.5), 1, Math.max(1, yHeight * 0.4));
-                            }
-                        }
-                    }
+                if (screenX >= 0 && screenX < screenWidth && transformY < zBuffer[screenX]) {
+                    ctx.fillStyle = '#39ff14';
+                    ctx.beginPath();
+                    ctx.arc(screenX, screenY, Math.max(3, size), 0, Math.PI * 2);
+                    ctx.fill();
                 }
             }
         }
-    }
 
-    function renderEnemyProjectiles() {
-        for (let proj of enemyProjectiles) {
-            let spriteX = proj.x - posX;
-            let spriteY = proj.y - posY;
-
+        // Render Water Projectiles
+        for (let wp of waterProjectiles) {
+            let wpX = wp.x - posX;
+            let wpY = wp.y - posY;
             let invDet = 1.0 / (planeX * dirY - dirX * planeY);
-            let transformX = invDet * (dirY * spriteX - dirX * spriteY);
-            let transformY = invDet * (-planeY * spriteX + planeX * spriteY);
+            let transformX = invDet * (dirY * wpX - dirX * wpY);
+            let transformY = invDet * (-planeY * wpX + planeX * wpY);
 
             if (transformY > 0.1) {
-                let spriteScreenX = Math.floor((screenWidth / 2) * (1 + transformX / transformY));
-                let radiusPx = Math.abs(Math.floor((screenHeight / transformY) * proj.radius));
-                let drawY = screenHeight / 2 + pitch + camZ;
+                let screenX = Math.floor((screenWidth / 2) * (1 + transformX / transformY));
+                let size = Math.abs(Math.floor(screenHeight / transformY)) * 0.25;
+                let screenY = Math.floor(screenHeight / 2 + pitch + camZ);
 
-                let stripeStart = Math.floor(spriteScreenX - radiusPx);
-                let stripeEnd = Math.floor(spriteScreenX + radiusPx);
-
-                for (let stripe = stripeStart; stripe <= stripeEnd; stripe++) {
-                    if (stripe >= 0 && stripe < screenWidth) {
-                        if (transformY < zBuffer[stripe]) {
-                            let xDist = (stripe - spriteScreenX) / radiusPx;
-                            let yHeight = Math.sqrt(Math.max(0, 1 - xDist * xDist)) * radiusPx;
-
-                            let yStart = Math.max(0, drawY - yHeight);
-                            let yEnd = Math.min(screenHeight, drawY + yHeight);
-
-                            // Glowing Toxic Green Venom Blob
-                            ctx.fillStyle = '#39ff14';
-                            ctx.fillRect(stripe, yStart, 1, yEnd - yStart);
-
-                            if (Math.abs(xDist) < 0.4) {
-                                ctx.fillStyle = '#ccff33';
-                                ctx.fillRect(stripe, Math.max(0, drawY - yHeight * 0.4), 1, Math.max(1, yHeight * 0.3));
-                            }
-                        }
-                    }
+                if (screenX >= 0 && screenX < screenWidth && transformY < zBuffer[screenX]) {
+                    ctx.fillStyle = '#00bfff';
+                    ctx.beginPath();
+                    ctx.arc(screenX, screenY, Math.max(4, size), 0, Math.PI * 2);
+                    ctx.fill();
                 }
             }
         }
-    }
 
-    function drawWeapon() {
-        let weaponX = screenWidth / 2;
-        let weaponY = screenHeight - weaponRecoilY + (camZ * 0.7);
+        // Draw 3D Water Gun HUD
+        let gunX = screenWidth / 2 - 60;
+        let gunY = screenHeight - 120 + weaponRecoilY;
 
-        ctx.save();
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(gunX + 20, gunY + 40, 80, 80);
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(gunX + 35, gunY + 10, 50, 40);
+        ctx.fillStyle = '#0284c7';
+        ctx.fillRect(gunX + 50, gunY - 15, 20, 30);
 
         if (waterSquirtEffect) {
-            ctx.fillStyle = 'rgba(0, 191, 255, 0.7)';
+            ctx.fillStyle = '#38bdf8';
             ctx.beginPath();
-            ctx.arc(weaponX + 25, weaponY - 170, 35, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = 'rgba(220, 248, 255, 0.9)';
-            ctx.beginPath();
-            ctx.arc(weaponX + 25, weaponY - 170, 20, 0, Math.PI * 2);
+            ctx.arc(gunX + 60, gunY - 25, 12, 0, Math.PI * 2);
             ctx.fill();
         }
 
-        // Translucent Water Tank
-        ctx.fillStyle = '#1e90ff';
-        ctx.fillRect(weaponX - 25, weaponY - 110, 50, 45);
-        ctx.fillStyle = '#00bfff';
-        ctx.fillRect(weaponX - 22, weaponY - 100, 44, 32);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(weaponX - 18, weaponY - 105, 6, 35);
-
-        // Water Gun Main Body
-        ctx.fillStyle = '#ff6600';
-        ctx.fillRect(weaponX - 35, weaponY - 70, 75, 45);
-
-        // Noticeably Extended Long Barrel Assembly
-        ctx.fillStyle = '#00bfff';
-        ctx.fillRect(weaponX + 16, weaponY - 155, 18, 90); // Extended barrel tube shaft
-        ctx.fillStyle = '#ffd700'; // Gold metallic reinforcement bands
-        ctx.fillRect(weaponX + 14, weaponY - 135, 22, 8);
-        ctx.fillRect(weaponX + 14, weaponY - 105, 22, 8);
-        ctx.fillRect(weaponX - 40, weaponY - 50, 80, 15);
-
-        // Extended Nozzle Tip
-        ctx.fillStyle = '#39ff14';
-        ctx.fillRect(weaponX + 18, weaponY - 168, 14, 15);
-
-        // Grip
-        ctx.fillStyle = '#32cd32';
-        ctx.fillRect(weaponX - 15, weaponY - 25, 30, 40);
-
-        ctx.restore();
-    }
-
-    function shadeColor(color, percent) {
-        let R = parseInt(color.substring(1,3), 16);
-        let G = parseInt(color.substring(3,5), 16);
-        let B = parseInt(color.substring(5,7), 16);
-
-        R = Math.min(255, Math.max(0, Math.floor(R * (100 + percent) / 100)));
-        G = Math.min(255, Math.max(0, Math.floor(G * (100 + percent) / 100)));
-        B = Math.min(255, Math.max(0, Math.floor(B * (100 + percent) / 100)));
-
-        let RR = R.toString(16).padStart(2, '0');
-        let GG = G.toString(16).padStart(2, '0');
-        let BB = B.toString(16).padStart(2, '0');
-
-        return "#" + RR + GG + BB;
-    }
-
-    function update(deltaTime) {
-        if (playerHealth <= 0) return;
-
-        // Grapple Pull Mechanics
-        if (grapple.active) {
-            if (!grapple.target || !grapple.target.alive) {
-                grapple.active = false;
-                grapple.target = null;
-            } else {
-                let dx = grapple.target.x - posX;
-                let dy = grapple.target.y - posY;
-                let dist = Math.sqrt(dx * dx + dy * dy);
-
-                if (dist < 0.95) {
-                    // Slam impact upon reaching enemy
-                    grapple.target.health -= 3;
-                    playHitSound();
-
-                    if (grapple.target.health <= 0) {
-                        grapple.target.alive = false;
-                        kills++;
-                        document.getElementById('kills-val').innerText = kills;
-                    }
-
-                    // Release grapple and push back slightly
-                    grapple.active = false;
-                    grapple.target = null;
-                    waterSquirtEffect = true;
-                    shootAnimTimer = 0.2;
-                } else {
-                    // Pull player at high speed toward enemy target
-                    let pullSpeed = deltaTime * 13.5;
-                    let stepX = (dx / dist) * pullSpeed;
-                    let stepY = (dy / dist) * pullSpeed;
-
-                    if (!isWall(posX + stepX, posY)) posX += stepX;
-                    if (!isWall(posX, posY + stepY)) posY += stepY;
-                }
-            }
-        }
-
-        let moveSpeed = deltaTime * 4.5;
-        let rotSpeed = deltaTime * 2.8;
-
-        if (keys.Shift) moveSpeed *= 1.8;
-
-        // Apply slight speed slowdown while actively firing water gun
-        if (shootSlowTimer > 0) {
-            shootSlowTimer -= deltaTime;
-            moveSpeed *= 0.55;
-        }
-
-        let isMoving = false;
-
-        // WASD Movement Mechanics
-        if (keys.w) {
-            if (!isWall(posX + dirX * moveSpeed, posY)) posX += dirX * moveSpeed;
-            if (!isWall(posX, posY + dirY * moveSpeed)) posY += dirY * moveSpeed;
-            isMoving = true;
-        }
-        if (keys.s) {
-            if (!isWall(posX - dirX * moveSpeed, posY)) posX -= dirX * moveSpeed;
-            if (!isWall(posX, posY - dirY * moveSpeed)) posY -= dirY * moveSpeed;
-            isMoving = true;
-        }
-        
-        // Strafing (A & D)
-        let strafeDirX = planeX;
-        let strafeDirY = planeY;
-        if (keys.d) {
-            if (!isWall(posX + strafeDirX * moveSpeed, posY)) posX += strafeDirX * moveSpeed;
-            if (!isWall(posX, posY + strafeDirY * moveSpeed)) posY += strafeDirY * moveSpeed;
-            isMoving = true;
-        }
-        if (keys.a) {
-            if (!isWall(posX - strafeDirX * moveSpeed, posY)) posX -= strafeDirX * moveSpeed;
-            if (!isWall(posX, posY - strafeDirY * moveSpeed)) posY -= strafeDirY * moveSpeed;
-            isMoving = true;
-        }
-
-        // Arrow Keys for Looking (Rotation Left/Right, Pitch Up/Down)
-        if (keys.ArrowRight) {
-            let oldDirX = dirX;
-            dirX = dirX * Math.cos(-rotSpeed) - dirY * Math.sin(-rotSpeed);
-            dirY = oldDirX * Math.sin(-rotSpeed) + dirY * Math.cos(-rotSpeed);
-            let oldPlaneX = planeX;
-            planeX = planeX * Math.cos(-rotSpeed) - planeY * Math.sin(-rotSpeed);
-            planeY = oldPlaneX * Math.sin(-rotSpeed) + planeY * Math.cos(-rotSpeed);
-        }
-        if (keys.ArrowLeft) {
-            let oldDirX = dirX;
-            dirX = dirX * Math.cos(rotSpeed) - dirY * Math.sin(rotSpeed);
-            dirY = oldDirX * Math.sin(rotSpeed) + dirY * Math.cos(rotSpeed);
-            let oldPlaneX = planeX;
-            planeX = planeX * Math.cos(rotSpeed) - planeY * Math.sin(rotSpeed);
-            planeY = oldPlaneX * Math.sin(rotSpeed) + planeY * Math.cos(rotSpeed);
-        }
-        if (keys.ArrowUp) {
-            pitch += 200 * deltaTime;
-            if (pitch > 150) pitch = 150;
-        }
-        if (keys.ArrowDown) {
-            pitch -= 200 * deltaTime;
-            if (pitch < -150) pitch = -150;
-        }
-
-        // Head Bobbing
-        if (isMoving) {
-            walkPhase += deltaTime * 12;
-            camZ = Math.sin(walkPhase) * 10;
-        } else {
-            walkPhase = 0;
-            camZ *= 0.8;
-        }
-
-        // Water Recoil Decay
-        if (shootAnimTimer > 0) {
-            shootAnimTimer -= deltaTime;
-            if (shootAnimTimer <= 0.08) waterSquirtEffect = false;
-            weaponRecoilY = (shootAnimTimer / 0.15) * 18;
-        } else {
-            weaponRecoilY = 0;
-            waterSquirtEffect = false;
-        }
-
-        // Update Player Water Projectiles
-        for (let i = waterProjectiles.length - 1; i >= 0; i--) {
-            let proj = waterProjectiles[i];
-            proj.x += proj.dirX * proj.speed * deltaTime;
-            proj.y += proj.dirY * proj.speed * deltaTime;
-            proj.lifetime -= deltaTime;
-
-            let hitWall = isWall(proj.x, proj.y);
-
-            let hitEnemy = false;
-            for (let b = 0; b < sprites.length; b++) {
-                let enemy = sprites[b];
-                if (!enemy.alive) continue;
-
-                let dx = proj.x - enemy.x;
-                let dy = proj.y - enemy.y;
-                let dist = Math.sqrt(dx * dx + dy * dy);
-
-                if (dist < 0.7) {
-                    hitEnemy = true;
-                    enemy.health--;
-                    playHitSound();
-
-                    if (enemy.health <= 0) {
-                        enemy.alive = false;
-                        kills++;
-                        document.getElementById('kills-val').innerText = kills;
-                    }
-                    break;
-                }
-            }
-
-            if (hitWall || hitEnemy || proj.lifetime <= 0) {
-                waterProjectiles.splice(i, 1);
-            }
-        }
-
-        // Update Enemy Green Acid Projectiles
-        for (let i = enemyProjectiles.length - 1; i >= 0; i--) {
-            let proj = enemyProjectiles[i];
-            proj.x += proj.dirX * proj.speed * deltaTime;
-            proj.y += proj.dirY * proj.speed * deltaTime;
-            proj.lifetime -= deltaTime;
-
-            let hitWall = isWall(proj.x, proj.y);
-
-            // Check Collision with Player
-            let dx = proj.x - posX;
-            let dy = proj.y - posY;
-            let distPlayer = Math.sqrt(dx * dx + dy * dy);
-            let hitPlayer = false;
-
-            if (distPlayer < 0.5) {
-                hitPlayer = true;
-                playerHealth = Math.max(0, playerHealth - 12);
-                document.getElementById('health-val').innerText = playerHealth;
-                triggerDamageFlash();
-                playPlayerDamageSound();
-            }
-
-            if (hitWall || hitPlayer || proj.lifetime <= 0) {
-                enemyProjectiles.splice(i, 1);
-            }
-        }
-
-        for (let i = 0; i < sprites.length; i++) {
-            let spr = sprites[i];
-            if (!spr.alive) continue;
-
-            let dx = posX - spr.x;
-            let dy = posY - spr.y;
-            let dist = Math.sqrt(dx * dx + dy * dy);
-
-            if (spr.type === 'bear') {
-                // Bear AI: Standard Pursuit
-                if (dist < 12 && dist > 1.0) {
-                    let enemySpeed = deltaTime * 1.1;
-                    let stepX = (dx / dist) * enemySpeed;
-                    let stepY = (dy / dist) * enemySpeed;
-
-                    if (!isWall(spr.x + stepX, spr.y)) spr.x += stepX;
-                    if (!isWall(spr.x, spr.y + stepY)) spr.y += stepY;
-                }
-                // Bear Melee Attack
-                if (dist <= 1.0) {
-                    playerHealth = Math.max(0, playerHealth - Math.floor(deltaTime * 25));
-                    document.getElementById('health-val').innerText = playerHealth;
-                    triggerDamageFlash();
-                }
-
-            } else if (spr.type === 'cockroach') {
-                // Fast Cockroach AI: Fast, Irregular Movement + Kiting/Keeping Distance
-                spr.skitterTimer -= deltaTime;
-                if (spr.skitterTimer <= 0) {
-                    spr.skitterTimer = 0.3 + Math.random() * 0.4;
-                    let angle = Math.atan2(dy, dx) + (Math.random() - 0.5) * 2.2;
-                    spr.skitterDirX = Math.cos(angle);
-                    spr.skitterDirY = Math.sin(angle);
-                }
-
-                let roachSpeed = deltaTime * 2.8; // Fast speed!
-                let moveX = 0;
-                let moveY = 0;
-
-                // Attempt to keep a safe distance (~6.0 units) from the player
-                if (dist < 5.5) {
-                    // Back away while skittering laterally
-                    moveX = (-dx / dist) * roachSpeed + spr.skitterDirX * roachSpeed * 0.6;
-                    moveY = (-dy / dist) * roachSpeed + spr.skitterDirY * roachSpeed * 0.6;
-                } else if (dist > 9.0) {
-                    // Move closer erratic skittering
-                    moveX = (dx / dist) * roachSpeed * 0.8 + spr.skitterDirX * roachSpeed * 0.5;
-                    moveY = (dy / dist) * roachSpeed * 0.8 + spr.skitterDirY * roachSpeed * 0.5;
-                } else {
-                    // Circle/skitter around the player maintaining distance
-                    moveX = spr.skitterDirX * roachSpeed;
-                    moveY = spr.skitterDirY * roachSpeed;
-                }
-
-                if (!isWall(spr.x + moveX, spr.y)) spr.x += moveX;
-                if (!isWall(spr.x, spr.y + moveY)) spr.y += moveY;
-
-                // Cockroach Shooting Mechanics (Green Venom Blob)
-                spr.shootTimer -= deltaTime;
-                if (spr.shootTimer <= 0 && dist < 14) {
-                    spr.shootTimer = 2.0 + Math.random() * 1.5;
-                    playSpitSound();
-
-                    enemyProjectiles.push({
-                        x: spr.x,
-                        y: spr.y,
-                        dirX: dx / dist,
-                        dirY: dy / dist,
-                        speed: 7.5,
-                        radius: 0.3,
-                        lifetime: 3.0
-                    });
-                }
-            }
+        // Game Over / Victory Screen
+        if (playerHealth <= 0) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+            ctx.fillRect(0, 0, screenWidth, screenHeight);
+            ctx.fillStyle = '#ff4d4d';
+            ctx.font = 'bold 36px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('PESTS OVERWHELMED YOU!', screenWidth / 2, screenHeight / 2 - 10);
+            ctx.font = '18px monospace';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText('Press R to Retry Level', screenWidth / 2, screenHeight / 2 + 30);
+        } else if (kills >= sprites.length) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+            ctx.fillRect(0, 0, screenWidth, screenHeight);
+            ctx.fillStyle = '#45f3ff';
+            ctx.font = 'bold 36px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('VICTORY! ALL PESTS CLEARED!', screenWidth / 2, screenHeight / 2 - 10);
+            ctx.font = '18px monospace';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText('Press R to Play Again', screenWidth / 2, screenHeight / 2 + 30);
         }
     }
 
-    function gameLoop(timestamp) {
-        if (!oldTime) oldTime = timestamp;
-        let frameTime = (timestamp - oldTime) / 1000.0;
-        oldTime = timestamp;
+    function adjustBrightness(hex, percent) {
+        let num = parseInt(hex.replace('#', ''), 16),
+            amt = Math.round(2.55 * percent),
+            R = (num >> 16) + amt,
+            B = (num >> 8 & 0x00FF) + amt,
+            G = (num & 0x0000FF) + amt;
+        return '#' + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 + (B < 255 ? B < 1 ? 0 : B : 255) * 0x100 + (G < 255 ? G < 1 ? 0 : G : 255)).toString(16).slice(1);
+    }
 
-        if (frameTime > 0.1) frameTime = 0.1;
+    function gameLoop(now) {
+        let dt = (now - oldTime) / 1000;
+        if (dt > 0.1) dt = 0.1;
+        oldTime = now;
 
-        update(frameTime);
-        draw();
+        update(dt);
+        render();
 
         requestAnimationFrame(gameLoop);
     }
 
     window.onload = function() {
+        window.focus();
         requestAnimationFrame(gameLoop);
     };
-
 </script>
 </body>
 </html>
