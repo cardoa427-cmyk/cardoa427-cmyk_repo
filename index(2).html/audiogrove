@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Grove - Community Sound Effects & SFX Library</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        grove: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            400: '#4ade80',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            900: '#14532d',
+                            950: '#052e16',
+                        },
+                        darkbg: '#0b0f19',
+                        cardbg: '#111827',
+                        accent: '#6366f1'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                        pixel: ['"Press Start 2P"', 'cursive']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts & FontAwesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #080c14;
+            color: #f3f4f6;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #111827;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #374151;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #4b5563;
+        }
+        .sound-pad-glow {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .sound-pad-glow:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px 2px var(--pad-color-glow, rgba(99, 102, 241, 0.4));
+        }
+        .sound-pad-glow:active {
+            transform: translateY(1px);
+        }
+        .pixel-font {
+            font-family: 'Press Start 2P', cursive;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between custom-scrollbar bg-[#080c14] text-slate-100">
+
+    <!-- Top Navigation Header -->
+    <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800/80 px-4 lg:px-8 py-3">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            
+            <!-- Logo & Brand -->
+            <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('soundboard')">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                    <i class="fa-solid font-bold fa-compact-disc text-slate-950 text-xl animate-spin-slow"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-xl tracking-tight bg-gradient-to-r from-emerald-400 via-teal-300 to-indigo-400 bg-clip-text text-transparent">
+                        AUDIO GROVE
+                    </h1>
+                    <p class="text-[10px] text-slate-400 tracking-wider uppercase font-semibold">Royalty-Free SFX Community</p>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="hidden md:flex items-center gap-1 bg-slate-950/60 p-1 rounded-xl border border-slate-800">
+                <button onclick="switchTab('soundboard')" id="nav-soundboard" class="px-4 py-2 rounded-lg text-sm font-medium transition-all bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    <i class="fa-solid fa-border-all mr-2"></i>Soundboard
+                </button>
+                <button onclick="switchTab('synth')" id="nav-synth" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 transition-all">
+                    <i class="fa-solid fa-wand-magic-sparkles mr-2"></i>8-Bit Synth
+                </button>
+                <button onclick="switchTab('upload')" id="nav-upload" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 transition-all">
+                    <i class="fa-solid fa-cloud-arrow-up mr-2"></i>Publish SFX
+                </button>
+            </nav>
+
+            <!-- User Status & Config Buttons -->
+            <div class="flex items-center gap-3">
+                <!-- Supabase Backend Status Badge -->
+                <button onclick="openModal('supabase-modal')" id="backend-status-badge" class="px-3 py-1.5 rounded-full text-xs font-medium border flex items-center gap-2 bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20 transition-all" title="Click to configure live Supabase connection">
+                    <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                    <span id="backend-status-text">Disconnected from Supabase</span>
+                    <i class="fa-solid fa-gear text-xs opacity-70"></i>
+                </button>
+
+                <!-- Auth / Profile Button -->
+                <div id="user-auth-section">
+                    <button onclick="openModal('auth-modal')" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-4 py-2 rounded-xl text-sm transition-all shadow-lg shadow-indigo-600/20 flex items-center gap-2">
+                        <i class="fa-solid fa-user-plus"></i>
+                        <span>Sign In</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- FLOATING TOAST NOTIFICATION SYSTEM -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Main Workspace Container -->
+    <main class="max-w-7xl w-full mx-auto px-4 lg:px-8 py-6 flex-1 pb-36">
+
+        <!-- TAB 1: MAIN SOUNDBOARD FEED -->
+        <section id="tab-soundboard" class="space-y-6">
+            
+            <!-- Hero / Filter Controls Bar -->
+            <div class="bg-slate-900/60 backdrop-blur-md rounded-2xl border border-slate-800/80 p-5 shadow-xl space-y-4">
+                <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+                    
+                    <!-- Search Input (Supports Titles, Handles, #Hashtags) -->
+                    <div class="relative w-full md:w-96">
+                        <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                        <input type="text" id="search-input" oninput="applyFilters()" placeholder="Search title, @creator, or #hashtag..." class="w-full bg-slate-950/80 text-sm text-slate-100 pl-11 pr-4 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all placeholder:text-slate-500">
+                    </div>
+
+                    <!-- Right Controls: Sort & Mobile Synth Trigger -->
+                    <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+                        <div class="flex items-center gap-2">
+                            <label class="text-xs text-slate-400 font-medium">Sort:</label>
+                            <select id="sort-select" onchange="applyFilters()" class="bg-slate-950 text-xs text-slate-200 px-3 py-2 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500/50">
+                                <option value="newest">Newest First</option>
+                                <option value="oldest">Oldest First</option>
+                                <option value="popular">Most Popular</option>
+                                <option value="least-popular">Least Popular</option>
+                            </select>
+                        </div>
+                        <button onclick="switchTab('synth')" class="md:hidden bg-emerald-500/10 text-emerald-400 text-xs px-3 py-2 rounded-xl border border-emerald-500/30">
+                            <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Synth
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Category Filters Pills -->
+                <div class="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1 pt-1">
+                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider mr-2">Categories:</span>
+                    <button onclick="selectCategory('All')" data-cat="All" class="category-btn active bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-xs font-semibold px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all">All SFX</button>
+                    <button onclick="selectCategory('8-Bit & Gaming')" data-cat="8-Bit & Gaming" class="category-btn bg-slate-800/80 text-slate-300 border border-slate-700/60 hover:bg-slate-800 text-xs font-semibold px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all">🎮 8-Bit & Gaming</button>
+                    <button onclick="selectCategory('Sci-Fi & Cyber')" data-cat="Sci-Fi & Cyber" class="category-btn bg-slate-800/80 text-slate-300 border border-slate-700/60 hover:bg-slate-800 text-xs font-semibold px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all">🛸 Sci-Fi & Cyber</button>
+                    <button onclick="selectCategory('Foley & Impact')" data-cat="Foley & Impact" class="category-btn bg-slate-800/80 text-slate-300 border border-slate-700/60 hover:bg-slate-800 text-xs font-semibold px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all">💥 Foley & Impact</button>
+                    <button onclick="selectCategory('Interface & Clicks')" data-cat="Interface & Clicks" class="category-btn bg-slate-800/80 text-slate-300 border border-slate-700/60 hover:bg-slate-800 text-xs font-semibold px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all">🖱️ Interface & Clicks</button>
+                    <button onclick="selectCategory('Private')" id="cat-btn-private" data-cat="Private" class="category-btn hidden bg-slate-800/80 text-purple-300 border border-purple-500/40 hover:bg-slate-800 text-xs font-semibold px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all">🔒 My Private SFX</button>
+                </div>
+            </div>
+
+            <!-- Sound Pads Grid -->
+            <div id="sounds-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <!-- Sound cards dynamically rendered here -->
+            </div>
+
+            <!-- Empty State Display -->
+            <div id="empty-state" class="hidden text-center py-16 bg-slate-900/30 rounded-2xl border border-dashed border-slate-800">
+                <i class="fa-solid fa-wave-square text-4xl text-slate-600 mb-3"></i>
+                <h3 class="text-lg font-bold text-slate-300">No Sound Effects Found</h3>
+                <p class="text-sm text-slate-500 max-w-sm mx-auto mt-1 mb-4">Try adjusting your search filters or generate a fresh 8-bit sound effect in our synthesizer!</p>
+                <button onclick="switchTab('synth')" class="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold px-4 py-2 rounded-xl text-sm transition-all">
+                    Create Sound in Synth
+                </button>
+            </div>
+        </section>
+
+        <!-- TAB 2: 8-BIT SYNTHESIZER GENERATOR -->
+        <section id="tab-synth" class="hidden space-y-6">
+            <div class="bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-800 p-6 shadow-2xl space-y-6">
+                
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-4">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-400 font-pixel text-[10px]">REAL-TIME DSP</span>
+                            <h2 class="text-2xl font-bold text-slate-100">8-Bit SFX Synthesizer</h2>
+                        </div>
+                        <p class="text-sm text-slate-400 mt-1">Design chiptune audio, lasers, explosions, and retro sound effects directly in your browser.</p>
+                    </div>
+
+                    <!-- Preset Quick Pickers -->
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="loadSynthPreset('jump')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-all border border-slate-700">🦘 Jump</button>
+                        <button onclick="loadSynthPreset('laser')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-all border border-slate-700">🔫 Laser</button>
+                        <button onclick="loadSynthPreset('explosion')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-all border border-slate-700">💣 Explosion</button>
+                        <button onclick="loadSynthPreset('coin')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-all border border-slate-700">🪙 Coin</button>
+                        <button onclick="loadSynthPreset('powerup')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-all border border-slate-700">⚡ PowerUp</button>
+                    </div>
+                </div>
+
+                <!-- Synth Controls Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    
+                    <!-- Oscillator Settings -->
+                    <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-4">
+                        <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-wave-square"></i> Waveform & Base Pitch
+                        </h3>
+                        <div>
+                            <label class="text-xs text-slate-400 font-medium block mb-2">Oscillator Shape</label>
+                            <div class="grid grid-cols-4 gap-2">
+                                <button onclick="setSynthWave('square')" id="wave-square" class="wave-btn active py-2 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-xs font-bold">Square</button>
+                                <button onclick="setSynthWave('sawtooth')" id="wave-sawtooth" class="wave-btn py-2 rounded bg-slate-900 text-slate-400 border border-slate-800 text-xs font-bold">Saw</button>
+                                <button onclick="setSynthWave('triangle')" id="wave-triangle" class="wave-btn py-2 rounded bg-slate-900 text-slate-400 border border-slate-800 text-xs font-bold">Tri</button>
+                                <button onclick="setSynthWave('noise')" id="wave-noise" class="wave-btn py-2 rounded bg-slate-900 text-slate-400 border border-slate-800 text-xs font-bold">Noise</button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-400">Start Frequency (Hz)</span>
+                                <span id="val-freq" class="font-mono text-emerald-400">440</span>
+                            </div>
+                            <input type="range" id="synth-freq" min="60" max="2000" value="440" oninput="updateSynthVal('freq', this.value)" class="w-full accent-emerald-500">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-400">Frequency Sweep / Pitch Slide</span>
+                                <span id="val-sweep" class="font-mono text-emerald-400">-200</span>
+                            </div>
+                            <input type="range" id="synth-sweep" min="-1200" max="1200" value="-200" oninput="updateSynthVal('sweep', this.value)" class="w-full accent-emerald-500">
+                        </div>
+                    </div>
+
+                    <!-- Envelope & Duration -->
+                    <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-4">
+                        <h3 class="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-sliders"></i> Envelope & Duration
+                        </h3>
+
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-400">Attack Time (sec)</span>
+                                <span id="val-attack" class="font-mono text-indigo-400">0.01</span>
+                            </div>
+                            <input type="range" id="synth-attack" min="0.001" max="0.3" step="0.005" value="0.01" oninput="updateSynthVal('attack', this.value)" class="w-full accent-indigo-500">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-400">Decay / Release (sec)</span>
+                                <span id="val-decay" class="font-mono text-indigo-400">0.25</span>
+                            </div>
+                            <input type="range" id="synth-decay" min="0.02" max="1.5" step="0.02" value="0.25" oninput="updateSynthVal('decay', this.value)" class="w-full accent-indigo-500">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-400">Vibrato Speed</span>
+                                <span id="val-vibrato" class="font-mono text-indigo-400">0</span>
+                            </div>
+                            <input type="range" id="synth-vibrato" min="0" max="30" value="0" oninput="updateSynthVal('vibrato', this.value)" class="w-full accent-indigo-500">
+                        </div>
+                    </div>
+
+                    <!-- Output & Action Buttons -->
+                    <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 flex flex-col justify-between space-y-4">
+                        <div>
+                            <h3 class="text-xs font-bold text-purple-400 uppercase tracking-wider flex items-center gap-2 mb-3">
+                                <i class="fa-solid fa-volume-high"></i> Preview & Export
+                            </h3>
+                            <p class="text-xs text-slate-400 leading-relaxed mb-4">
+                                Test your synthesized sound effect live in real-time. Once you're satisfied with your custom SFX, publish it directly to Audio Grove!
+                            </p>
+                        </div>
+
+                        <div class="space-y-2">
+                            <button onclick="playSynthSFX()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl text-sm transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-play"></i> Test Play Sound
+                            </button>
+                            <button onclick="exportSynthToUpload()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold py-3 rounded-xl text-sm transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-share-from-square"></i> Export to Publish Form
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: UPLOAD / PUBLISH SOUND SCREEN -->
+        <section id="tab-upload" class="hidden max-w-2xl mx-auto space-y-6">
+            <div class="bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-800 p-6 shadow-2xl space-y-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-100">Publish Sound Effect</h2>
+                    <p class="text-sm text-slate-400 mt-1">Upload an audio/video file or use a synth preset to share with creators worldwide.</p>
+                </div>
+
+                <!-- Auth Guard Banner for Unauthenticated Users -->
+                <div id="upload-auth-banner" class="hidden bg-indigo-950/60 border border-indigo-500/40 p-4 rounded-xl flex items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-lock text-indigo-400"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-bold text-indigo-200 uppercase tracking-wider">Account Required</h4>
+                            <p class="text-xs text-indigo-300/80">You need to sign in or create a creator profile before publishing audio.</p>
+                        </div>
+                    </div>
+                    <button onclick="openModal('auth-modal')" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3.5 py-2 rounded-lg transition-all shrink-0">
+                        Sign In Now
+                    </button>
+                </div>
+
+                <form id="upload-form" onsubmit="handleSoundUpload(event)" class="space-y-5">
+                    
+                    <!-- File Input / Synth Data Preview -->
+                    <div>
+                        <label class="text-xs font-semibold text-slate-300 block mb-2">Audio Source (MP3, WAV, OGG, WebM, MP4)</label>
+                        <div id="drop-zone" class="border-2 border-dashed border-slate-700 hover:border-emerald-500/50 bg-slate-950/60 rounded-xl p-6 text-center cursor-pointer transition-all">
+                            <i class="fa-solid fa-file-audio text-3xl text-emerald-400 mb-2"></i>
+                            <p class="text-sm font-medium text-slate-200" id="file-status-text">Click to browse or drop sound file here</p>
+                            <p class="text-xs text-slate-500 mt-1">Video files are automatically extracted to audio in-browser (Max 10MB)</p>
+                            <input type="file" id="audio-file-input" accept="audio/*,video/*" onchange="handleFileSelect(event)" class="hidden">
+                        </div>
+                    </div>
+
+                    <!-- Title & Category -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs font-semibold text-slate-300 block mb-1">Sound Title *</label>
+                            <input type="text" id="upload-title" required placeholder="e.g. Cyber Laser Blast #laser" class="w-full bg-slate-950 text-sm text-slate-100 px-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500">
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-slate-300 block mb-1">Category *</label>
+                            <select id="upload-category" class="w-full bg-slate-950 text-sm text-slate-100 px-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500">
+                                <option value="8-Bit & Gaming">🎮 8-Bit & Gaming</option>
+                                <option value="Sci-Fi & Cyber">🛸 Sci-Fi & Cyber</option>
+                                <option value="Foley & Impact">💥 Foley & Impact</option>
+                                <option value="Interface & Clicks">🖱️ Interface & Clicks</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div>
+                        <label class="text-xs font-semibold text-slate-300 block mb-1">Description & Hashtags</label>
+                        <textarea id="upload-description" rows="2" placeholder="Describe your sound effect or add tags like #synth #retro #chiptune..." class="w-full bg-slate-950 text-sm text-slate-100 px-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500"></textarea>
+                    </div>
+
+                    <!-- Color Pad Picker & Visibility -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs font-semibold text-slate-300 block mb-1">Preview Pad Color</label>
+                            <div class="flex items-center gap-3">
+                                <input type="color" id="upload-color" value="#10b981" class="w-10 h-10 rounded cursor-pointer border-0 bg-transparent">
+                                <span class="text-xs text-slate-400">Choose pad glow theme</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-semibold text-slate-300 block mb-1">Visibility Option</label>
+                            <div class="flex items-center gap-4 pt-2">
+                                <label class="inline-flex items-center cursor-pointer text-xs text-slate-300">
+                                    <input type="radio" name="upload-visibility" value="public" checked class="accent-emerald-500">
+                                    <span class="ml-2">🌐 Public SFX</span>
+                                </label>
+                                <label class="inline-flex items-center cursor-pointer text-xs text-slate-300">
+                                    <input type="radio" name="upload-visibility" value="private" class="accent-purple-500">
+                                    <span class="ml-2">🔒 Private SFX</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" id="submit-upload-btn" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3 rounded-xl text-sm transition-all shadow-lg shadow-emerald-500/20">
+                        Publish to Soundboard
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- TAB 4: SETTINGS / ACCOUNT SCREEN -->
+        <section id="tab-settings" class="hidden max-w-xl mx-auto space-y-6">
+            <div class="bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-800 p-6 shadow-2xl space-y-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-100">Account Settings</h2>
+                    <p class="text-sm text-slate-400 mt-1">Manage creator account credentials and view audio stats.</p>
+                </div>
+
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                    <div class="text-xs text-slate-400">Logged in Creator</div>
+                    <div class="text-lg font-bold text-emerald-400" id="account-handle-display">@guest_creator</div>
+                    <div class="text-xs text-slate-500" id="account-email-display">Guest User (Simulated Session)</div>
+                </div>
+
+                <!-- Password Reset Form -->
+                <form onsubmit="handlePasswordUpdate(event)" class="space-y-4">
+                    <h3 class="text-sm font-bold text-slate-200">Update Account Password</h3>
+                    <div>
+                        <label class="text-xs text-slate-400 block mb-1">New Password</label>
+                        <input type="password" id="new-password" required minlength="8" placeholder="••••••••" class="w-full bg-slate-950 text-sm text-slate-100 px-3 py-2 rounded-xl border border-slate-800 focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs px-4 py-2.5 rounded-xl transition-all">
+                        Update Password
+                    </button>
+                </form>
+
+                <div class="border-t border-slate-800 pt-4">
+                    <button onclick="handleSignOut()" class="w-full bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 font-semibold py-2.5 rounded-xl text-sm transition-all">
+                        Sign Out
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FIXED BOTTOM AUDIO PLAYER & REAL-TIME CANVA VISUALIZER DOCK -->
+    <div id="visualizer-dock" class="fixed bottom-0 left-0 right-0 z-50 bg-slate-950/95 backdrop-blur-xl border-t border-slate-800/80 px-4 py-3 shadow-2xl">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
+            
+            <!-- Left: Current Track Details -->
+            <div class="flex items-center gap-3 w-full md:w-1/4">
+                <div id="dock-pad-thumb" class="w-11 h-11 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-music text-emerald-400 text-lg"></i>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <h4 id="dock-title" class="font-bold text-sm text-slate-100 truncate">Select a Sound Effect</h4>
+                    <p id="dock-subtitle" class="text-xs text-slate-400 truncate">Click any sound pad to preview</p>
+                </div>
+            </div>
+
+            <!-- Center: Audio Visualizer Canvas & Controls -->
+            <div class="flex-1 w-full flex flex-col items-center gap-1">
+                
+                <!-- Visualizer Canvas -->
+                <div class="relative w-full max-w-xl h-12 bg-slate-900/90 rounded-lg overflow-hidden border border-slate-800">
+                    <canvas id="visualizer-canvas" class="w-full h-full block"></canvas>
+                    
+                    <!-- Visualizer Mode Selectors -->
+                    <div class="absolute right-2 top-1 flex gap-1 z-10">
+                        <button onclick="setVisualizerMode('hybrid')" id="vmode-hybrid" class="vmode-btn active px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/30 text-emerald-300 border border-emerald-500/40">HYBRID</button>
+                        <button onclick="setVisualizerMode('spectrum')" id="vmode-spectrum" class="vmode-btn px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-950/80 text-slate-400 border border-slate-800">SPECTRUM</button>
+                        <button onclick="setVisualizerMode('waveform')" id="vmode-waveform" class="vmode-btn px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-950/80 text-slate-400 border border-slate-800">WAVE</button>
+                    </div>
+                </div>
+
+                <!-- Playback Timeline & Buttons -->
+                <div class="w-full max-w-xl flex items-center gap-3">
+                    <span id="dock-current-time" class="text-[10px] font-mono text-slate-400 w-8 text-right">0:00</span>
+                    
+                    <button onclick="toggleDockPlayPause()" id="dock-play-btn" class="w-7 h-7 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center text-xs font-bold hover:scale-105 transition-all">
+                        <i class="fa-solid fa-play ml-0.5"></i>
+                    </button>
+
+                    <input type="range" id="dock-seek-bar" value="0" min="0" max="100" oninput="seekAudio(this.value)" class="flex-1 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+                    
+                    <span id="dock-duration" class="text-[10px] font-mono text-slate-400 w-8">0:00</span>
+                </div>
+            </div>
+
+            <!-- Right: Volume & Download -->
+            <div class="hidden md:flex items-center justify-end gap-3 w-1/4">
+                <i class="fa-solid fa-volume-high text-xs text-slate-400"></i>
+                <input type="range" id="dock-volume" min="0" max="1" step="0.05" value="0.8" oninput="setAudioVolume(this.value)" class="w-20 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+                
+                <button onclick="downloadCurrentSound()" id="dock-download-btn" disabled class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 disabled:opacity-40 text-xs font-semibold transition-all">
+                    <i class="fa-solid fa-download mr-1"></i> Download
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 1: AUTHENTICATION (LOGIN & SIGN UP) -->
+    <div id="auth-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl relative space-y-5">
+            <button onclick="closeModal('auth-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-200">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <!-- Auth Header Tabs -->
+            <div class="flex border-b border-slate-800">
+                <button onclick="switchAuthTab('login')" id="tab-login-btn" class="flex-1 pb-3 text-sm font-bold border-b-2 border-emerald-500 text-emerald-400">Sign In</button>
+                <button onclick="switchAuthTab('signup')" id="tab-signup-btn" class="flex-1 pb-3 text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-200">Create Account</button>
+            </div>
+
+            <!-- GitHub OAuth Button -->
+            <button onclick="handleGitHubAuth()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-semibold py-2.5 rounded-xl text-sm transition-all border border-slate-700 flex items-center justify-center gap-2">
+                <i class="fa-brands fa-github text-lg"></i>
+                <span>Continue with GitHub</span>
+            </button>
+
+            <div class="flex items-center gap-3 my-2">
+                <div class="h-px bg-slate-800 flex-1"></div>
+                <span class="text-xs text-slate-500 uppercase">or email</span>
+                <div class="h-px bg-slate-800 flex-1"></div>
+            </div>
+
+            <!-- Auth Form -->
+            <form id="auth-form" onsubmit="handleAuthSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="text-xs font-medium text-slate-300 block mb-1">Email Address</label>
+                    <input type="email" id="auth-email" required placeholder="creator@audiogrove.io" class="w-full bg-slate-950 text-sm text-slate-100 px-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500">
+                </div>
+
+                <div>
+                    <label class="text-xs font-medium text-slate-300 block mb-1">Password</label>
+                    <input type="password" id="auth-password" oninput="checkPasswordComplexity(this.value)" required placeholder="••••••••" class="w-full bg-slate-950 text-sm text-slate-100 px-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500">
+                </div>
+
+                <!-- Password Rule Validation Indicators -->
+                <div id="signup-rules" class="hidden text-[11px] space-y-1 bg-slate-950/50 p-3 rounded-lg border border-slate-800">
+                    <div id="rule-length" class="text-slate-500"><i class="fa-solid fa-circle-dot mr-1"></i>At least 8 characters</div>
+                    <div id="rule-uppercase" class="text-slate-500"><i class="fa-solid fa-circle-dot mr-1"></i>At least 1 uppercase letter</div>
+                    <div id="rule-lowercase" class="text-slate-500"><i class="fa-solid fa-circle-dot mr-1"></i>At least 1 lowercase letter</div>
+                    <div id="rule-number" class="text-slate-500"><i class="fa-solid fa-circle-dot mr-1"></i>At least 1 number</div>
+                </div>
+
+                <button type="submit" id="auth-submit-btn" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-2.5 rounded-xl text-sm transition-all">
+                    Sign In
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: USERNAME ONBOARDING SETUP -->
+    <div id="username-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+            <h3 class="text-xl font-bold text-slate-100">Welcome to Audio Grove!</h3>
+            <p class="text-xs text-slate-400 leading-relaxed">Choose a unique creator handle (@username) to publish sound effects on the soundboard.</p>
+
+            <form onsubmit="handleUsernameSetup(event)" class="space-y-4">
+                <div>
+                    <label class="text-xs font-medium text-slate-300 block mb-1">Creator Username</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-2.5 text-slate-500 text-sm font-bold">@</span>
+                        <input type="text" id="setup-username" required pattern="^[a-zA-Z0-9_]{3,16}$" placeholder="sound_master" class="w-full bg-slate-950 text-sm text-slate-100 pl-8 pr-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500">
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-2.5 rounded-xl text-sm transition-all">
+                    Claim Username
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: SUPABASE BACKEND CONFIGURATION -->
+    <div id="supabase-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-5 relative">
+            <button onclick="closeModal('supabase-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-200">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <div>
+                <h3 class="text-xl font-bold text-slate-100 flex items-center gap-2">
+                    <i class="fa-solid fa-database text-amber-400"></i> Supabase Backend Connection
+                </h3>
+                <p class="text-xs text-slate-400 mt-1">Connect your live Supabase cloud database instance or switch back to local simulated mode.</p>
+            </div>
+
+            <form onsubmit="saveSupabaseConfig(event)" class="space-y-4">
+                <div>
+                    <label class="text-xs font-medium text-slate-300 block mb-1">Supabase Project URL</label>
+                    <input type="url" id="sb-url-input" required placeholder="https://your-project.supabase.co" class="w-full bg-slate-950 text-sm font-mono text-slate-100 px-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-amber-500">
+                </div>
+
+                <div>
+                    <label class="text-xs font-medium text-slate-300 block mb-1">Supabase Anon Key</label>
+                    <input type="text" id="sb-key-input" required placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6..." class="w-full bg-slate-950 text-xs font-mono text-slate-100 px-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-amber-500">
+                </div>
+
+                <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800 text-[11px] text-slate-400 space-y-1">
+                    <div class="font-bold text-amber-400 flex items-center gap-1.5"><i class="fa-solid fa-database"></i> Database Connection</div>
+                    <p>Provide your Supabase URL & Key above to connect directly to your live database.</p>
+                </div>
+
+                <div class="flex items-center justify-end pt-2">
+                    <button type="submit" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-5 py-2.5 rounded-xl text-sm transition-all">
+                        Connect Supabase
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 4: CUSTOM CONFIRMATION MODAL -->
+    <div id="confirm-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl space-y-4 text-center">
+            <div class="w-12 h-12 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center mx-auto text-xl">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 class="text-lg font-bold text-slate-100" id="confirm-modal-title">Are you sure?</h3>
+            <p class="text-xs text-slate-400" id="confirm-modal-msg">This action cannot be undone.</p>
+            <div class="flex items-center gap-3 pt-2">
+                <button onclick="closeModal('confirm-modal')" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-2 rounded-xl text-xs transition-all">Cancel</button>
+                <button id="confirm-modal-action-btn" class="flex-1 bg-red-500 hover:bg-red-400 text-slate-950 font-bold py-2 rounded-xl text-xs transition-all">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AUDIO ENGINE & APPLICATION LOGIC -->
+    <script>
+        // ==========================================
+        // APP STATE & CONSTANTS
+        // ==========================================
+        let supabaseClient = null;
+        let currentUser = null;
+        let userProfile = null;
+        let currentCategory = 'All';
+        let currentVisualizerMode = 'hybrid'; // 'hybrid', 'spectrum', 'waveform'
+
+        // Audio Context & Web Audio API Engine
+        let audioCtx = null;
+        let currentAudio = null;
+        let activeSoundId = null;
+        let analyserNode = null;
+        let masterGainNode = null;
+        let audioSourceNode = null;
+        let animFrameId = null;
+
+        // Current Active Synth Parameters
+        let synthParams = {
+            wave: 'square',
+            freq: 440,
+            sweep: -200,
+            attack: 0.01,
+            decay: 0.25,
+            vibrato: 0
+        };
+
+        // Temporary File Buffer for Uploads
+        let currentSelectedAudioBlob = null;
+        let activeSoundsList = [];
+
+        // UI Toast Notification Helper
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const colorClass = type === 'success' ? 'bg-emerald-900/90 border-emerald-500 text-emerald-200' :
+                             type === 'error' ? 'bg-red-900/90 border-red-500 text-red-200' :
+                             'bg-indigo-900/90 border-indigo-500 text-indigo-200';
+            
+            const iconClass = type === 'success' ? 'fa-circle-check text-emerald-400' :
+                             type === 'error' ? 'fa-circle-xmark text-red-400' :
+                             'fa-circle-info text-indigo-400';
+
+            toast.className = `pointer-events-auto px-4 py-3 rounded-xl border backdrop-blur-md shadow-xl text-xs font-semibold flex items-center gap-3 animate-bounce-short transition-all ${colorClass}`;
+            toast.innerHTML = `<i class="fa-solid ${iconClass} text-base"></i><span>${message}</span>`;
+            
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-[-10px]');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        // ==========================================
+        // INITIALIZATION & SUPABASE CONFIG
+        // ==========================================
+        window.addEventListener('DOMContentLoaded', () => {
+            initSupabaseFromStorage();
+            setupVisualizerCanvas();
+        });
+
+        function initSupabaseFromStorage() {
+            const savedUrl = localStorage.getItem('ag_sb_url');
+            const savedKey = localStorage.getItem('ag_sb_key');
+
+            if (savedUrl && savedKey && window.supabase) {
+                try {
+                    supabaseClient = window.supabase.createClient(savedUrl, savedKey);
+                    updateBackendBadge(true);
+                    checkSupabaseAuthSession();
+                } catch (e) {
+                    console.error("Supabase init error:", e);
+                    updateBackendBadge(false);
+                    renderSoundboard();
+                }
+            } else {
+                updateBackendBadge(false);
+                renderSoundboard();
+            }
+        }
+
+        function updateBackendBadge(isConnected) {
+            const badge = document.getElementById('backend-status-badge');
+            const text = document.getElementById('backend-status-text');
+            if (!badge || !text) return;
+            if (isConnected) {
+                badge.className = 'px-3 py-1.5 rounded-full text-xs font-medium border flex items-center gap-2 bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20 transition-all cursor-pointer';
+                text.innerText = 'Supabase Connected';
+            } else {
+                badge.className = 'px-3 py-1.5 rounded-full text-xs font-medium border flex items-center gap-2 bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20 transition-all cursor-pointer';
+                text.innerText = 'Connect Supabase';
+            }
+        }
+
+        async function checkSupabaseAuthSession() {
+            if (!supabaseClient) return;
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session?.user) {
+                currentUser = session.user;
+                await fetchSupabaseProfile(currentUser.id);
+            }
+            updateUserUI();
+            await renderSoundboard();
+        }
+
+        async function fetchSupabaseProfile(userId) {
+            if (!supabaseClient) return;
+            const { data } = await supabaseClient
+                .from('profiles')
+                .select('*')
+                .eq('id', userId)
+                .single();
+            if (data) {
+                userProfile = data;
+            } else {
+                userProfile = { id: userId, username: '@' + (currentUser?.email?.split('@')[0] || 'creator') };
+            }
+            updateUserUI();
+        }
+
+        let authMode = 'login';
+
+        function switchAuthTab(mode) {
+            authMode = mode;
+            const loginBtn = document.getElementById('tab-login-btn');
+            const signupBtn = document.getElementById('tab-signup-btn');
+            const submitBtn = document.getElementById('auth-submit-btn');
+            const signupRules = document.getElementById('signup-rules');
+
+            if (mode === 'login') {
+                loginBtn.className = 'flex-1 pb-3 text-sm font-bold border-b-2 border-emerald-500 text-emerald-400';
+                signupBtn.className = 'flex-1 pb-3 text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-200';
+                submitBtn.innerText = 'Sign In';
+                signupRules.classList.add('hidden');
+            } else {
+                signupBtn.className = 'flex-1 pb-3 text-sm font-bold border-b-2 border-emerald-500 text-emerald-400';
+                loginBtn.className = 'flex-1 pb-3 text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-200';
+                submitBtn.innerText = 'Create Account';
+                signupRules.classList.remove('hidden');
+            }
+        }
+
+        function checkPasswordComplexity(pw) {
+            const ruleLen = document.getElementById('rule-length');
+            const ruleUpper = document.getElementById('rule-uppercase');
+            const ruleLower = document.getElementById('rule-lowercase');
+            const ruleNum = document.getElementById('rule-number');
+
+            if (!ruleLen) return;
+
+            ruleLen.className = pw.length >= 8 ? 'text-emerald-400' : 'text-slate-500';
+            ruleUpper.className = /[A-Z]/.test(pw) ? 'text-emerald-400' : 'text-slate-500';
+            ruleLower.className = /[a-z]/.test(pw) ? 'text-emerald-400' : 'text-slate-500';
+            ruleNum.className = /[0-9]/.test(pw) ? 'text-emerald-400' : 'text-slate-500';
+        }
+
+        function saveSupabaseConfig(e) {
+            e.preventDefault();
+            const url = document.getElementById('sb-url-input').value.trim();
+            const key = document.getElementById('sb-key-input').value.trim();
+
+            if (!url || !key) {
+                showToast("Please enter both Supabase URL and Anon Key", "error");
+                return;
+            }
+
+            localStorage.setItem('ag_sb_url', url);
+            localStorage.setItem('ag_sb_key', key);
+            initSupabaseFromStorage();
+            closeModal('supabase-modal');
+            showToast("Supabase configuration saved!", "success");
+        }
+
+        function selectCategory(cat) {
+            currentCategory = cat;
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                if (btn.getAttribute('data-cat') === cat) {
+                    btn.className = 'category-btn active bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-xs font-semibold px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all';
+                } else {
+                    btn.className = 'category-btn bg-slate-800/80 text-slate-300 border border-slate-700/60 hover:bg-slate-800 text-xs font-semibold px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all';
+                }
+            });
+            renderSoundboard();
+        }
+
+        function applyFilters() {
+            renderSoundboard();
+        }
+
+        async function renderSoundboard() {
+            const grid = document.getElementById('sounds-grid');
+            const emptyState = document.getElementById('empty-state');
+            if (!grid) return;
+
+            if (!supabaseClient) {
+                grid.innerHTML = '';
+                if (emptyState) {
+                    emptyState.classList.remove('hidden');
+                    emptyState.querySelector('h3').innerText = 'Supabase Disconnected';
+                    emptyState.querySelector('p').innerText = 'Connect your Supabase project using the configuration button at the top to view and publish live sounds.';
+                }
+                return;
+            }
+
+            const queryStr = (document.getElementById('search-input')?.value || '').toLowerCase().trim();
+            const sortVal = document.getElementById('sort-select')?.value || 'newest';
+
+            let query = supabaseClient.from('sounds').select('*');
+
+            if (currentCategory === 'Private') {
+                if (currentUser) {
+                    query = query.eq('is_private', true).eq('user_id', currentUser.id);
+                } else {
+                    query = query.eq('is_private', true);
+                }
+            } else if (currentCategory !== 'All') {
+                query = query.eq('category', currentCategory).eq('is_private', false);
+            } else {
+                query = query.eq('is_private', false);
+            }
+
+            const { data: sounds, error } = await query;
+
+            if (error || !sounds || sounds.length === 0) {
+                grid.innerHTML = '';
+                if (emptyState) {
+                    emptyState.classList.remove('hidden');
+                    emptyState.querySelector('h3').innerText = 'No Sound Effects Found';
+                    emptyState.querySelector('p').innerText = 'Try adjusting your search filters or generate a sound in our synthesizer!';
+                }
+                return;
+            }
+
+            activeSoundsList = sounds;
+            let filteredSounds = [...sounds];
+
+            if (queryStr) {
+                filteredSounds = filteredSounds.filter(s => 
+                    (s.title && s.title.toLowerCase().includes(queryStr)) ||
+                    (s.username && s.username.toLowerCase().includes(queryStr)) ||
+                    (s.description && s.description.toLowerCase().includes(queryStr))
+                );
+            }
+
+            if (sortVal === 'newest') {
+                filteredSounds.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            } else if (sortVal === 'oldest') {
+                filteredSounds.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+            } else if (sortVal === 'popular') {
+                filteredSounds.sort((a, b) => (b.plays || 0) - (a.plays || 0));
+            } else if (sortVal === 'least-popular') {
+                filteredSounds.sort((a, b) => (a.plays || 0) - (b.plays || 0));
+            }
+
+            if (filteredSounds.length === 0) {
+                grid.innerHTML = '';
+                if (emptyState) emptyState.classList.remove('hidden');
+                return;
+            }
+
+            if (emptyState) emptyState.classList.add('hidden');
+
+            grid.innerHTML = filteredSounds.map(sound => {
+                const isOwner = currentUser && sound.user_id === currentUser.id;
+                const isPlaying = activeSoundId === sound.id;
+
+                return `
+                    <div class="sound-pad-glow bg-slate-900/90 rounded-2xl border border-slate-800 p-4 flex flex-col justify-between relative group" style="--pad-color-glow: ${sound.button_color || '#10b981'}40;">
+                        <div>
+                            <div class="flex items-start justify-between gap-2 mb-3">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-3 h-3 rounded-full" style="background-color: ${sound.button_color || '#10b981'};"></span>
+                                    <span class="text-[11px] font-semibold text-slate-400">${sound.category}</span>
+                                </div>
+                                ${sound.is_private ? '<span class="text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-full font-bold">🔒 Private</span>' : ''}
+                            </div>
+
+                            <h3 class="font-bold text-slate-100 text-base line-clamp-1 group-hover:text-emerald-400 transition-colors">${sound.title}</h3>
+                            <p class="text-xs text-slate-400 mt-1 line-clamp-2">${sound.description || 'No description provided.'}</p>
+                        </div>
+
+                        <div class="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between">
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-xs font-semibold text-emerald-400">${sound.username || '@creator'}</span>
+                            </div>
+
+                            <div class="flex items-center gap-2">
+                                ${isOwner ? `
+                                    <button onclick="deleteSound('${sound.id}')" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-red-500/20 hover:text-red-400 text-slate-400 flex items-center justify-center text-xs transition-all" title="Delete Sound">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                ` : ''}
+                                
+                                <button onclick="playSound('${sound.id}')" class="w-10 h-10 rounded-xl ${isPlaying ? 'bg-amber-500 text-slate-950' : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950'} font-bold flex items-center justify-center text-sm shadow-md transition-all active:scale-95">
+                                    <i class="fa-solid ${isPlaying ? 'fa-pause' : 'fa-play'}"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function switchTab(tabId) {
+            const tabs = ['soundboard', 'synth', 'upload', 'settings'];
+            tabs.forEach(t => {
+                const el = document.getElementById(`tab-${t}`);
+                const nav = document.getElementById(`nav-${t}`);
+                if (el) el.classList.add('hidden');
+                if (nav) nav.className = 'px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 transition-all';
+            });
+
+            const targetTab = document.getElementById(`tab-${tabId}`);
+            const targetNav = document.getElementById(`nav-${tabId}`);
+            if (targetTab) targetTab.classList.remove('hidden');
+            if (targetNav) targetNav.className = 'px-4 py-2 rounded-lg text-sm font-medium transition-all bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+        }
+
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function updateUserUI() {
+            const authSection = document.getElementById('user-auth-section');
+            const privateCatBtn = document.getElementById('cat-btn-private');
+            const uploadAuthBanner = document.getElementById('upload-auth-banner');
+            const handleDisplay = document.getElementById('account-handle-display');
+            const emailDisplay = document.getElementById('account-email-display');
+
+            if (currentUser) {
+                if (authSection) {
+                    authSection.innerHTML = `
+                        <button onclick="switchTab('settings')" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium px-3.5 py-1.5 rounded-xl text-xs border border-slate-700 transition-all">
+                            <i class="fa-solid fa-circle-user text-emerald-400 text-sm"></i>
+                            <span>${userProfile ? userProfile.username : '@creator'}</span>
+                        </button>
+                    `;
+                }
+                if (privateCatBtn) privateCatBtn.classList.remove('hidden');
+                if (uploadAuthBanner) uploadAuthBanner.classList.add('hidden');
+                if (handleDisplay) handleDisplay.innerText = userProfile ? userProfile.username : '@creator';
+                if (emailDisplay) emailDisplay.innerText = currentUser.email || 'Registered User';
+            } else {
+                if (authSection) {
+                    authSection.innerHTML = `
+                        <button onclick="openModal('auth-modal')" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-4 py-2 rounded-xl text-sm transition-all shadow-lg shadow-indigo-600/20 flex items-center gap-2">
+                            <i class="fa-solid fa-user-plus"></i>
+                            <span>Sign In</span>
+                        </button>
+                    `;
+                }
+                if (privateCatBtn) privateCatBtn.classList.add('hidden');
+                if (uploadAuthBanner) uploadAuthBanner.classList.remove('hidden');
+                if (handleDisplay) handleDisplay.innerText = '@guest_creator';
+                if (emailDisplay) emailDisplay.innerText = 'Guest Session';
+            }
+        }
+
+        function initAudioContext() {
+            if (!audioCtx) {
+                const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioCtxClass();
+                analyserNode = audioCtx.createAnalyser();
+                analyserNode.fftSize = 64;
+                masterGainNode = audioCtx.createGain();
+                masterGainNode.connect(audioCtx.destination);
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function setupVisualizerCanvas() {
+            const canvas = document.getElementById('visualizer-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+
+            function resize() {
+                canvas.width = canvas.parentElement.clientWidth || 300;
+                canvas.height = canvas.parentElement.clientHeight || 48;
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            function draw() {
+                animFrameId = requestAnimationFrame(draw);
+                const width = canvas.width;
+                const height = canvas.height;
+                ctx.clearRect(0, 0, width, height);
+
+                if (analyserNode && activeSoundId) {
+                    const bufferLength = analyserNode.frequencyBinCount;
+                    const dataArray = new Uint8Array(bufferLength);
+
+                    if (currentVisualizerMode === 'waveform') {
+                        analyserNode.getByteTimeDomainData(dataArray);
+                        ctx.lineWidth = 2;
+                        ctx.strokeStyle = '#10b981';
+                        ctx.beginPath();
+                        const sliceWidth = width / bufferLength;
+                        let x = 0;
+                        for (let i = 0; i < bufferLength; i++) {
+                            const v = dataArray[i] / 128.0;
+                            const y = (v * height) / 2;
+                            if (i === 0) ctx.moveTo(x, y);
+                            else ctx.lineTo(x, y);
+                            x += sliceWidth;
+                        }
+                        ctx.stroke();
+                    } else {
+                        analyserNode.getByteFrequencyData(dataArray);
+                        const barWidth = (width / bufferLength) * 2;
+                        let x = 0;
+                        for (let i = 0; i < bufferLength; i++) {
+                            const barHeight = (dataArray[i] / 255) * height;
+                            const gradient = ctx.createLinearGradient(0, height, 0, 0);
+                            gradient.addColorStop(0, '#10b981');
+                            gradient.addColorStop(1, '#6366f1');
+                            ctx.fillStyle = gradient;
+                            ctx.fillRect(x, height - barHeight, barWidth, barHeight);
+                            x += barWidth + 2;
+                        }
+                    }
+                } else {
+                    // Ambient idle animation
+                    ctx.strokeStyle = 'rgba(16, 185, 129, 0.3)';
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    const time = Date.now() * 0.003;
+                    for (let x = 0; x < width; x += 5) {
+                        const y = height / 2 + Math.sin(x * 0.05 + time) * 6;
+                        if (x === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+                }
+            }
+            draw();
+        }
+
+        function setVisualizerMode(mode) {
+            currentVisualizerMode = mode;
+            document.querySelectorAll('.vmode-btn').forEach(btn => {
+                btn.className = 'vmode-btn px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-950/80 text-slate-400 border border-slate-800';
+            });
+            const activeBtn = document.getElementById(`vmode-${mode}`);
+            if (activeBtn) {
+                activeBtn.className = 'vmode-btn active px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/30 text-emerald-300 border border-emerald-500/40';
+            }
+        }
+
+        function setSynthWave(wave) {
+            synthParams.wave = wave;
+            document.querySelectorAll('.wave-btn').forEach(btn => {
+                btn.className = 'wave-btn py-2 rounded bg-slate-900 text-slate-400 border border-slate-800 text-xs font-bold';
+            });
+            const active = document.getElementById(`wave-${wave}`);
+            if (active) active.className = 'wave-btn active py-2 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-xs font-bold';
+        }
+
+        function updateSynthVal(param, val) {
+            synthParams[param] = parseFloat(val);
+            const display = document.getElementById(`val-${param}`);
+            if (display) display.innerText = val;
+        }
+
+        function loadSynthPreset(preset) {
+            const presets = {
+                jump: { wave: 'square', freq: 150, sweep: 600, attack: 0.01, decay: 0.2, vibrato: 0 },
+                laser: { wave: 'sawtooth', freq: 850, sweep: -750, attack: 0.001, decay: 0.15, vibrato: 0 },
+                explosion: { wave: 'noise', freq: 100, sweep: -80, attack: 0.01, decay: 0.6, vibrato: 0 },
+                coin: { wave: 'square', freq: 987, sweep: 300, attack: 0.005, decay: 0.3, vibrato: 5 },
+                powerup: { wave: 'triangle', freq: 300, sweep: 900, attack: 0.02, decay: 0.5, vibrato: 12 }
+            };
+
+            const p = presets[preset];
+            if (!p) return;
+
+            setSynthWave(p.wave);
+            document.getElementById('synth-freq').value = p.freq;
+            document.getElementById('synth-sweep').value = p.sweep;
+            document.getElementById('synth-attack').value = p.attack;
+            document.getElementById('synth-decay').value = p.decay;
+            document.getElementById('synth-vibrato').value = p.vibrato;
+
+            updateSynthVal('freq', p.freq);
+            updateSynthVal('sweep', p.sweep);
+            updateSynthVal('attack', p.attack);
+            updateSynthVal('decay', p.decay);
+            updateSynthVal('vibrato', p.vibrato);
+
+            showToast(`Loaded '${preset.toUpperCase()}' preset`, 'info');
+        }
+
+        function playSynthSFX() {
+            initAudioContext();
+            const now = audioCtx.currentTime;
+            const gain = audioCtx.createGain();
+
+            if (synthParams.wave === 'noise') {
+                const bufferSize = Math.floor(audioCtx.sampleRate * (synthParams.attack + synthParams.decay));
+                const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                const noiseSource = audioCtx.createBufferSource();
+                noiseSource.buffer = buffer;
+                noiseSource.connect(gain);
+                
+                gain.gain.setValueAtTime(0.01, now);
+                gain.gain.linearRampToValueAtTime(0.4, now + synthParams.attack);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + synthParams.attack + synthParams.decay);
+
+                gain.connect(analyserNode);
+                analyserNode.connect(audioCtx.destination);
+
+                noiseSource.start(now);
+                noiseSource.stop(now + synthParams.attack + synthParams.decay);
+                return;
+            }
+
+            const osc = audioCtx.createOscillator();
+            osc.type = synthParams.wave;
+            osc.frequency.setValueAtTime(synthParams.freq, now);
+            if (synthParams.sweep !== 0) {
+                osc.frequency.exponentialRampToValueAtTime(
+                    Math.max(20, synthParams.freq + synthParams.sweep),
+                    now + synthParams.attack + synthParams.decay
+                );
+            }
+
+            gain.gain.setValueAtTime(0.001, now);
+            gain.gain.linearRampToValueAtTime(0.4, now + synthParams.attack);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + synthParams.attack + synthParams.decay);
+
+            osc.connect(gain);
+            gain.connect(analyserNode);
+            analyserNode.connect(audioCtx.destination);
+
+            osc.start(now);
+            osc.stop(now + synthParams.attack + synthParams.decay);
+        }
+
+        function exportSynthToUpload() {
+            switchTab('upload');
+            document.getElementById('upload-title').value = `Retro Synth SFX (${synthParams.wave})`;
+            document.getElementById('file-status-text').innerText = `Configured: 8-Bit Synth Preset (${synthParams.wave.toUpperCase()})`;
+            showToast("Exported synth configuration to publish form!", "success");
+        }
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                currentSelectedAudioBlob = file;
+                document.getElementById('file-status-text').innerText = `Selected: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+                showToast("File attached successfully", "info");
+            }
+        }
+
+        async function playSound(soundId) {
+            initAudioContext();
+            const sound = activeSoundsList.find(s => s.id === soundId);
+            if (!sound) return;
+
+            if (activeSoundId === soundId) {
+                activeSoundId = null;
+            } else {
+                activeSoundId = soundId;
+                const dockTitle = document.getElementById('dock-title');
+                const dockSubtitle = document.getElementById('dock-subtitle');
+                const downloadBtn = document.getElementById('dock-download-btn');
+
+                if (dockTitle) dockTitle.innerText = sound.title;
+                if (dockSubtitle) dockSubtitle.innerText = `${sound.username || '@creator'} • ${sound.category}`;
+                if (downloadBtn) downloadBtn.disabled = false;
+
+                if (sound.synth_config) {
+                    synthParams = { ...sound.synth_config };
+                    playSynthSFX();
+                } else {
+                    showToast(`Playing sound: ${sound.title}`, 'info');
+                }
+            }
+            renderSoundboard();
+        }
+
+        function toggleDockPlayPause() {
+            if (activeSoundId) {
+                playSound(activeSoundId);
+            } else if (activeSoundsList.length > 0) {
+                playSound(activeSoundsList[0].id);
+            }
+        }
+
+        function seekAudio(val) {}
+        function setAudioVolume(val) {
+            if (masterGainNode) masterGainNode.gain.value = parseFloat(val);
+        }
+        function downloadCurrentSound() {
+            showToast("Preparing download...", "info");
+        }
+
+        async function handleAuthSubmit(e) {
+            e.preventDefault();
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+
+            if (!supabaseClient) {
+                return showToast("Please connect your Supabase project first using the header button.", "error");
+            }
+
+            if (authMode === 'signup') {
+                const { data, error } = await supabaseClient.auth.signUp({ email, password });
+                if (error) return showToast(error.message, 'error');
+                showToast("Account created successfully!", 'success');
+                currentUser = data.user;
+                closeModal('auth-modal');
+                openModal('username-modal');
+            } else {
+                const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+                if (error) return showToast(error.message, 'error');
+                currentUser = data.user;
+                closeModal('auth-modal');
+                await fetchSupabaseProfile(data.user.id);
+                showToast("Welcome back!", 'success');
+            }
+        }
+
+        async function handleGitHubAuth() {
+            if (supabaseClient) {
+                await supabaseClient.auth.signInWithOAuth({ provider: 'github' });
+            } else {
+                showToast("Please connect your Supabase project first.", "error");
+            }
+        }
+
+        async function handleUsernameSetup(e) {
+            e.preventDefault();
+            const username = '@' + document.getElementById('setup-username').value.trim().replace(/^@/, '');
+
+            if (supabaseClient && currentUser) {
+                const { error } = await supabaseClient
+                    .from('profiles')
+                    .upsert({ id: currentUser.id, username: username });
+
+                if (error) return showToast(error.message, 'error');
+                userProfile = { id: currentUser.id, username: username };
+            }
+
+            closeModal('username-modal');
+            updateUserUI();
+            renderSoundboard();
+            showToast(`Profile setup complete!`, 'success');
+        }
+
+        async function handlePasswordUpdate(e) {
+            e.preventDefault();
+            const newPw = document.getElementById('new-password').value;
+            if (supabaseClient) {
+                const { error } = await supabaseClient.auth.updateUser({ password: newPw });
+                if (error) showToast(error.message, 'error');
+                else showToast("Password updated successfully!", 'success');
+            } else {
+                showToast("Supabase is not connected.", "error");
+            }
+        }
+
+        async function handleSignOut() {
+            if (supabaseClient) {
+                await supabaseClient.auth.signOut();
+            }
+            currentUser = null;
+            userProfile = null;
+            updateUserUI();
+            renderSoundboard();
+            switchTab('soundboard');
+            showToast("Signed out successfully", "info");
+        }
+
+        async function handleSoundUpload(e) {
+            e.preventDefault();
+
+            if (!currentUser || !supabaseClient) {
+                showToast("You must be signed in with a active Supabase connection to publish sounds.", "error");
+                return openModal('auth-modal');
+            }
+
+            const title = document.getElementById('upload-title').value.trim();
+            const category = document.getElementById('upload-category').value;
+            const description = document.getElementById('upload-description').value.trim();
+            const color = document.getElementById('upload-color').value;
+            const isPrivate = document.querySelector('input[name="upload-visibility"]:checked').value === 'private';
+
+            const { error } = await supabaseClient.from('sounds').insert([{
+                user_id: currentUser.id,
+                username: userProfile ? userProfile.username : '@creator',
+                title: title,
+                description: description,
+                category: category,
+                button_color: color,
+                is_private: isPrivate,
+                synth_config: currentSelectedAudioBlob ? null : synthParams
+            }]);
+
+            if (error) return showToast("Upload failed: " + error.message, 'error');
+
+            showToast("Sound published successfully!", 'success');
+            switchTab('soundboard');
+            renderSoundboard();
+        }
+
+        function deleteSound(soundId) {
+            const confirmModal = document.getElementById('confirm-modal');
+            const actionBtn = document.getElementById('confirm-modal-action-btn');
+
+            actionBtn.onclick = async () => {
+                if (supabaseClient) {
+                    const { error } = await supabaseClient.from('sounds').delete().eq('id', soundId);
+                    if (error) showToast("Delete failed: " + error.message, 'error');
+                    else showToast("Sound deleted", "info");
+                }
+                closeModal('confirm-modal');
+                renderSoundboard();
+            };
+
+            openModal('confirm-modal');
+        }
+    </script>
+</body>
+</html>
