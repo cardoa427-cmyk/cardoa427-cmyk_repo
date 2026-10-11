@@ -78,6 +78,9 @@
 </head>
 <body class="min-h-screen flex flex-col justify-between custom-scrollbar bg-[#080c14] text-slate-100">
 
+    <!-- FLOATING TOAST NOTIFICATION SYSTEM (z-[100] ensures toasts are above all modals) -->
+    <div id="toast-container" class="fixed top-5 right-5 z-[100] flex flex-col gap-2 pointer-events-none"></div>
+
     <!-- Top Navigation Header -->
     <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800/80 px-4 lg:px-8 py-3">
         <div class="max-w-7xl mx-auto flex items-center justify-between">
@@ -127,9 +130,6 @@
             </div>
         </div>
     </header>
-
-    <!-- FLOATING TOAST NOTIFICATION SYSTEM -->
-    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
     <!-- Main Workspace Container -->
     <main class="max-w-7xl w-full mx-auto px-4 lg:px-8 py-6 flex-1 pb-36">
@@ -504,18 +504,6 @@
                 <button onclick="switchAuthTab('signup')" id="tab-signup-btn" class="flex-1 pb-3 text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-200">Create Account</button>
             </div>
 
-            <!-- GitHub OAuth Button -->
-            <button onclick="handleGitHubAuth()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-semibold py-2.5 rounded-xl text-sm transition-all border border-slate-700 flex items-center justify-center gap-2">
-                <i class="fa-brands fa-github text-lg"></i>
-                <span>Continue with GitHub</span>
-            </button>
-
-            <div class="flex items-center gap-3 my-2">
-                <div class="h-px bg-slate-800 flex-1"></div>
-                <span class="text-xs text-slate-500 uppercase">or email</span>
-                <div class="h-px bg-slate-800 flex-1"></div>
-            </div>
-
             <!-- Auth Form -->
             <form id="auth-form" onsubmit="handleAuthSubmit(event)" class="space-y-4">
                 <div>
@@ -540,6 +528,18 @@
                     Sign In
                 </button>
             </form>
+
+            <div class="flex items-center gap-3 my-2">
+                <div class="h-px bg-slate-800 flex-1"></div>
+                <span class="text-xs text-slate-500 uppercase">or</span>
+                <div class="h-px bg-slate-800 flex-1"></div>
+            </div>
+
+            <!-- GitHub OAuth Button (Placed under the email sign in button) -->
+            <button onclick="handleGitHubAuth()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-semibold py-2.5 rounded-xl text-sm transition-all border border-slate-700 flex items-center justify-center gap-2">
+                <i class="fa-brands fa-github text-lg"></i>
+                <span>Sign in with GitHub</span>
+            </button>
         </div>
     </div>
 
@@ -554,8 +554,9 @@
                     <label class="text-xs font-medium text-slate-300 block mb-1">Creator Username</label>
                     <div class="relative">
                         <span class="absolute left-3 top-2.5 text-slate-500 text-sm font-bold">@</span>
-                        <input type="text" id="setup-username" required pattern="^[a-zA-Z0-9_]{3,16}$" placeholder="sound_master" class="w-full bg-slate-950 text-sm text-slate-100 pl-8 pr-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500">
+                        <input type="text" id="setup-username" required pattern="^@?[a-zA-Z0-9_]{3,16}$" oninput="cleanUsernameInput(this)" placeholder="sound_master" class="w-full bg-slate-950 text-sm text-slate-100 pl-8 pr-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500">
                     </div>
+                    <p class="text-[10px] text-slate-500 mt-1">3–16 letters, numbers, or underscores (e.g., soundz)</p>
                 </div>
                 <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-2.5 rounded-xl text-sm transition-all">
                     Claim Username
@@ -671,7 +672,7 @@
                              type === 'error' ? 'fa-circle-xmark text-red-400' :
                              'fa-circle-info text-indigo-400';
 
-            toast.className = `pointer-events-auto px-4 py-3 rounded-xl border backdrop-blur-md shadow-xl text-xs font-semibold flex items-center gap-3 animate-bounce-short transition-all ${colorClass}`;
+            toast.className = `pointer-events-auto px-4 py-3 rounded-xl border backdrop-blur-md shadow-2xl text-xs font-semibold flex items-center gap-3 animate-bounce-short transition-all ${colorClass}`;
             toast.innerHTML = `<i class="fa-solid ${iconClass} text-base"></i><span>${message}</span>`;
             
             container.appendChild(toast);
@@ -680,6 +681,13 @@
                 toast.classList.add('opacity-0', 'translate-y-[-10px]');
                 setTimeout(() => toast.remove(), 300);
             }, 3500);
+        }
+
+        // Auto-clean input when user types @
+        function cleanUsernameInput(inputEl) {
+            if (inputEl.value.startsWith('@')) {
+                inputEl.value = inputEl.value.replace(/^@+/, '');
+            }
         }
 
         // ==========================================
@@ -699,6 +707,17 @@
                 try {
                     supabaseClient = window.supabase.createClient(savedUrl, savedKey);
                     updateBackendBadge(true);
+
+                    // Register auth state change listener to handle OAuth redirects automatically
+                    supabaseClient.auth.onAuthStateChange(async (event, session) => {
+                        if (session?.user) {
+                            currentUser = session.user;
+                            await fetchSupabaseProfile(currentUser.id);
+                            updateUserUI();
+                            await renderSoundboard();
+                        }
+                    });
+
                     checkSupabaseAuthSession();
                 } catch (e) {
                     console.error("Supabase init error:", e);
@@ -726,6 +745,15 @@
 
         async function checkSupabaseAuthSession() {
             if (!supabaseClient) return;
+
+            // Check for OAuth error responses returned in the URL hash
+            if (window.location.hash) {
+                const hashParams = new URLSearchParams(window.location.hash.substring(1));
+                if (hashParams.get('error_description')) {
+                    showToast("Auth Error: " + hashParams.get('error_description').replace(/\+/g, ' '), "error");
+                }
+            }
+
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (session?.user) {
                 currentUser = session.user;
@@ -737,15 +765,27 @@
 
         async function fetchSupabaseProfile(userId) {
             if (!supabaseClient) return;
-            const { data } = await supabaseClient
-                .from('profiles')
-                .select('*')
-                .eq('id', userId)
-                .single();
-            if (data) {
-                userProfile = data;
-            } else {
-                userProfile = { id: userId, username: '@' + (currentUser?.email?.split('@')[0] || 'creator') };
+
+            // Extract username metadata from GitHub profile or email fallback
+            const githubHandle = currentUser?.user_metadata?.preferred_username || 
+                                currentUser?.user_metadata?.user_name || 
+                                currentUser?.user_metadata?.name;
+            const fallbackName = githubHandle || currentUser?.email?.split('@')[0] || 'creator';
+            const defaultHandle = '@' + fallbackName.replace(/^@+/, '');
+
+            try {
+                const { data } = await supabaseClient
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', userId)
+                    .single();
+                if (data && data.username) {
+                    userProfile = data;
+                } else {
+                    userProfile = { id: userId, username: defaultHandle };
+                }
+            } catch (err) {
+                userProfile = { id: userId, username: defaultHandle };
             }
             updateUserUI();
         }
@@ -974,6 +1014,9 @@
             const emailDisplay = document.getElementById('account-email-display');
 
             if (currentUser) {
+                closeModal('auth-modal');
+                const userEmail = currentUser.email || currentUser?.user_metadata?.email || 'GitHub Account';
+
                 if (authSection) {
                     authSection.innerHTML = `
                         <button onclick="switchTab('settings')" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium px-3.5 py-1.5 rounded-xl text-xs border border-slate-700 transition-all">
@@ -985,7 +1028,7 @@
                 if (privateCatBtn) privateCatBtn.classList.remove('hidden');
                 if (uploadAuthBanner) uploadAuthBanner.classList.add('hidden');
                 if (handleDisplay) handleDisplay.innerText = userProfile ? userProfile.username : '@creator';
-                if (emailDisplay) emailDisplay.innerText = currentUser.email || 'Registered User';
+                if (emailDisplay) emailDisplay.innerText = userEmail;
             } else {
                 if (authSection) {
                     authSection.innerHTML = `
@@ -1274,30 +1317,62 @@
         }
 
         async function handleGitHubAuth() {
-            if (supabaseClient) {
-                await supabaseClient.auth.signInWithOAuth({ provider: 'github' });
-            } else {
-                showToast("Please connect your Supabase project first.", "error");
+            if (!supabaseClient) {
+                return showToast("Please connect your Supabase project first using the header button.", "error");
+            }
+
+            const redirectUrl = window.location.origin + window.location.pathname;
+
+            const { data, error } = await supabaseClient.auth.signInWithOAuth({
+                provider: 'github',
+                options: {
+                    redirectTo: redirectUrl
+                }
+            });
+
+            if (error) {
+                showToast("GitHub sign in error: " + error.message, "error");
             }
         }
 
         async function handleUsernameSetup(e) {
             e.preventDefault();
-            const username = '@' + document.getElementById('setup-username').value.trim().replace(/^@/, '');
+            const inputVal = document.getElementById('setup-username').value.trim();
+            const cleanName = inputVal.replace(/^@+/, '');
+            
+            if (!cleanName || cleanName.length < 3) {
+                return showToast("Username must be at least 3 characters", "error");
+            }
+
+            const username = '@' + cleanName;
 
             if (supabaseClient && currentUser) {
-                const { error } = await supabaseClient
-                    .from('profiles')
-                    .upsert({ id: currentUser.id, username: username });
+                try {
+                    const { error } = await supabaseClient
+                        .from('profiles')
+                        .upsert({ id: currentUser.id, username: username });
 
-                if (error) return showToast(error.message, 'error');
-                userProfile = { id: currentUser.id, username: username };
+                    if (error) {
+                        console.warn("Supabase profiles update notice:", error);
+                        showToast(`Notice: ${error.message}`, 'error');
+                        userProfile = { id: currentUser.id, username: username };
+                    } else {
+                        userProfile = { id: currentUser.id, username: username };
+                        showToast(`Welcome ${username}! Profile ready.`, 'success');
+                    }
+                } catch (err) {
+                    console.error("Profile update exception:", err);
+                    userProfile = { id: currentUser.id, username: username };
+                    showToast(`Username set to ${username}`, 'info');
+                }
+            } else {
+                userProfile = { id: (currentUser ? currentUser.id : 'guest'), username: username };
+                showToast(`Welcome ${username}!`, 'success');
             }
 
             closeModal('username-modal');
             updateUserUI();
             renderSoundboard();
-            showToast(`Profile setup complete!`, 'success');
         }
 
         async function handlePasswordUpdate(e) {
