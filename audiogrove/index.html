@@ -334,12 +334,23 @@
                     
                     <!-- File Input / Synth Data Preview -->
                     <div>
-                        <label class="text-xs font-semibold text-slate-300 block mb-2">Audio Source (MP3, WAV, OGG, WebM, MP4)</label>
-                        <div id="drop-zone" class="border-2 border-dashed border-slate-700 hover:border-emerald-500/50 bg-slate-950/60 rounded-xl p-6 text-center cursor-pointer transition-all">
+                        <label class="text-xs font-semibold text-slate-300 block mb-2">Audio File (Max 10MB - Audio only)</label>
+                        <div id="drop-zone" onclick="document.getElementById('audio-file-input').click()" class="border-2 border-dashed border-slate-700 hover:border-emerald-500/50 bg-slate-950/60 rounded-xl p-6 text-center cursor-pointer transition-all">
                             <i class="fa-solid fa-file-audio text-3xl text-emerald-400 mb-2"></i>
-                            <p class="text-sm font-medium text-slate-200" id="file-status-text">Click to browse or drop sound file here</p>
-                            <p class="text-xs text-slate-500 mt-1">Video files are automatically extracted to audio in-browser (Max 10MB)</p>
-                            <input type="file" id="audio-file-input" accept="audio/*,video/*" onchange="handleFileSelect(event)" class="hidden">
+                            <p class="text-sm font-medium text-slate-200" id="file-status-text">Click to browse or drop audio file here</p>
+                            <p class="text-xs text-slate-500 mt-1">Allowed types: audio/* (Max 10 MB)</p>
+                            <input type="file" id="audio-file-input" accept="audio/*" onchange="handleFileSelect(event)" class="hidden">
+                        </div>
+                    </div>
+
+                    <!-- Upload Progress Bar (Real-Time Progress) -->
+                    <div id="upload-progress-container" class="hidden space-y-1.5 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <div class="flex justify-between text-xs font-semibold">
+                            <span class="text-slate-300">Uploading to storage...</span>
+                            <span id="upload-progress-percent" class="text-emerald-400 font-mono">0%</span>
+                        </div>
+                        <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                            <div id="upload-progress-bar" class="h-full bg-emerald-500 transition-all duration-150 w-0"></div>
                         </div>
                     </div>
 
@@ -392,10 +403,25 @@
                     </div>
 
                     <!-- Submit Button -->
-                    <button type="submit" id="submit-upload-btn" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3 rounded-xl text-sm transition-all shadow-lg shadow-emerald-500/20">
+                    <button type="submit" id="submit-upload-btn" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3 rounded-xl text-sm transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed">
                         Publish to Soundboard
                     </button>
                 </form>
+
+                <!-- USER STORAGE FILES LIST SECTION -->
+                <div id="user-files-section" class="mt-8 pt-6 border-t border-slate-800 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
+                            <i class="fa-solid fa-folder-open text-emerald-400"></i> My Uploaded Storage Files
+                        </h3>
+                        <button onclick="fetchUserStorageFiles()" class="text-xs text-emerald-400 hover:underline"><i class="fa-solid fa-rotate-right mr-1"></i>Refresh Files</button>
+                    </div>
+
+                    <div id="user-files-list" class="space-y-3">
+                        <p class="text-xs text-slate-500 italic">Sign in to view your files in storage.</p>
+                    </div>
+                </div>
+
             </div>
         </section>
 
@@ -1240,99 +1266,38 @@
 
         function handleFileSelect(e) {
             const file = e.target.files[0];
-            if (file) {
-                currentSelectedAudioBlob = file;
-                document.getElementById('file-status-text').innerText = `Selected: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
-                showToast("File attached successfully", "info");
+            if (!file) return;
+
+            // 1. Client-side Size Check (Max 10 MB)
+            const MAX_SIZE = 10 * 1024 * 1024; // 10MB in bytes
+            if (file.size > MAX_SIZE) {
+                showToast(`File is too large (${(file.size / (1024 * 1024)).toFixed(2)} MB). Max limit is 10 MB.`, "error");
+                e.target.value = "";
+                currentSelectedAudioBlob = null;
+                document.getElementById('file-status-text').innerText = "Click to browse or drop audio file here";
+                return;
             }
+
+            // 2. Client-side Type Check (Allowed: Audio)
+            if (!file.type.startsWith('audio/') && file.type !== "") {
+                showToast("Invalid file type! Only audio files are allowed.", "error");
+                e.target.value = "";
+                currentSelectedAudioBlob = null;
+                document.getElementById('file-status-text').innerText = "Click to browse or drop audio file here";
+                return;
+            }
+
+            currentSelectedAudioBlob = file;
+            document.getElementById('file-status-text').innerText = `Selected: ${file.name} (${formatBytes(file.size)})`;
+            showToast("File attached and validated successfully", "success");
         }
 
-        async function playSound(soundId) {
-            initAudioContext();
-            const sound = activeSoundsList.find(s => s.id === soundId);
-            if (!sound) return;
-
-            if (activeSoundId === soundId) {
-                activeSoundId = null;
-            } else {
-                activeSoundId = soundId;
-                const dockTitle = document.getElementById('dock-title');
-                const dockSubtitle = document.getElementById('dock-subtitle');
-                const downloadBtn = document.getElementById('dock-download-btn');
-
-                if (dockTitle) dockTitle.innerText = sound.title;
-                if (dockSubtitle) dockSubtitle.innerText = `${sound.username || '@creator'} • ${sound.category}`;
-                if (downloadBtn) downloadBtn.disabled = false;
-
-                if (sound.synth_config) {
-                    synthParams = { ...sound.synth_config };
-                    playSynthSFX();
-                } else {
-                    showToast(`Playing sound: ${sound.title}`, 'info');
-                }
-            }
-            renderSoundboard();
-        }
-
-        function toggleDockPlayPause() {
-            if (activeSoundId) {
-                playSound(activeSoundId);
-            } else if (activeSoundsList.length > 0) {
-                playSound(activeSoundsList[0].id);
-            }
-        }
-
-        function seekAudio(val) {}
-        function setAudioVolume(val) {
-            if (masterGainNode) masterGainNode.gain.value = parseFloat(val);
-        }
-        function downloadCurrentSound() {
-            showToast("Preparing download...", "info");
-        }
-
-        async function handleAuthSubmit(e) {
-            e.preventDefault();
-            const email = document.getElementById('auth-email').value;
-            const password = document.getElementById('auth-password').value;
-
-            if (!supabaseClient) {
-                return showToast("Please connect your Supabase project first using the header button.", "error");
-            }
-
-            if (authMode === 'signup') {
-                const { data, error } = await supabaseClient.auth.signUp({ email, password });
-                if (error) return showToast(error.message, 'error');
-                showToast("Account created successfully!", 'success');
-                currentUser = data.user;
-                closeModal('auth-modal');
-                openModal('username-modal');
-            } else {
-                const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-                if (error) return showToast(error.message, 'error');
-                currentUser = data.user;
-                closeModal('auth-modal');
-                await fetchSupabaseProfile(data.user.id);
-                showToast("Welcome back!", 'success');
-            }
-        }
-
-        async function handleGitHubAuth() {
-            if (!supabaseClient) {
-                return showToast("Please connect your Supabase project first using the header button.", "error");
-            }
-
-            const redirectUrl = window.location.origin + window.location.pathname;
-
-            const { data, error } = await supabaseClient.auth.signInWithOAuth({
-                provider: 'github',
-                options: {
-                    redirectTo: redirectUrl
-                }
-            });
-
-            if (error) {
-                showToast("GitHub sign in error: " + error.message, "error");
-            }
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
         async function handleUsernameSetup(e) {
@@ -1348,42 +1313,301 @@
 
             if (supabaseClient && currentUser) {
                 try {
+                    // Check if username is already taken by another user
+                    const { data: existingUser, error: checkErr } = await supabaseClient
+                        .from('profiles')
+                        .select('id')
+                        .eq('username', username)
+                        .maybeSingle();
+
+                    if (checkErr && checkErr.code !== 'PGRST116') {
+                        showToast("Error checking username: " + checkErr.message, 'error');
+                        return;
+                    }
+
+                    if (existingUser && existingUser.id !== currentUser.id) {
+                        return showToast(`Username "${username}" is already taken. Please try another handle.`, 'error');
+                    }
+
                     const { error } = await supabaseClient
                         .from('profiles')
                         .upsert({ id: currentUser.id, username: username });
 
                     if (error) {
-                        console.warn("Supabase profiles update notice:", error);
-                        showToast(`Notice: ${error.message}`, 'error');
-                        userProfile = { id: currentUser.id, username: username };
-                    } else {
-                        userProfile = { id: currentUser.id, username: username };
-                        showToast(`Welcome ${username}! Profile ready.`, 'success');
+                        showToast(`Could not set username: ${error.message}`, 'error');
+                        return;
                     }
-                } catch (err) {
-                    console.error("Profile update exception:", err);
+
                     userProfile = { id: currentUser.id, username: username };
-                    showToast(`Username set to ${username}`, 'info');
+                    showToast(`Welcome ${username}! Profile saved.`, 'success');
+                    closeModal('username-modal');
+                } catch (err) {
+                    showToast(`Error: ${err.message}`, 'error');
+                    return;
                 }
             } else {
                 userProfile = { id: (currentUser ? currentUser.id : 'guest'), username: username };
                 showToast(`Welcome ${username}!`, 'success');
+                closeModal('username-modal');
             }
 
-            closeModal('username-modal');
             updateUserUI();
             renderSoundboard();
         }
 
-        async function handlePasswordUpdate(e) {
+        async function handleSoundUpload(e) {
             e.preventDefault();
-            const newPw = document.getElementById('new-password').value;
-            if (supabaseClient) {
-                const { error } = await supabaseClient.auth.updateUser({ password: newPw });
-                if (error) showToast(error.message, 'error');
-                else showToast("Password updated successfully!", 'success');
+
+            if (!currentUser || !supabaseClient) {
+                showToast("You must be signed in with an active Supabase connection to publish sounds.", "error");
+                return openModal('auth-modal');
+            }
+
+            const title = document.getElementById('upload-title').value.trim();
+            const category = document.getElementById('upload-category').value;
+            const description = document.getElementById('upload-description').value.trim();
+            const color = document.getElementById('upload-color').value;
+            const isPrivate = document.querySelector('input[name="upload-visibility"]:checked').value === 'private';
+
+            const submitBtn = document.getElementById('submit-upload-btn');
+            const progressContainer = document.getElementById('upload-progress-container');
+            const progressBar = document.getElementById('upload-progress-bar');
+            const progressPercent = document.getElementById('upload-progress-percent');
+
+            let uploadedStoragePath = null;
+
+            // Handle Storage Bucket Upload if File is Selected
+            if (currentSelectedAudioBlob) {
+                // Pre-upload size & type guard
+                if (currentSelectedAudioBlob.size > 10 * 1024 * 1024) {
+                    return showToast("File exceeds the 10 MB limit.", "error");
+                }
+
+                // Path format: [user id]/[timestamp]-[file name]
+                const timestamp = Date.now();
+                const sanitizedFileName = currentSelectedAudioBlob.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+                const filePath = `${currentUser.id}/${timestamp}-${sanitizedFileName}`;
+
+                // UI Loading & Progress State setup
+                submitBtn.disabled = true;
+                progressContainer.classList.remove('hidden');
+                progressBar.style.width = '0%';
+                progressPercent.innerText = '0%';
+
+                try {
+                    const { data: uploadData, error: uploadErr } = await supabaseClient.storage
+                        .from('user-files')
+                        .upload(filePath, currentSelectedAudioBlob, {
+                            cacheControl: '3600',
+                            upsert: false,
+                            onUploadProgress: (progress) => {
+                                const percent = Math.round((progress.loaded / progress.total) * 100);
+                                progressBar.style.width = `${percent}%`;
+                                progressPercent.innerText = `${percent}%`;
+                            }
+                        });
+
+                    if (uploadErr) {
+                        submitBtn.disabled = false;
+                        progressContainer.classList.add('hidden');
+                        return showToast("Storage Upload Error: " + uploadErr.message, "error");
+                    }
+
+                    uploadedStoragePath = filePath;
+                } catch (err) {
+                    submitBtn.disabled = false;
+                    progressContainer.classList.add('hidden');
+                    return showToast("Upload Failed: " + err.message, "error");
+                }
+            }
+
+            // Insert Sound Record to Supabase DB
+            const { error: dbErr } = await supabaseClient.from('sounds').insert([{
+                user_id: currentUser.id,
+                username: userProfile ? userProfile.username : '@creator',
+                title: title,
+                description: description,
+                category: category,
+                button_color: color,
+                is_private: isPrivate,
+                file_path: uploadedStoragePath,
+                synth_config: currentSelectedAudioBlob ? null : synthParams
+            }]);
+
+            submitBtn.disabled = false;
+            progressContainer.classList.add('hidden');
+
+            if (dbErr) {
+                return showToast("Database Save Failed: " + dbErr.message, 'error');
+            }
+
+            showToast("Sound published successfully!", 'success');
+            document.getElementById('upload-form').reset();
+            currentSelectedAudioBlob = null;
+            document.getElementById('file-status-text').innerText = "Click to browse or drop audio file here";
+            
+            switchTab('soundboard');
+            renderSoundboard();
+            fetchUserStorageFiles();
+        }
+
+        async function fetchUserStorageFiles() {
+            const listEl = document.getElementById('user-files-list');
+            if (!listEl) return;
+
+            if (!currentUser || !supabaseClient) {
+                listEl.innerHTML = `<p class="text-xs text-slate-500 italic">Sign in to view your files in storage.</p>`;
+                return;
+            }
+
+            listEl.innerHTML = `<p class="text-xs text-slate-400 flex items-center gap-2"><i class="fa-solid fa-spinner animate-spin"></i> Loading storage files...</p>`;
+
+            // List files inside [user id] folder in bucket 'user-files'
+            const { data: files, error } = await supabaseClient.storage
+                .from('user-files')
+                .list(currentUser.id, {
+                    limit: 100,
+                    offset: 0,
+                    sortBy: { column: 'created_at', order: 'desc' }
+                });
+
+            if (error) {
+                listEl.innerHTML = `<div class="p-3 bg-red-950/40 border border-red-500/30 rounded-xl text-xs text-red-300">Supabase Error: ${error.message}</div>`;
+                return;
+            }
+
+            if (!files || files.length === 0) {
+                listEl.innerHTML = `<p class="text-xs text-slate-500 py-2">No files found in bucket [user-files].</p>`;
+                return;
+            }
+
+            // Generate signed URL for each file (supports private bucket) and render appropriate HTML tags
+            const fileItemsHtml = await Promise.all(files.map(async (f) => {
+                const filePath = `${currentUser.id}/${f.name}`;
+                
+                // Get Signed URL (valid for 1 hour)
+                const { data: signedData, error: signedErr } = await supabaseClient.storage
+                    .from('user-files')
+                    .createSignedUrl(filePath, 3600);
+
+                const fileUrl = signedData ? signedData.signedUrl : '#';
+                const fileSizeStr = f.metadata?.size ? formatBytes(f.metadata.size) : 'Unknown size';
+                const lowerName = f.name.toLowerCase();
+
+                let mediaPreviewHtml = '';
+
+                // Render media depending on file type extension
+                if (/\.(jpg|jpeg|png|gif|webp|svg)$/i.test(lowerName)) {
+                    mediaPreviewHtml = `<img src="${fileUrl}" alt="${f.name}" class="w-20 h-20 object-cover rounded-lg border border-slate-700 mt-2">`;
+                } else if (/\.(mp4|webm|ogg|mov)$/i.test(lowerName)) {
+                    mediaPreviewHtml = `<video controls src="${fileUrl}" class="max-w-xs h-28 rounded-lg border border-slate-700 mt-2"></video>`;
+                } else if (/\.(mp3|wav|ogg|m4a|aac|flac)$/i.test(lowerName)) {
+                    mediaPreviewHtml = `<audio controls src="${fileUrl}" class="w-full mt-2 h-8 rounded"></audio>`;
+                } else if (/\.(pdf|doc|docx)$/i.test(lowerName)) {
+                    mediaPreviewHtml = `<a href="${fileUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 text-xs text-indigo-400 hover:underline mt-2 font-medium"><i class="fa-solid fa-file-arrow-up"></i> Open Document in New Tab</a>`;
+                } else {
+                    mediaPreviewHtml = `<a href="${fileUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 text-xs text-emerald-400 hover:underline mt-2 font-medium"><i class="fa-solid fa-download"></i> Download / Open File</a>`;
+                }
+
+                return `
+                    <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col justify-between gap-2">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0 flex-1">
+                                <p class="text-xs font-bold text-slate-200 truncate" title="${f.name}">${f.name}</p>
+                                <p class="text-[11px] text-slate-400 mt-0.5">${fileSizeStr}</p>
+                            </div>
+                            <button onclick="deleteStorageFile('${filePath}')" class="px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 text-xs font-semibold rounded-lg transition-all shrink-0">
+                                <i class="fa-solid fa-trash mr-1"></i>Delete
+                            </button>
+                        </div>
+                        ${mediaPreviewHtml}
+                    </div>
+                `;
+            }));
+
+            listEl.innerHTML = fileItemsHtml.join('');
+        }
+
+        async function deleteStorageFile(filePath) {
+            if (!supabaseClient) return;
+
+            const confirmModal = document.getElementById('confirm-modal');
+            const actionBtn = document.getElementById('confirm-modal-action-btn');
+
+            document.getElementById('confirm-modal-title').innerText = "Delete Storage File?";
+            document.getElementById('confirm-modal-msg').innerText = `Deleting "${filePath.split('/').pop()}". This cannot be undone.`;
+
+            actionBtn.onclick = async () => {
+                const { error } = await supabaseClient.storage
+                    .from('user-files')
+                    .remove([filePath]);
+
+                if (error) {
+                    showToast("Delete Failed: " + error.message, "error");
+                } else {
+                    showToast("File deleted from storage", "info");
+                    fetchUserStorageFiles();
+                }
+                closeModal('confirm-modal');
+            };
+
+            openModal('confirm-modal');
+        }
+
+        // ==========================================
+        // AUTHENTICATION & PROFILE HANDLERS
+        // ==========================================
+        async function handleGitHubAuth() {
+            if (!supabaseClient) {
+                showToast("Supabase is disconnected. Please configure credentials first.", "error");
+                return openModal('supabase-modal');
+            }
+            try {
+                const { error } = await supabaseClient.auth.signInWithOAuth({
+                    provider: 'github',
+                    options: {
+                        redirectTo: window.location.href.split('#')[0]
+                    }
+                });
+                if (error) showToast("GitHub Sign-In Error: " + error.message, "error");
+            } catch (err) {
+                showToast("Error initiating GitHub auth: " + err.message, "error");
+            }
+        }
+
+        async function handleAuthSubmit(e) {
+            e.preventDefault();
+            if (!supabaseClient) {
+                showToast("Supabase is disconnected. Please configure credentials first.", "error");
+                return openModal('supabase-modal');
+            }
+
+            const email = document.getElementById('auth-email').value.trim();
+            const password = document.getElementById('auth-password').value;
+
+            if (authMode === 'login') {
+                const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+                if (error) {
+                    showToast("Sign In Failed: " + error.message, "error");
+                } else {
+                    currentUser = data.user;
+                    await fetchSupabaseProfile(currentUser.id);
+                    closeModal('auth-modal');
+                    showToast("Signed in successfully!", "success");
+                    updateUserUI();
+                    renderSoundboard();
+                }
             } else {
-                showToast("Supabase is not connected.", "error");
+                const { data, error } = await supabaseClient.auth.signUp({ email, password });
+                if (error) {
+                    showToast("Sign Up Failed: " + error.message, "error");
+                } else {
+                    currentUser = data.user;
+                    showToast("Account created! Please complete your profile.", "success");
+                    closeModal('auth-modal');
+                    openModal('username-modal');
+                    updateUserUI();
+                }
             }
         }
 
@@ -1399,50 +1623,223 @@
             showToast("Signed out successfully", "info");
         }
 
-        async function handleSoundUpload(e) {
+        async function handlePasswordUpdate(e) {
             e.preventDefault();
-
-            if (!currentUser || !supabaseClient) {
-                showToast("You must be signed in with a active Supabase connection to publish sounds.", "error");
-                return openModal('auth-modal');
+            if (!supabaseClient || !currentUser) {
+                showToast("You must be logged in to update your password", "error");
+                return;
             }
-
-            const title = document.getElementById('upload-title').value.trim();
-            const category = document.getElementById('upload-category').value;
-            const description = document.getElementById('upload-description').value.trim();
-            const color = document.getElementById('upload-color').value;
-            const isPrivate = document.querySelector('input[name="upload-visibility"]:checked').value === 'private';
-
-            const { error } = await supabaseClient.from('sounds').insert([{
-                user_id: currentUser.id,
-                username: userProfile ? userProfile.username : '@creator',
-                title: title,
-                description: description,
-                category: category,
-                button_color: color,
-                is_private: isPrivate,
-                synth_config: currentSelectedAudioBlob ? null : synthParams
-            }]);
-
-            if (error) return showToast("Upload failed: " + error.message, 'error');
-
-            showToast("Sound published successfully!", 'success');
-            switchTab('soundboard');
-            renderSoundboard();
+            const newPassword = document.getElementById('new-password').value;
+            const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+            if (error) {
+                showToast("Failed to update password: " + error.message, "error");
+            } else {
+                showToast("Password updated successfully!", "success");
+                document.getElementById('new-password').value = '';
+            }
         }
 
-        function deleteSound(soundId) {
-            const confirmModal = document.getElementById('confirm-modal');
-            const actionBtn = document.getElementById('confirm-modal-action-btn');
+        // ==========================================
+        // AUDIO PLAYBACK, DOCK PLAYER & SOUND ACTIONS
+        // ==========================================
+        async function playSound(soundId) {
+            initAudioContext();
 
+            // If clicking currently active sound, toggle play/pause
+            if (activeSoundId === soundId && currentAudio) {
+                toggleDockPlayPause();
+                return;
+            }
+
+            const sound = activeSoundsList.find(s => s.id === soundId);
+            if (!sound) return;
+
+            // Stop current playing audio
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio = null;
+            }
+
+            activeSoundId = soundId;
+
+            // Update Dock UI
+            document.getElementById('dock-title').innerText = sound.title;
+            document.getElementById('dock-subtitle').innerText = `by ${sound.username || '@creator'} • ${sound.category}`;
+            const padThumb = document.getElementById('dock-pad-thumb');
+            if (padThumb) {
+                padThumb.style.backgroundColor = (sound.button_color || '#10b981') + '30';
+                padThumb.style.borderColor = (sound.button_color || '#10b981') + '60';
+            }
+
+            // Play Synth sound if synthesizer config exists
+            if (sound.synth_config) {
+                synthParams = { ...sound.synth_config };
+                playSynthSFX();
+                renderSoundboard();
+                document.getElementById('dock-play-btn').innerHTML = '<i class="fa-solid fa-pause ml-0.5"></i>';
+                return;
+            }
+
+            // Play Audio File from Supabase Storage
+            if (sound.file_path && supabaseClient) {
+                try {
+                    const { data, error } = await supabaseClient.storage
+                        .from('user-files')
+                        .createSignedUrl(sound.file_path, 3600);
+
+                    if (error || !data?.signedUrl) {
+                        showToast("Error loading audio file: " + (error?.message || "File not found"), "error");
+                        activeSoundId = null;
+                        renderSoundboard();
+                        return;
+                    }
+
+                    const audio = new Audio(data.signedUrl);
+                    audio.crossOrigin = "anonymous";
+                    currentAudio = audio;
+
+                    // Connect Audio element to Web Audio API Analyser for Visualizer
+                    if (audioSourceNode) {
+                        audioSourceNode.disconnect();
+                    }
+                    try {
+                        audioSourceNode = audioCtx.createMediaElementSource(audio);
+                        audioSourceNode.connect(analyserNode);
+                        analyserNode.connect(audioCtx.destination);
+                    } catch (err) {
+                        // Ignore re-bind errors if node is already connected
+                    }
+
+                    audio.volume = parseFloat(document.getElementById('dock-volume')?.value || 0.8);
+
+                    audio.ontimeupdate = () => {
+                        if (!audio.duration) return;
+                        const seekVal = (audio.currentTime / audio.duration) * 100;
+                        const seekBar = document.getElementById('dock-seek-bar');
+                        if (seekBar) seekBar.value = seekVal;
+
+                        document.getElementById('dock-current-time').innerText = formatTime(audio.currentTime);
+                        document.getElementById('dock-duration').innerText = formatTime(audio.duration);
+                    };
+
+                    audio.onended = () => {
+                        activeSoundId = null;
+                        currentAudio = null;
+                        document.getElementById('dock-play-btn').innerHTML = '<i class="fa-solid fa-play ml-0.5"></i>';
+                        renderSoundboard();
+                    };
+
+                    audio.play().then(() => {
+                        document.getElementById('dock-play-btn').innerHTML = '<i class="fa-solid fa-pause ml-0.5"></i>';
+                        document.getElementById('dock-download-btn').disabled = false;
+                        renderSoundboard();
+
+                        // Increment play count in DB
+                        supabaseClient.from('sounds').update({ plays: (sound.plays || 0) + 1 }).eq('id', soundId).then();
+                    }).catch(e => {
+                        showToast("Audio playback failed: " + e.message, "error");
+                        activeSoundId = null;
+                        renderSoundboard();
+                    });
+
+                } catch (e) {
+                    showToast("Playback error: " + e.message, "error");
+                }
+            }
+        }
+
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return "0:00";
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+
+        function toggleDockPlayPause() {
+            if (!currentAudio) {
+                if (activeSoundId) playSound(activeSoundId);
+                return;
+            }
+
+            if (currentAudio.paused) {
+                currentAudio.play();
+                document.getElementById('dock-play-btn').innerHTML = '<i class="fa-solid fa-pause ml-0.5"></i>';
+            } else {
+                currentAudio.pause();
+                document.getElementById('dock-play-btn').innerHTML = '<i class="fa-solid fa-play ml-0.5"></i>';
+            }
+        }
+
+        function seekAudio(val) {
+            if (currentAudio && currentAudio.duration) {
+                currentAudio.currentTime = (val / 100) * currentAudio.duration;
+            }
+        }
+
+        function setAudioVolume(val) {
+            if (currentAudio) {
+                currentAudio.volume = parseFloat(val);
+            }
+            if (masterGainNode) {
+                masterGainNode.gain.value = parseFloat(val);
+            }
+        }
+
+        async function downloadCurrentSound() {
+            if (!activeSoundId) return;
+            const sound = activeSoundsList.find(s => s.id === activeSoundId);
+            if (!sound || !sound.file_path || !supabaseClient) return;
+
+            try {
+                const { data, error } = await supabaseClient.storage
+                    .from('user-files')
+                    .createSignedUrl(sound.file_path, 3600);
+
+                if (data?.signedUrl) {
+                    const a = document.createElement('a');
+                    a.href = data.signedUrl;
+                    a.download = `${sound.title.replace(/[^a-zA-Z0-9]/g, '_')}.mp3`;
+                    a.target = '_blank';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    showToast("Download started!", "success");
+                }
+            } catch (e) {
+                showToast("Download failed: " + e.message, "error");
+            }
+        }
+
+        async function deleteSound(soundId) {
+            if (!supabaseClient || !currentUser) return;
+
+            const sound = activeSoundsList.find(s => s.id === soundId);
+            if (!sound) return;
+
+            document.getElementById('confirm-modal-title').innerText = "Delete Sound Effect?";
+            document.getElementById('confirm-modal-msg').innerText = `Deleting "${sound.title}". This cannot be undone.`;
+
+            const actionBtn = document.getElementById('confirm-modal-action-btn');
             actionBtn.onclick = async () => {
-                if (supabaseClient) {
-                    const { error } = await supabaseClient.from('sounds').delete().eq('id', soundId);
-                    if (error) showToast("Delete failed: " + error.message, 'error');
-                    else showToast("Sound deleted", "info");
+                if (sound.file_path) {
+                    await supabaseClient.storage.from('user-files').remove([sound.file_path]);
+                }
+
+                const { error } = await supabaseClient.from('sounds').delete().eq('id', soundId);
+
+                if (error) {
+                    showToast("Delete Failed: " + error.message, "error");
+                } else {
+                    showToast("Sound deleted successfully", "info");
+                    if (activeSoundId === soundId) {
+                        if (currentAudio) currentAudio.pause();
+                        activeSoundId = null;
+                        currentAudio = null;
+                    }
+                    renderSoundboard();
+                    fetchUserStorageFiles();
                 }
                 closeModal('confirm-modal');
-                renderSoundboard();
             };
 
             openModal('confirm-modal');
