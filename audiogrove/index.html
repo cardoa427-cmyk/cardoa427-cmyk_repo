@@ -335,11 +335,11 @@
                     <!-- File Input / Synth Data Preview -->
                     <div>
                         <label class="text-xs font-semibold text-slate-300 block mb-2">Audio File (Max 10MB - Audio only)</label>
-                        <div id="drop-zone" onclick="document.getElementById('audio-file-input').click()" class="border-2 border-dashed border-slate-700 hover:border-emerald-500/50 bg-slate-950/60 rounded-xl p-6 text-center cursor-pointer transition-all">
+                        <div id="drop-zone" onclick="document.getElementById('audio-file-input').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)" class="border-2 border-dashed border-slate-700 hover:border-emerald-500/50 bg-slate-950/60 rounded-xl p-6 text-center cursor-pointer transition-all">
                             <i class="fa-solid fa-file-audio text-3xl text-emerald-400 mb-2"></i>
                             <p class="text-sm font-medium text-slate-200" id="file-status-text">Click to browse or drop audio file here</p>
-                            <p class="text-xs text-slate-500 mt-1">Allowed types: audio/* (Max 10 MB)</p>
-                            <input type="file" id="audio-file-input" accept="audio/*" onchange="handleFileSelect(event)" class="hidden">
+                            <p class="text-xs text-slate-500 mt-1">Allowed formats: MP3, WAV, OGG, M4A, AAC, FLAC (Max 10 MB)</p>
+                            <input type="file" id="audio-file-input" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac,.wma,.aiff,.aif" onchange="handleFileSelect(event)" class="hidden">
                         </div>
                     </div>
 
@@ -1264,24 +1264,24 @@
             showToast("Exported synth configuration to publish form!", "success");
         }
 
-        function handleFileSelect(e) {
-            const file = e.target.files[0];
+        function processAudioFile(file) {
             if (!file) return;
 
             // 1. Client-side Size Check (Max 10 MB)
             const MAX_SIZE = 10 * 1024 * 1024; // 10MB in bytes
             if (file.size > MAX_SIZE) {
                 showToast(`File is too large (${(file.size / (1024 * 1024)).toFixed(2)} MB). Max limit is 10 MB.`, "error");
-                e.target.value = "";
                 currentSelectedAudioBlob = null;
                 document.getElementById('file-status-text').innerText = "Click to browse or drop audio file here";
                 return;
             }
 
-            // 2. Client-side Type Check (Allowed: Audio)
-            if (!file.type.startsWith('audio/') && file.type !== "") {
-                showToast("Invalid file type! Only audio files are allowed.", "error");
-                e.target.value = "";
+            // 2. Client-side Type Check (Supports MP3, WAV, OGG, M4A, AAC, FLAC, WMA, AIFF)
+            const isAudioMime = file.type && file.type.startsWith('audio/');
+            const isAudioExt = /\.(mp3|wav|ogg|m4a|aac|flac|wma|aiff|aif)$/i.test(file.name);
+
+            if (!isAudioMime && !isAudioExt) {
+                showToast("Invalid file type! Only genuine audio files (MP3, WAV, etc.) are allowed.", "error");
                 currentSelectedAudioBlob = null;
                 document.getElementById('file-status-text').innerText = "Click to browse or drop audio file here";
                 return;
@@ -1289,7 +1289,53 @@
 
             currentSelectedAudioBlob = file;
             document.getElementById('file-status-text').innerText = `Selected: ${file.name} (${formatBytes(file.size)})`;
-            showToast("File attached and validated successfully", "success");
+            showToast("Audio file attached successfully", "success");
+        }
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            processAudioFile(file);
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const dropZone = document.getElementById('drop-zone');
+            if (dropZone) dropZone.classList.add('border-emerald-500', 'bg-emerald-500/10');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const dropZone = document.getElementById('drop-zone');
+            if (dropZone) dropZone.classList.remove('border-emerald-500', 'bg-emerald-500/10');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const dropZone = document.getElementById('drop-zone');
+            if (dropZone) dropZone.classList.remove('border-emerald-500', 'bg-emerald-500/10');
+            if (e.dataTransfer && e.dataTransfer.files.length > 0) {
+                const file = e.dataTransfer.files[0];
+                processAudioFile(file);
+            }
+        }
+
+        function getAudioContentType(filename) {
+            const ext = filename.split('.').pop().toLowerCase();
+            const mimeMap = {
+                'mp3': 'audio/mpeg',
+                'wav': 'audio/wav',
+                'ogg': 'audio/ogg',
+                'm4a': 'audio/mp4',
+                'aac': 'audio/aac',
+                'flac': 'audio/flac',
+                'wma': 'audio/x-ms-wma',
+                'aiff': 'audio/x-aiff',
+                'aif': 'audio/x-aiff'
+            };
+            return mimeMap[ext] || 'audio/mpeg';
         }
 
         function formatBytes(bytes) {
@@ -1395,16 +1441,13 @@
                 progressPercent.innerText = '0%';
 
                 try {
+                    const mimeType = currentSelectedAudioBlob.type || getAudioContentType(currentSelectedAudioBlob.name);
                     const { data: uploadData, error: uploadErr } = await supabaseClient.storage
                         .from('user-files')
                         .upload(filePath, currentSelectedAudioBlob, {
                             cacheControl: '3600',
-                            upsert: false,
-                            onUploadProgress: (progress) => {
-                                const percent = Math.round((progress.loaded / progress.total) * 100);
-                                progressBar.style.width = `${percent}%`;
-                                progressPercent.innerText = `${percent}%`;
-                            }
+                            contentType: mimeType,
+                            upsert: false
                         });
 
                     if (uploadErr) {
