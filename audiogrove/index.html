@@ -340,15 +340,15 @@
                         <div id="drop-zone" onclick="document.getElementById('audio-file-input').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)" class="border-2 border-dashed border-slate-700 hover:border-emerald-500/50 bg-slate-950/60 rounded-xl p-6 text-center cursor-pointer transition-all">
                             <i class="fa-solid fa-file-audio text-3xl text-emerald-400 mb-2"></i>
                             <p class="text-sm font-medium text-slate-200" id="file-status-text">Click to browse or drop audio file here</p>
-                            <p class="text-xs text-slate-500 mt-1">Allowed formats: MP3, WAV, OGG, M4A, AAC, FLAC, WMA, AIFF (Max 10 MB)</p>
-                            <input type="file" id="audio-file-input" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac,.wma,.aiff,.aif,.webm,.mp4" onchange="handleFileSelect(event)" class="hidden">
+                            <p class="text-xs text-slate-500 mt-1">Allowed formats: MP3, WAV, OGG, M4A, AAC, FLAC (Max 10 MB)</p>
+                            <input type="file" id="audio-file-input" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac,.wma,.aiff,.aif" onchange="handleFileSelect(event)" class="hidden">
                         </div>
                     </div>
 
                     <!-- Upload Progress Bar -->
                     <div id="upload-progress-container" class="hidden space-y-1.5 bg-slate-950 p-3 rounded-xl border border-slate-800">
                         <div class="flex justify-between text-xs font-semibold">
-                            <span class="text-slate-300" id="upload-status-label">Uploading audio file...</span>
+                            <span class="text-slate-300">Uploading audio file...</span>
                             <span id="upload-progress-percent" class="text-emerald-400 font-mono">0%</span>
                         </div>
                         <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
@@ -729,7 +729,7 @@
             </div>
             <div class="flex items-center gap-3 pt-2">
                 <button onclick="closeModal('download-warning-modal')" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-2.5 rounded-xl text-xs transition-all">Cancel</button>
-                <button id="confirm-download-btn" onclick="confirmDownload()" class="flex-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-2.5 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5">
+                <button id="confirm-download-btn" class="flex-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-2.5 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5">
                     <i class="fa-solid fa-download"></i> Confirm & Download
                 </button>
             </div>
@@ -873,16 +873,6 @@
                 toast.classList.add('opacity-0', 'translate-y-[-10px]');
                 setTimeout(() => toast.remove(), 300);
             }, 3500);
-        }
-
-        // Helper: Format Bytes
-        function formatBytes(bytes, decimals = 2) {
-            if (!bytes || bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const dm = decimals < 0 ? 0 : decimals;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
         }
 
         // Helper: Format Seconds into mm:ss
@@ -1263,7 +1253,7 @@
                 if (error) throw error;
 
                 if (!data || data.length === 0) {
-                    listEl.innerHTML = '<p class="text-xs text-slate-500 italic">No uploaded files in storage bucket.</p>';
+                    listEl.innerHTML = '<p class="text-xs text-slate-500 italic">No uploaded files in storage.</p>';
                     return;
                 }
 
@@ -1278,7 +1268,7 @@
                 `).join('');
             } catch (err) {
                 console.error("Fetch storage files error:", err);
-                listEl.innerHTML = '<p class="text-xs text-slate-500 italic">No storage files available or bucket not created yet.</p>';
+                listEl.innerHTML = '<p class="text-xs text-slate-500 italic">No storage files available.</p>';
             }
         }
 
@@ -1299,321 +1289,6 @@
             showToast("Supabase configuration saved!", "success");
         }
 
-        // ==========================================
-        // AUDIO FILE SELECTION & UPLOAD HANDLERS (FIXED)
-        // ==========================================
-        function handleDragOver(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            const zone = document.getElementById('drop-zone');
-            if (zone) zone.classList.add('border-emerald-500', 'bg-emerald-500/10');
-        }
-
-        function handleDragLeave(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            const zone = document.getElementById('drop-zone');
-            if (zone) zone.classList.remove('border-emerald-500', 'bg-emerald-500/10');
-        }
-
-        function handleDrop(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            const zone = document.getElementById('drop-zone');
-            if (zone) zone.classList.remove('border-emerald-500', 'bg-emerald-500/10');
-
-            if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                processAudioFile(e.dataTransfer.files[0]);
-            }
-        }
-
-        function handleFileSelect(e) {
-            if (e.target && e.target.files && e.target.files.length > 0) {
-                processAudioFile(e.target.files[0]);
-            }
-        }
-
-        function processAudioFile(file) {
-            if (!file) return;
-
-            const MAX_SIZE = 10 * 1024 * 1024; // 10MB in bytes
-            if (file.size > MAX_SIZE) {
-                showToast(`File is too large (${(file.size / (1024 * 1024)).toFixed(2)} MB). Max limit is 10 MB.`, "error");
-                currentSelectedAudioBlob = null;
-                document.getElementById('file-status-text').innerText = "Click to browse or drop audio file here";
-                return;
-            }
-
-            // ROBUST FILE TYPE VALIDATION (Checks MIME + Extension)
-            const isAudioMime = file.type && file.type.startsWith('audio/');
-            const extension = file.name.split('.').pop().toLowerCase();
-            const validExtensions = ['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac', 'wma', 'aiff', 'aif', 'webm', 'mp4', 'opus'];
-            const isValidExt = validExtensions.includes(extension);
-
-            if (!isAudioMime && !isValidExt) {
-                showToast("Please select a valid audio file (.mp3, .wav, .ogg, .m4a, .aac, .flac)", "error");
-                currentSelectedAudioBlob = null;
-                document.getElementById('file-status-text').innerText = "Click to browse or drop audio file here";
-                return;
-            }
-
-            currentSelectedAudioBlob = file;
-            const statusEl = document.getElementById('file-status-text');
-            if (statusEl) {
-                statusEl.innerText = `Selected: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`;
-            }
-            showToast(`Audio file selected: ${file.name}`, "success");
-        }
-
-        // Convert Offline Synth preset into a real WAV Blob for uploading
-        async function renderSynthToWavBlob(params) {
-            const duration = Math.min(2.0, params.attack + params.decay + 0.1);
-            const sampleRate = 44100;
-            const offlineCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, sampleRate * duration, sampleRate);
-            const now = 0;
-            const gain = offlineCtx.createGain();
-
-            if (params.wave === 'noise') {
-                const bufferSize = Math.floor(sampleRate * duration);
-                const buffer = offlineCtx.createBuffer(1, bufferSize, sampleRate);
-                const data = buffer.getChannelData(0);
-                for (let i = 0; i < bufferSize; i++) {
-                    data[i] = Math.random() * 2 - 1;
-                }
-                const noiseSource = offlineCtx.createBufferSource();
-                noiseSource.buffer = buffer;
-                noiseSource.connect(gain);
-                
-                gain.gain.setValueAtTime(0.01, now);
-                gain.gain.linearRampToValueAtTime(0.4, now + params.attack);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + params.attack + params.decay);
-
-                gain.connect(offlineCtx.destination);
-                noiseSource.start(now);
-            } else {
-                const osc = offlineCtx.createOscillator();
-                osc.type = params.wave;
-                osc.frequency.setValueAtTime(params.freq, now);
-                if (params.sweep !== 0) {
-                    osc.frequency.exponentialRampToValueAtTime(
-                        Math.max(20, params.freq + params.sweep),
-                        now + params.attack + params.decay
-                    );
-                }
-
-                gain.gain.setValueAtTime(0.001, now);
-                gain.gain.linearRampToValueAtTime(0.4, now + params.attack);
-                gain.gain.exponentialRampToValueAtTime(0.0001, now + params.attack + params.decay);
-
-                osc.connect(gain);
-                gain.connect(offlineCtx.destination);
-                osc.start(now);
-            }
-
-            const renderedBuffer = await offlineCtx.startRendering();
-            return audioBufferToWavBlob(renderedBuffer);
-        }
-
-        function audioBufferToWavBlob(buffer) {
-            const numOfChan = buffer.numberOfChannels;
-            const length = buffer.length * numOfChan * 2 + 44;
-            const out = new DataView(new ArrayBuffer(length));
-            let channels = [], sample, offset = 0, pos = 0;
-
-            function setUint16(data) { out.setUint16(pos, data, true); pos += 2; }
-            function setUint32(data) { out.setUint32(pos, data, true); pos += 4; }
-
-            setUint32(0x46464952); // "RIFF"
-            setUint32(length - 8);
-            setUint32(0x45564157); // "WAVE"
-            setUint32(0x20746d66); // "fmt "
-            setUint32(16);         // length
-            setUint16(1);          // PCM
-            setUint16(numOfChan);
-            setUint32(buffer.sampleRate);
-            setUint32(buffer.sampleRate * 2 * numOfChan);
-            setUint16(numOfChan * 2);
-            setUint16(16);         // 16-bit
-            setUint32(0x61746164); // "data"
-            setUint32(length - pos - 4);
-
-            for(let i = 0; i < buffer.numberOfChannels; i++) channels.push(buffer.getChannelData(i));
-
-            while(offset < buffer.length) {
-                for(let i = 0; i < numOfChan; i++) {
-                    sample = Math.max(-1, Math.min(1, channels[i][offset]));
-                    sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767) | 0;
-                    out.setInt16(pos, sample, true);
-                    pos += 2;
-                }
-                offset++;
-            }
-
-            return new Blob([out], { type: 'audio/wav' });
-        }
-
-        // Helper: Convert File to Data URL Base64 (Fallback if bucket doesn't exist)
-        function fileToDataURL(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = error => reject(error);
-                reader.readAsDataURL(file);
-            });
-        }
-
-        // PUBLISH POST HANDLER (COMPLETE & FIXED)
-        async function handleSoundUpload(e) {
-            e.preventDefault();
-
-            if (!currentUser) {
-                showToast("Please sign in before publishing a sound effect.", "error");
-                openModal('auth-modal');
-                return;
-            }
-
-            if (!supabaseClient) {
-                showToast("Supabase is not connected. Please configure credentials.", "error");
-                openModal('supabase-modal');
-                return;
-            }
-
-            const title = document.getElementById('upload-title').value.trim();
-            const category = document.getElementById('upload-category').value;
-            const description = document.getElementById('upload-description').value.trim();
-            const color = document.getElementById('upload-color').value;
-            const isPrivate = document.querySelector('input[name="upload-visibility"]:checked')?.value === 'private';
-
-            if (!title) {
-                showToast("Sound Title is required.", "error");
-                return;
-            }
-
-            let audioFileToUpload = currentSelectedAudioBlob;
-
-            // If no audio file uploaded, try generating synth WAV audio blob
-            if (!audioFileToUpload) {
-                const statusText = document.getElementById('file-status-text')?.innerText || '';
-                if (statusText.includes('Configured: 8-Bit Synth')) {
-                    try {
-                        showToast("Generating WAV audio from 8-Bit synth...", "info");
-                        audioFileToUpload = await renderSynthToWavBlob(synthParams);
-                        audioFileToUpload.name = `synth_${Date.now()}.wav`;
-                    } catch (err) {
-                        console.error("Synth rendering error:", err);
-                    }
-                }
-            }
-
-            if (!audioFileToUpload) {
-                showToast("Please select an audio file to publish.", "error");
-                return;
-            }
-
-            const submitBtn = document.getElementById('submit-upload-btn');
-            const progressContainer = document.getElementById('upload-progress-container');
-            const progressBar = document.getElementById('upload-progress-bar');
-            const progressPercent = document.getElementById('upload-progress-percent');
-            const statusLabel = document.getElementById('upload-status-label');
-
-            if (submitBtn) submitBtn.disabled = true;
-            if (progressContainer) progressContainer.classList.remove('hidden');
-            if (progressBar) progressBar.style.width = '30%';
-            if (progressPercent) progressPercent.innerText = '30%';
-
-            let audioUrl = '';
-
-            try {
-                // Generate safe, clean file path
-                const cleanName = (audioFileToUpload.name || 'audio.mp3').replace(/[^a-zA-Z0-9_.-]/g, '_');
-                const filePath = `${currentUser.id}/${Date.now()}_${cleanName}`;
-
-                if (statusLabel) statusLabel.innerText = "Uploading audio to Supabase Storage...";
-                if (progressBar) progressBar.style.width = '60%';
-                if (progressPercent) progressPercent.innerText = '60%';
-
-                // 1. ATTEMPT STORAGE BUCKET UPLOAD ('user-files')
-                const { data: uploadData, error: uploadError } = await supabaseClient.storage
-                    .from('user-files')
-                    .upload(filePath, audioFileToUpload, {
-                        cacheControl: '3600',
-                        upsert: true
-                    });
-
-                if (uploadError) {
-                    console.warn("Supabase Storage bucket upload error:", uploadError);
-
-                    // If storage bucket is missing or restricted by RLS policy, fallback to Data URL Base64 or object URL
-                    if (uploadError.message && (uploadError.message.includes('bucket_not_found') || uploadError.statusCode === '404' || uploadError.message.includes('Bucket not found'))) {
-                        showToast("Supabase storage bucket 'user-files' not found. Using direct audio storage...", "info");
-                    } else if (uploadError.message && uploadError.message.includes('row-level security')) {
-                        showToast("Storage RLS policy restricted bucket upload. Falling back to base64...", "info");
-                    }
-
-                    // Fallback to storing as Base64 Data URL so post creation never breaks!
-                    audioUrl = await fileToDataURL(audioFileToUpload);
-                } else {
-                    // Obtain public URL from Supabase Storage
-                    const { data: publicUrlData } = supabaseClient.storage
-                        .from('user-files')
-                        .getPublicUrl(filePath);
-
-                    audioUrl = publicUrlData ? publicUrlData.publicUrl : '';
-                }
-
-                if (progressBar) progressBar.style.width = '85%';
-                if (progressPercent) progressPercent.innerText = '85%';
-                if (statusLabel) statusLabel.innerText = "Publishing post to database...";
-
-                // 2. INSERT POST RECORD INTO 'sounds' TABLE
-                const creatorHandle = userProfile ? userProfile.username : ('@' + (currentUser.email ? currentUser.email.split('@')[0] : 'creator'));
-
-                const { data: insertData, error: insertError } = await supabaseClient
-                    .from('sounds')
-                    .insert([{
-                        title: title,
-                        category: category,
-                        description: description,
-                        audio_url: audioUrl,
-                        button_color: color,
-                        is_private: isPrivate,
-                        user_id: currentUser.id,
-                        username: creatorHandle,
-                        likes: 0,
-                        plays: 0,
-                        created_at: new Date()
-                    }])
-                    .select();
-
-                if (insertError) throw insertError;
-
-                if (progressBar) progressBar.style.width = '100%';
-                if (progressPercent) progressPercent.innerText = '100%';
-
-                showToast("Post published successfully!", "success");
-
-                // Reset form
-                document.getElementById('upload-form').reset();
-                currentSelectedAudioBlob = null;
-                document.getElementById('file-status-text').innerText = "Click to browse or drop audio file here";
-
-                setTimeout(() => {
-                    if (progressContainer) progressContainer.classList.add('hidden');
-                    switchTab('homeboard');
-                }, 500);
-
-            } catch (err) {
-                console.error("Publishing error:", err);
-                showToast(err.message || "Failed to publish post. Check console details.", "error");
-            } finally {
-                if (submitBtn) submitBtn.disabled = false;
-                if (progressContainer) {
-                    setTimeout(() => progressContainer.classList.add('hidden'), 2000);
-                }
-            }
-        }
-
-        // CATEGORY & SEARCH FILTERS
         function selectCategory(cat) {
             currentCategory = cat;
             document.querySelectorAll('.category-btn').forEach(btn => {
@@ -1630,7 +1305,6 @@
             renderSoundboard();
         }
 
-        // RENDER SOUND CARD HTML
         function renderSoundCardHTML(sound, isOwner) {
             const isPlaying = activeSoundId === sound.id;
             const likedIds = getLikedPostIds();
@@ -1914,39 +1588,6 @@
             }
         }
 
-        async function deleteSound(soundId) {
-            const modal = document.getElementById('confirm-modal');
-            const actionBtn = document.getElementById('confirm-modal-action-btn');
-            if (!modal || !actionBtn) return;
-
-            document.getElementById('confirm-modal-title').innerText = "Delete Sound Effect";
-            document.getElementById('confirm-modal-msg').innerText = "Are you sure you want to permanently delete this post?";
-
-            actionBtn.onclick = async () => {
-                closeModal('confirm-modal');
-                if (!supabaseClient) return;
-
-                try {
-                    const { error } = await supabaseClient
-                        .from('sounds')
-                        .delete()
-                        .eq('id', soundId);
-
-                    if (error) throw error;
-
-                    activeSoundsList = activeSoundsList.filter(s => s.id !== soundId);
-                    showToast("Post deleted successfully", "info");
-                    renderSoundboard();
-                    renderProfile();
-                } catch (err) {
-                    console.error("Delete error:", err);
-                    showToast(err.message || "Failed to delete post", "error");
-                }
-            };
-
-            openModal('confirm-modal');
-        }
-
         function switchTab(tabId) {
             if (tabId === 'soundboard') tabId = 'homeboard';
 
@@ -2037,143 +1678,6 @@
             }
             if (audioCtx.state === 'suspended') {
                 audioCtx.resume();
-            }
-        }
-
-        // VISUALIZER & SOUND PLAYBACK ENGINE
-        function playSound(soundId) {
-            initAudioContext();
-            const sound = activeSoundsList.find(s => s.id === soundId);
-            if (!sound || !sound.audio_url) {
-                showToast("No playable audio link found for this post.", "error");
-                return;
-            }
-
-            if (activeSoundId === soundId && currentAudio && !currentAudio.paused) {
-                currentAudio.pause();
-                activeSoundId = null;
-                updateDockPlayer(null);
-                renderSoundboard();
-                renderProfile();
-                return;
-            }
-
-            if (currentAudio) {
-                currentAudio.pause();
-            }
-
-            activeSoundId = soundId;
-            currentAudio = new Audio();
-            currentAudio.crossOrigin = "anonymous";
-            currentAudio.src = sound.audio_url;
-
-            currentAudio.onended = () => {
-                activeSoundId = null;
-                updateDockPlayer(null);
-                renderSoundboard();
-                renderProfile();
-            };
-
-            currentAudio.ontimeupdate = () => {
-                if (!currentAudio) return;
-                const currentTime = currentAudio.currentTime || 0;
-                const duration = currentAudio.duration || 1;
-                const percent = (currentTime / duration) * 100;
-
-                const curTimeEl = document.getElementById('dock-current-time');
-                const durationEl = document.getElementById('dock-duration');
-                const seekBar = document.getElementById('dock-seek-bar');
-
-                if (curTimeEl) curTimeEl.innerText = formatTime(currentTime);
-                if (durationEl) durationEl.innerText = formatTime(duration);
-                if (seekBar) seekBar.value = percent;
-            };
-
-            currentAudio.play().then(() => {
-                updateDockPlayer(sound);
-                renderSoundboard();
-                renderProfile();
-            }).catch(err => {
-                console.error("Playback error:", err);
-                showToast("Unable to play audio format", "error");
-                activeSoundId = null;
-                renderSoundboard();
-            });
-        }
-
-        function toggleDockPlayPause() {
-            if (!currentAudio || !activeSoundId) return;
-            if (currentAudio.paused) {
-                currentAudio.play();
-                document.getElementById('dock-play-btn').innerHTML = '<i class="fa-solid fa-pause"></i>';
-            } else {
-                currentAudio.pause();
-                document.getElementById('dock-play-btn').innerHTML = '<i class="fa-solid fa-play ml-0.5"></i>';
-            }
-        }
-
-        function seekAudio(percent) {
-            if (currentAudio && currentAudio.duration) {
-                currentAudio.currentTime = (percent / 100) * currentAudio.duration;
-            }
-        }
-
-        function setAudioVolume(val) {
-            if (currentAudio) {
-                currentAudio.volume = parseFloat(val);
-            }
-        }
-
-        function updateDockPlayer(sound) {
-            const titleEl = document.getElementById('dock-title');
-            const subTitleEl = document.getElementById('dock-subtitle');
-            const playBtn = document.getElementById('dock-play-btn');
-            const downloadBtn = document.getElementById('dock-download-btn');
-            const thumbEl = document.getElementById('dock-pad-thumb');
-
-            if (!sound) {
-                if (titleEl) titleEl.innerText = 'Select a Sound Effect';
-                if (subTitleEl) subTitleEl.innerText = 'Click any sound pad to preview';
-                if (playBtn) playBtn.innerHTML = '<i class="fa-solid fa-play ml-0.5"></i>';
-                if (downloadBtn) downloadBtn.disabled = true;
-                if (thumbEl) thumbEl.style.backgroundColor = 'rgba(16, 185, 129, 0.2)';
-                return;
-            }
-
-            if (titleEl) titleEl.innerText = sound.title;
-            if (subTitleEl) subTitleEl.innerText = `${sound.category} • ${sound.username || '@creator'}`;
-            if (playBtn) playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
-            if (downloadBtn) downloadBtn.disabled = false;
-            if (thumbEl) thumbEl.style.backgroundColor = `${sound.button_color || '#10b981'}30`;
-        }
-
-        function requestDownload(soundId) {
-            const sound = activeSoundsList.find(s => s.id === soundId);
-            if (!sound) return;
-
-            pendingDownloadSound = sound;
-            document.getElementById('download-target-title').innerText = sound.title;
-            document.getElementById('download-target-info').innerText = `${sound.category} • ${sound.username || '@creator'}`;
-            openModal('download-warning-modal');
-        }
-
-        function confirmDownload() {
-            closeModal('download-warning-modal');
-            if (pendingDownloadSound && pendingDownloadSound.audio_url) {
-                const a = document.createElement('a');
-                a.href = pendingDownloadSound.audio_url;
-                a.download = `${pendingDownloadSound.title.replace(/[^a-zA-Z0-9]/g, '_')}.mp3`;
-                a.target = '_blank';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                showToast(`Downloading '${pendingDownloadSound.title}'...`, "success");
-            }
-        }
-
-        function downloadCurrentSound() {
-            if (activeSoundId) {
-                requestDownload(activeSoundId);
             }
         }
 
@@ -2353,6 +1857,469 @@
             document.getElementById('upload-title').value = `Retro Synth SFX (${synthParams.wave})`;
             document.getElementById('file-status-text').innerText = `Configured: 8-Bit Synth Preset (${synthParams.wave.toUpperCase()})`;
             showToast("Exported synth configuration to publish form!", "success");
+        }
+
+        function processAudioFile(file) {
+            if (!file) return;
+
+            const MAX_SIZE = 10 * 1024 * 1024; // 10MB in bytes
+            if (file.size > MAX_SIZE) {
+                showToast(`File is too large (${(file.size / (1024 * 1024)).toFixed(2)} MB). Max limit is 10 MB.`, "error");
+                currentSelectedAudioBlob = null;
+                document.getElementById('file-status-text').innerText = "Click to browse or drop audio file here";
+                return;
+            }
+
+            const isAudioMime = file.type && file.type.startsWith('audio/');
+            const isAudioExt = /\.(mp3|wav|ogg|m4a|aac|flac|wma|aiff|aif)$/i.test(file.name);
+
+            if (!isAudioMime && !isAudioExt) {
+                showToast("Invalid file type! Only genuine audio files (MP3, WAV, etc.) are allowed.", "error");
+                currentSelectedAudioBlob = null;
+                document.getElementById('file-status-text').innerText = "Click to browse or drop audio file here";
+                return;
+            }
+
+            currentSelectedAudioBlob = file;
+            document.getElementById('file-status-text').innerText = `Selected: ${file.name} (${formatBytes(file.size)})`;
+            showToast("Audio file attached successfully", "success");
+        }
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            processAudioFile(file);
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const dropZone = document.getElementById('drop-zone');
+            if (dropZone) dropZone.classList.add('border-emerald-500');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const dropZone = document.getElementById('drop-zone');
+            if (dropZone) dropZone.classList.remove('border-emerald-500');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const dropZone = document.getElementById('drop-zone');
+            if (dropZone) dropZone.classList.remove('border-emerald-500');
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                processAudioFile(e.dataTransfer.files[0]);
+            }
+        }
+
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+
+        // FAIL-SAFE SOUND UPLOAD HANDLER
+        async function handleSoundUpload(e) {
+            e.preventDefault();
+            if (!currentUser) {
+                showToast("Please sign in to publish sound effects", "error");
+                openModal('auth-modal');
+                return;
+            }
+
+            const title = document.getElementById('upload-title').value.trim();
+            const category = document.getElementById('upload-category').value;
+            const description = document.getElementById('upload-description').value.trim();
+            const color = document.getElementById('upload-color').value;
+            const isPrivate = document.querySelector('input[name="upload-visibility"]:checked')?.value === 'private';
+
+            if (!title) {
+                showToast("Please enter a sound title", "error");
+                return;
+            }
+
+            const submitBtn = document.getElementById('submit-upload-btn');
+            if (submitBtn) submitBtn.disabled = true;
+
+            try {
+                let filePath = null;
+                let fileUrl = null;
+
+                if (currentSelectedAudioBlob) {
+                    const progressContainer = document.getElementById('upload-progress-container');
+                    const progressBar = document.getElementById('upload-progress-bar');
+                    const progressPercent = document.getElementById('upload-progress-percent');
+                    if (progressContainer) progressContainer.classList.remove('hidden');
+
+                    const ext = currentSelectedAudioBlob.name ? currentSelectedAudioBlob.name.split('.').pop() : 'mp3';
+                    const fileName = `${currentUser.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
+
+                    if (progressBar) progressBar.style.width = '30%';
+                    if (progressPercent) progressPercent.innerText = '30%';
+
+                    let uploadSuccess = false;
+
+                    // Try uploading to Supabase Storage if client is connected
+                    if (supabaseClient) {
+                        try {
+                            const { data, error: uploadErr } = await supabaseClient.storage
+                                .from('user-files')
+                                .upload(fileName, currentSelectedAudioBlob, {
+                                    cacheControl: '3600',
+                                    upsert: true
+                                });
+
+                            if (!uploadErr) {
+                                filePath = fileName;
+                                const { data: pubData } = supabaseClient.storage.from('user-files').getPublicUrl(fileName);
+                                fileUrl = pubData?.publicUrl;
+                                uploadSuccess = true;
+                            } else {
+                                console.warn("Supabase storage upload error, switching to Data URL fallback:", uploadErr);
+                            }
+                        } catch (stgErr) {
+                            console.warn("Storage upload exception, switching to Data URL fallback:", stgErr);
+                        }
+                    }
+
+                    // Fallback: read as Data URL if bucket upload is restricted or unconfigured
+                    if (!uploadSuccess) {
+                        fileUrl = await new Promise((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.onload = (e) => resolve(e.target.result);
+                            reader.onerror = (e) => reject(e);
+                            reader.readAsDataURL(currentSelectedAudioBlob);
+                        });
+                        filePath = fileName;
+                    }
+
+                    if (progressBar) progressBar.style.width = '100%';
+                    if (progressPercent) progressPercent.innerText = '100%';
+                }
+
+                const username = userProfile ? userProfile.username : '@creator';
+                const soundData = {
+                    user_id: currentUser.id,
+                    username: username,
+                    title: title,
+                    category: category,
+                    description: description,
+                    button_color: color,
+                    is_private: isPrivate,
+                    file_path: filePath,
+                    file_url: fileUrl,
+                    audio_url: fileUrl,
+                    synth_config: currentSelectedAudioBlob ? null : synthParams,
+                    likes: 0
+                };
+
+                if (supabaseClient) {
+                    const { error: insertErr } = await supabaseClient.from('sounds').insert([soundData]);
+                    if (insertErr) {
+                        console.warn("Primary DB insert error, attempting sanitized insert:", insertErr);
+                        const fallbackData = {
+                            user_id: currentUser.id,
+                            username: username,
+                            title: title,
+                            category: category,
+                            description: description,
+                            button_color: color,
+                            is_private: isPrivate,
+                            file_path: filePath,
+                            synth_config: currentSelectedAudioBlob ? null : synthParams,
+                            likes: 0
+                        };
+                        const { error: retryErr } = await supabaseClient.from('sounds').insert([fallbackData]);
+                        if (retryErr) throw retryErr;
+                    }
+                }
+
+                showToast("Sound published successfully!", "success");
+                document.getElementById('upload-form').reset();
+                currentSelectedAudioBlob = null;
+                document.getElementById('file-status-text').innerText = "Click to browse or drop audio file here";
+                const progressContainer = document.getElementById('upload-progress-container');
+                if (progressContainer) progressContainer.classList.add('hidden');
+
+                if (isPrivate) {
+                    switchTab('profile');
+                    setProfileVisibilityFilter('private');
+                } else {
+                    switchTab('homeboard');
+                    await renderSoundboard();
+                }
+            } catch (err) {
+                console.error("Upload error:", err);
+                showToast("Failed to publish sound: " + (err.message || err), "error");
+            } finally {
+                if (submitBtn) submitBtn.disabled = false;
+            }
+        }
+
+        // DELETE SOUND HANDLER
+        function deleteSound(soundId) {
+            if (!currentUser) return;
+            const sound = activeSoundsList.find(s => s.id === soundId);
+            if (!sound) return;
+
+            const modalTitle = document.getElementById('confirm-modal-title');
+            const modalMsg = document.getElementById('confirm-modal-msg');
+            const actionBtn = document.getElementById('confirm-modal-action-btn');
+
+            if (modalTitle) modalTitle.innerText = "Delete Sound Effect?";
+            if (modalMsg) modalMsg.innerText = `Are you sure you want to delete "${sound.title}"? This action cannot be undone.`;
+            
+            if (actionBtn) {
+                actionBtn.onclick = async () => {
+                    try {
+                        if (supabaseClient) {
+                            const { error } = await supabaseClient.from('sounds').delete().eq('id', soundId);
+                            if (error) throw error;
+                        }
+                        activeSoundsList = activeSoundsList.filter(s => s.id !== soundId);
+                        showToast("Sound deleted successfully", "info");
+                        closeModal('confirm-modal');
+                        renderSoundboard();
+                        renderProfile();
+                    } catch (err) {
+                        console.error("Delete error:", err);
+                        showToast(err.message || "Failed to delete sound", "error");
+                    }
+                };
+            }
+            openModal('confirm-modal');
+        }
+
+        // PLAYBACK ENGINE HANDLERS
+        async function playSound(soundId) {
+            initAudioContext();
+            const sound = activeSoundsList.find(s => s.id === soundId);
+            if (!sound) return;
+
+            if (activeSoundId === soundId && currentAudio) {
+                if (currentAudio.paused) {
+                    currentAudio.play();
+                    updatePlayDockUI(sound, true);
+                } else {
+                    currentAudio.pause();
+                    updatePlayDockUI(sound, false);
+                }
+                return;
+            }
+
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio = null;
+            }
+
+            activeSoundId = soundId;
+            updatePlayDockUI(sound, true);
+
+            if (sound.synth_config && !sound.file_path && !sound.file_url && !sound.audio_url) {
+                const origParams = { ...synthParams };
+                synthParams = { ...sound.synth_config };
+                playSynthSFX();
+                synthParams = origParams;
+                setTimeout(() => {
+                    if (activeSoundId === soundId) {
+                        activeSoundId = null;
+                        updatePlayDockUI(null, false);
+                    }
+                }, 1000);
+                return;
+            }
+
+            let audioUrl = sound.file_url || sound.audio_url || sound.data_url;
+            if (!audioUrl && sound.file_path && supabaseClient) {
+                const { data } = supabaseClient.storage.from('user-files').getPublicUrl(sound.file_path);
+                audioUrl = data?.publicUrl;
+            }
+
+            if (!audioUrl) {
+                showToast("Audio source URL not available for this sound effect.", "error");
+                activeSoundId = null;
+                updatePlayDockUI(null, false);
+                return;
+            }
+
+            try {
+                currentAudio = new Audio();
+                currentAudio.crossOrigin = "anonymous";
+                currentAudio.src = audioUrl;
+
+                const volumeSlider = document.getElementById('dock-volume');
+                if (volumeSlider) currentAudio.volume = parseFloat(volumeSlider.value);
+
+                try {
+                    if (audioSourceNode) {
+                        audioSourceNode.disconnect();
+                    }
+                    audioSourceNode = audioCtx.createMediaElementSource(currentAudio);
+                    audioSourceNode.connect(analyserNode);
+                    analyserNode.connect(masterGainNode);
+                } catch (e) {
+                    console.log("MediaElementSource fallback:", e);
+                }
+
+                currentAudio.ontimeupdate = () => {
+                    const seek = document.getElementById('dock-seek-bar');
+                    const currTime = document.getElementById('dock-current-time');
+                    const durTime = document.getElementById('dock-duration');
+                    if (currentAudio.duration) {
+                        if (seek) seek.value = (currentAudio.currentTime / currentAudio.duration) * 100;
+                        if (currTime) currTime.innerText = formatTime(currentAudio.currentTime);
+                        if (durTime) durTime.innerText = formatTime(currentAudio.duration);
+                    }
+                };
+
+                currentAudio.onended = () => {
+                    activeSoundId = null;
+                    updatePlayDockUI(null, false);
+                    renderSoundboard();
+                    renderProfile();
+                };
+
+                await currentAudio.play();
+                renderSoundboard();
+                renderProfile();
+            } catch (err) {
+                console.error("Playback error:", err);
+                showToast("Playback error or blocked by browser policy.", "error");
+                activeSoundId = null;
+                updatePlayDockUI(null, false);
+            }
+        }
+
+        function updatePlayDockUI(sound, isPlaying) {
+            const dockTitle = document.getElementById('dock-title');
+            const dockSubtitle = document.getElementById('dock-subtitle');
+            const dockPlayBtn = document.getElementById('dock-play-btn');
+            const dockDownloadBtn = document.getElementById('dock-download-btn');
+            const dockThumb = document.getElementById('dock-pad-thumb');
+
+            if (!sound || !isPlaying) {
+                if (!sound) {
+                    if (dockTitle) dockTitle.innerText = "Select a Sound Effect";
+                    if (dockSubtitle) dockSubtitle.innerText = "Click any sound pad to preview";
+                    if (dockDownloadBtn) dockDownloadBtn.disabled = true;
+                }
+                if (dockPlayBtn) dockPlayBtn.innerHTML = '<i class="fa-solid fa-play ml-0.5"></i>';
+                return;
+            }
+
+            if (dockTitle) dockTitle.innerText = sound.title;
+            if (dockSubtitle) dockSubtitle.innerText = `${sound.category} • ${sound.username || '@creator'}`;
+            if (dockPlayBtn) dockPlayBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+            if (dockDownloadBtn) dockDownloadBtn.disabled = false;
+            
+            if (dockThumb && sound.button_color) {
+                dockThumb.style.backgroundColor = `${sound.button_color}20`;
+                dockThumb.style.borderColor = `${sound.button_color}60`;
+            }
+
+            pendingDownloadSound = sound;
+        }
+
+        function toggleDockPlayPause() {
+            if (activeSoundId) {
+                playSound(activeSoundId);
+            }
+        }
+
+        function seekAudio(percent) {
+            if (currentAudio && currentAudio.duration) {
+                currentAudio.currentTime = (percent / 100) * currentAudio.duration;
+            }
+        }
+
+        function setAudioVolume(vol) {
+            if (currentAudio) {
+                currentAudio.volume = parseFloat(vol);
+            }
+            if (masterGainNode) {
+                masterGainNode.gain.setValueAtTime(parseFloat(vol), audioCtx ? audioCtx.currentTime : 0);
+            }
+        }
+
+        function requestDownload(soundId) {
+            const sound = activeSoundsList.find(s => s.id === soundId);
+            if (!sound) return;
+
+            pendingDownloadSound = sound;
+            const targetTitle = document.getElementById('download-target-title');
+            const targetInfo = document.getElementById('download-target-info');
+            const confirmBtn = document.getElementById('confirm-download-btn');
+
+            if (targetTitle) targetTitle.innerText = sound.title;
+            if (targetInfo) targetInfo.innerText = `${sound.category} • Created by ${sound.username || '@creator'}`;
+
+            if (confirmBtn) {
+                confirmBtn.onclick = () => {
+                    downloadCurrentSound();
+                    closeModal('download-warning-modal');
+                };
+            }
+
+            openModal('download-warning-modal');
+        }
+
+        async function downloadCurrentSound() {
+            const sound = pendingDownloadSound;
+            if (!sound) return;
+
+            let url = sound.file_url || sound.audio_url || sound.data_url;
+            if (!url && sound.file_path && supabaseClient) {
+                const { data } = supabaseClient.storage.from('user-files').getPublicUrl(sound.file_path);
+                url = data?.publicUrl;
+            }
+
+            if (!url) {
+                showToast("No downloadable audio file available for this sound effect.", "error");
+                return;
+            }
+
+            // Keep the original file extension when we can tell what it is
+            let ext = 'mp3';
+            const extSource = (sound.file_path || url.split('?')[0] || '');
+            const extMatch = extSource.match(/\.([a-z0-9]{2,5})$/i);
+            if (extMatch && !url.startsWith('data:')) ext = extMatch[1].toLowerCase();
+            const fileName = `${sound.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_audiogrove.${ext}`;
+
+            const triggerDownload = (href) => {
+                const a = document.createElement('a');
+                a.href = href;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            };
+
+            showToast(`Downloading "${sound.title}"...`, "success");
+
+            try {
+                // Browsers ignore the "download" attribute on cross-origin links,
+                // so fetch the file and save it from a local blob instead.
+                const response = await fetch(url);
+                if (!response.ok) throw new Error("HTTP " + response.status);
+                const blob = await response.blob();
+                const blobUrl = URL.createObjectURL(blob);
+                triggerDownload(blobUrl);
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+            } catch (err) {
+                console.warn("Blob download failed, trying forced-download link:", err);
+                if (sound.file_path && supabaseClient) {
+                    // Supabase adds a Content-Disposition: attachment header with this option
+                    const { data } = supabaseClient.storage.from('user-files').getPublicUrl(sound.file_path, { download: fileName });
+                    triggerDownload(data?.publicUrl || url);
+                } else {
+                    triggerDownload(url);
+                }
+            }
         }
     </script>
 </body>
