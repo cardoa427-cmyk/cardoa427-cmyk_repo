@@ -86,7 +86,7 @@
         <div class="max-w-7xl mx-auto flex items-center justify-between">
             
             <!-- Logo & Brand -->
-            <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('soundboard')">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('homeboard')">
                 <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
                     <i class="fa-solid font-bold fa-compact-disc text-slate-950 text-xl animate-spin-slow"></i>
                 </div>
@@ -100,13 +100,16 @@
 
             <!-- Navigation Links -->
             <nav class="hidden md:flex items-center gap-1 bg-slate-950/60 p-1 rounded-xl border border-slate-800">
-                <button onclick="switchTab('soundboard')" id="nav-soundboard" class="px-4 py-2 rounded-lg text-sm font-medium transition-all bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                    <i class="fa-solid fa-border-all mr-2"></i>Soundboard
+                <button onclick="switchTab('homeboard')" id="nav-homeboard" class="nav-tab-btn px-4 py-2 rounded-lg text-sm font-medium transition-all bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    <i class="fa-solid fa-house mr-2"></i>Homeboard
                 </button>
-                <button onclick="switchTab('synth')" id="nav-synth" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 transition-all">
+                <button onclick="switchTab('profile')" id="nav-profile" class="nav-tab-btn px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 transition-all">
+                    <i class="fa-solid fa-user mr-2"></i>Profile
+                </button>
+                <button onclick="switchTab('synth')" id="nav-synth" class="nav-tab-btn px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 transition-all">
                     <i class="fa-solid fa-wand-magic-sparkles mr-2"></i>8-Bit Synth
                 </button>
-                <button onclick="switchTab('upload')" id="nav-upload" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 transition-all">
+                <button onclick="switchTab('upload')" id="nav-upload" class="nav-tab-btn px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 transition-all">
                     <i class="fa-solid fa-cloud-arrow-up mr-2"></i>Publish SFX
                 </button>
             </nav>
@@ -134,8 +137,8 @@
     <!-- Main Workspace Container -->
     <main class="max-w-7xl w-full mx-auto px-4 lg:px-8 py-6 flex-1 pb-36">
 
-        <!-- TAB 1: MAIN SOUNDBOARD FEED -->
-        <section id="tab-soundboard" class="space-y-6">
+        <!-- TAB 1: MAIN HOMEBOARD FEED -->
+        <section id="tab-homeboard" class="tab-content space-y-6">
             
             <!-- Hero / Filter Controls Bar -->
             <div class="bg-slate-900/60 backdrop-blur-md rounded-2xl border border-slate-800/80 p-5 shadow-xl space-y-4">
@@ -158,6 +161,9 @@
                                 <option value="least-popular">Least Popular</option>
                             </select>
                         </div>
+                        <button onclick="switchTab('profile')" class="md:hidden bg-indigo-500/10 text-indigo-400 text-xs px-3 py-2 rounded-xl border border-indigo-500/30">
+                            <i class="fa-solid fa-user mr-1"></i>Profile
+                        </button>
                         <button onclick="switchTab('synth')" class="md:hidden bg-emerald-500/10 text-emerald-400 text-xs px-3 py-2 rounded-xl border border-emerald-500/30">
                             <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Synth
                         </button>
@@ -172,7 +178,6 @@
                     <button onclick="selectCategory('Sci-Fi & Cyber')" data-cat="Sci-Fi & Cyber" class="category-btn bg-slate-800/80 text-slate-300 border border-slate-700/60 hover:bg-slate-800 text-xs font-semibold px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all">🛸 Sci-Fi & Cyber</button>
                     <button onclick="selectCategory('Foley & Impact')" data-cat="Foley & Impact" class="category-btn bg-slate-800/80 text-slate-300 border border-slate-700/60 hover:bg-slate-800 text-xs font-semibold px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all">💥 Foley & Impact</button>
                     <button onclick="selectCategory('Interface & Clicks')" data-cat="Interface & Clicks" class="category-btn bg-slate-800/80 text-slate-300 border border-slate-700/60 hover:bg-slate-800 text-xs font-semibold px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all">🖱️ Interface & Clicks</button>
-                    <button onclick="selectCategory('Private')" id="cat-btn-private" data-cat="Private" class="category-btn hidden bg-slate-800/80 text-purple-300 border border-purple-500/40 hover:bg-slate-800 text-xs font-semibold px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all">🔒 My Private SFX</button>
                 </div>
             </div>
 
@@ -192,8 +197,85 @@
             </div>
         </section>
 
-        <!-- TAB 2: 8-BIT SYNTHESIZER GENERATOR -->
-        <section id="tab-synth" class="hidden space-y-6">
+        <!-- TAB 2: PERSONAL CREATOR PROFILE & POST MANAGEMENT -->
+        <section id="tab-profile" class="tab-content hidden space-y-6">
+            
+            <!-- Profile Header Card -->
+            <div class="bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-800 p-6 shadow-xl relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-gradient-to-br from-indigo-600/10 via-emerald-500/10 to-transparent rounded-full blur-2xl pointer-events-none"></div>
+
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-6 relative z-10">
+                    <div class="flex items-center gap-4 text-center sm:text-left">
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-500 via-emerald-500 to-teal-400 p-0.5 shadow-lg shadow-indigo-500/20">
+                            <div class="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
+                                <i class="fa-solid fa-user-gear text-2xl text-emerald-400"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 justify-center sm:justify-start">
+                                <h2 class="text-xl font-bold text-slate-100" id="profile-creator-handle">@guest_creator</h2>
+                                <span class="bg-emerald-500/10 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-500/20">Creator</span>
+                            </div>
+                            <p class="text-xs text-slate-400 mt-1" id="profile-creator-email">Manage your personal SFX collection and post privacy settings.</p>
+                        </div>
+                    </div>
+
+                    <!-- Quick Stats & Actions -->
+                    <div class="flex items-center gap-3">
+                        <div class="bg-slate-950/80 px-4 py-2 rounded-xl border border-slate-800 text-center">
+                            <span class="block text-xs text-slate-400">Public SFX</span>
+                            <span id="stat-public-count" class="text-sm font-bold text-emerald-400">0</span>
+                        </div>
+                        <div class="bg-slate-950/80 px-4 py-2 rounded-xl border border-slate-800 text-center">
+                            <span class="block text-xs text-slate-400">Private SFX</span>
+                            <span id="stat-private-count" class="text-sm font-bold text-purple-400">0</span>
+                        </div>
+                        <button onclick="switchTab('upload')" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-xs transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2">
+                            <i class="fa-solid fa-plus"></i> New SFX
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PUBLIC / PRIVATE POST TOGGLE SWITCH BAR -->
+            <div class="bg-slate-900/60 backdrop-blur-md rounded-2xl border border-slate-800 p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg">
+                <div>
+                    <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-indigo-400"></i> My Posts & Sound Effects
+                    </h3>
+                    <p class="text-xs text-slate-400">Switch views below to alternate between your public community posts and private SFX.</p>
+                </div>
+
+                <!-- Toggle Switch Control -->
+                <div class="bg-slate-950 p-1 rounded-xl border border-slate-800 flex items-center gap-1">
+                    <button onclick="setProfilePostVisibility('public')" id="profile-switch-public" class="px-4 py-2 rounded-lg text-xs font-bold transition-all bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-sm flex items-center gap-2">
+                        <i class="fa-solid fa-globe text-xs"></i> 🌐 Public Posts
+                    </button>
+                    <button onclick="setProfilePostVisibility('private')" id="profile-switch-private" class="px-4 py-2 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-slate-200 flex items-center gap-2">
+                        <i class="fa-solid fa-lock text-xs"></i> 🔒 Private Posts
+                    </button>
+                </div>
+            </div>
+
+            <!-- Profile Posts Grid -->
+            <div id="profile-sounds-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <!-- User posts dynamically rendered here -->
+            </div>
+
+            <!-- Profile Empty State -->
+            <div id="profile-empty-state" class="hidden text-center py-16 bg-slate-900/30 rounded-2xl border border-dashed border-slate-800">
+                <i class="fa-solid fa-folder-open text-4xl text-slate-600 mb-3"></i>
+                <h3 class="text-lg font-bold text-slate-300" id="profile-empty-title">No Public Posts Found</h3>
+                <p class="text-sm text-slate-500 max-w-sm mx-auto mt-1 mb-4" id="profile-empty-msg">You haven't published any public sound effects yet.</p>
+                <button onclick="switchTab('upload')" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded-xl text-sm transition-all">
+                    Upload & Publish Sound
+                </button>
+            </div>
+
+        </section>
+
+        <!-- TAB 3: 8-BIT SYNTHESIZER GENERATOR -->
+        <section id="tab-synth" class="tab-content hidden space-y-6">
             <div class="bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-800 p-6 shadow-2xl space-y-6">
                 
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-4">
@@ -306,12 +388,12 @@
             </div>
         </section>
 
-        <!-- TAB 3: UPLOAD / PUBLISH SOUND SCREEN -->
-        <section id="tab-upload" class="hidden max-w-2xl mx-auto space-y-6">
+        <!-- TAB 4: UPLOAD / PUBLISH SOUND SCREEN -->
+        <section id="tab-upload" class="tab-content hidden max-w-2xl mx-auto space-y-6">
             <div class="bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-800 p-6 shadow-2xl space-y-6">
                 <div>
                     <h2 class="text-2xl font-bold text-slate-100">Publish Sound Effect</h2>
-                    <p class="text-sm text-slate-400 mt-1">Upload an audio/video file or use a synth preset to share with creators worldwide.</p>
+                    <p class="text-sm text-slate-400 mt-1">Upload an audio file or use a synth preset to share with creators worldwide.</p>
                 </div>
 
                 <!-- Auth Guard Banner for Unauthenticated Users -->
@@ -425,8 +507,8 @@
             </div>
         </section>
 
-        <!-- TAB 4: SETTINGS / ACCOUNT SCREEN -->
-        <section id="tab-settings" class="hidden max-w-xl mx-auto space-y-6">
+        <!-- TAB 5: SETTINGS / ACCOUNT SCREEN -->
+        <section id="tab-settings" class="tab-content hidden max-w-xl mx-auto space-y-6">
             <div class="bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-800 p-6 shadow-2xl space-y-6">
                 <div>
                     <h2 class="text-2xl font-bold text-slate-100">Account Settings</h2>
@@ -517,7 +599,69 @@
         </div>
     </div>
 
-    <!-- MODAL 1: AUTHENTICATION (LOGIN & SIGN UP) -->
+    <!-- MODAL 1: EDIT POST METADATA MODAL -->
+    <div id="edit-post-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl relative space-y-4">
+            <button onclick="closeModal('edit-post-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-200">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <div>
+                <h3 class="text-xl font-bold text-slate-100 flex items-center gap-2">
+                    <i class="fa-solid fa-pen-to-square text-emerald-400"></i> Edit Sound Post
+                </h3>
+                <p class="text-xs text-slate-400 mt-1">Modify your post title, description, category, and visibility. <span class="text-amber-400 font-semibold">(Audio file cannot be changed)</span></p>
+            </div>
+
+            <form id="edit-post-form" onsubmit="handlePostEditSubmit(event)" class="space-y-4">
+                <input type="hidden" id="edit-post-id">
+
+                <div>
+                    <label class="text-xs font-semibold text-slate-300 block mb-1">Sound Title *</label>
+                    <input type="text" id="edit-post-title" required class="w-full bg-slate-950 text-sm text-slate-100 px-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500">
+                </div>
+
+                <div>
+                    <label class="text-xs font-semibold text-slate-300 block mb-1">Category *</label>
+                    <select id="edit-post-category" class="w-full bg-slate-950 text-sm text-slate-100 px-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500">
+                        <option value="8-Bit & Gaming">🎮 8-Bit & Gaming</option>
+                        <option value="Sci-Fi & Cyber">🛸 Sci-Fi & Cyber</option>
+                        <option value="Foley & Impact">💥 Foley & Impact</option>
+                        <option value="Interface & Clicks">🖱️ Interface & Clicks</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="text-xs font-semibold text-slate-300 block mb-1">Description & Hashtags</label>
+                    <textarea id="edit-post-description" rows="3" class="w-full bg-slate-950 text-sm text-slate-100 px-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500"></textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs font-semibold text-slate-300 block mb-1">Pad Glow Color</label>
+                        <input type="color" id="edit-post-color" class="w-full h-10 rounded cursor-pointer border-0 bg-transparent">
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-semibold text-slate-300 block mb-1">Visibility Switch</label>
+                        <select id="edit-post-visibility" class="w-full bg-slate-950 text-xs text-slate-100 px-3 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500">
+                            <option value="public">🌐 Public SFX</option>
+                            <option value="private">🔒 Private SFX</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 pt-2">
+                    <button type="button" onclick="closeModal('edit-post-modal')" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-2.5 rounded-xl text-xs transition-all">Cancel</button>
+                    <button type="submit" class="flex-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-2.5 rounded-xl text-xs transition-all shadow-lg shadow-emerald-500/20">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: AUTHENTICATION (LOGIN & SIGN UP) -->
     <div id="auth-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl relative space-y-5">
             <button onclick="closeModal('auth-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-200">
@@ -568,7 +712,7 @@
         </div>
     </div>
 
-    <!-- MODAL 2: USERNAME ONBOARDING SETUP -->
+    <!-- MODAL 3: USERNAME ONBOARDING SETUP -->
     <div id="username-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
             <h3 class="text-xl font-bold text-slate-100">Welcome to Audio Grove!</h3>
@@ -590,7 +734,7 @@
         </div>
     </div>
 
-    <!-- MODAL 3: SUPABASE BACKEND CONFIGURATION -->
+    <!-- MODAL 4: SUPABASE BACKEND CONFIGURATION -->
     <div id="supabase-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-5 relative">
             <button onclick="closeModal('supabase-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-200">
@@ -629,7 +773,7 @@
         </div>
     </div>
 
-    <!-- MODAL 4: CUSTOM CONFIRMATION MODAL -->
+    <!-- MODAL 5: CUSTOM CONFIRMATION MODAL -->
     <div id="confirm-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl space-y-4 text-center">
             <div class="w-12 h-12 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center mx-auto text-xl">
@@ -644,15 +788,15 @@
         </div>
     </div>
 
-    <!-- MODAL 5: DOWNLOAD WARNING / CAUTION MODAL -->
+    <!-- MODAL 6: DOWNLOAD WARNING / CAUTION MODAL -->
     <div id="download-warning-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4 text-center">
             <div class="w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto text-xl">
                 <i class="fa-solid fa-shield-halved"></i>
             </div>
-            <h3 class="text-lg font-bold text-slate-100">Download at Your Own Risk</h3>
+            <h3 class="text-lg font-bold text-slate-100">Download SFX File</h3>
             <p class="text-xs text-slate-400 leading-relaxed">
-                User-created and community-submitted audio files may carry unverified content or metadata. Please proceed with caution before downloading and opening external files.
+                You are about to download a community royalty-free sound effect.
             </p>
             <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-left flex items-center gap-3">
                 <i class="fa-solid fa-file-audio text-emerald-400 text-lg"></i>
@@ -679,13 +823,92 @@
         const DEFAULT_SUPABASE_KEY = "sb_publishable_oX-jcP7C0zarWbfqhy82Lg_vffZE6FV";
 
         // ==========================================
+        // INITIAL SAMPLE AUDIO DATA (LOCAL FALLBACK & DEMO)
+        // ==========================================
+        const MOCK_INITIAL_SOUNDS = [
+            {
+                id: 'sfx_laser_01',
+                title: 'Cyber Laser Cannon',
+                creator_handle: '@sound_master',
+                user_id: 'guest_user',
+                category: 'Sci-Fi & Cyber',
+                description: 'High frequency neon laser shot sound effect for retro games #laser #scifi',
+                color: '#6366f1',
+                is_private: false,
+                audio_url: 'synth:laser',
+                downloads_count: 142,
+                likes_count: 38,
+                created_at: new Date(Date.now() - 3600000 * 24).toISOString()
+            },
+            {
+                id: 'sfx_jump_01',
+                title: '8-Bit Hero Jump',
+                creator_handle: '@pixel_artisan',
+                user_id: 'other_user_1',
+                category: '8-Bit & Gaming',
+                description: 'Classic arcade platformer jump sound #retro #jump #8bit',
+                color: '#10b981',
+                is_private: false,
+                audio_url: 'synth:jump',
+                downloads_count: 289,
+                likes_count: 76,
+                created_at: new Date(Date.now() - 3600000 * 48).toISOString()
+            },
+            {
+                id: 'sfx_coin_01',
+                title: 'Golden Coin Collect',
+                creator_handle: '@guest_creator',
+                user_id: 'guest_user',
+                category: '8-Bit & Gaming',
+                description: 'Chime sound when pickup up coin or gems #coin #reward',
+                color: '#eab308',
+                is_private: false,
+                audio_url: 'synth:coin',
+                downloads_count: 410,
+                likes_count: 95,
+                created_at: new Date(Date.now() - 3600000 * 12).toISOString()
+            },
+            {
+                id: 'sfx_explosion_01',
+                title: 'Retro Pixel Explosion',
+                creator_handle: '@guest_creator',
+                user_id: 'guest_user',
+                category: 'Foley & Impact',
+                description: 'Low-fi noise burst explosion for space shooters #boom #synth',
+                color: '#ef4444',
+                is_private: true,
+                audio_url: 'synth:explosion',
+                downloads_count: 87,
+                likes_count: 19,
+                created_at: new Date(Date.now() - 3600000 * 5).toISOString()
+            },
+            {
+                id: 'sfx_click_01',
+                title: 'Hologram UI Click',
+                creator_handle: '@synth_wave',
+                user_id: 'other_user_2',
+                category: 'Interface & Clicks',
+                description: 'Clean futuristic user interface click feedback #ui #click',
+                color: '#06b6d4',
+                is_private: false,
+                audio_url: 'synth:click',
+                downloads_count: 195,
+                likes_count: 42,
+                created_at: new Date(Date.now() - 3600000 * 18).toISOString()
+            }
+        ];
+
+        // ==========================================
         // APP STATE & CONSTANTS
         // ==========================================
         let supabaseClient = null;
         let currentUser = null;
         let userProfile = null;
+        let currentTab = 'homeboard';
         let currentCategory = 'All';
-        let currentVisualizerMode = 'hybrid'; // 'hybrid', 'spectrum', 'waveform'
+        let profilePostVisibility = 'public';
+        let currentVisualizerMode = 'hybrid';
+        let authMode = 'login';
 
         // Audio Context & Web Audio API Engine
         let audioCtx = null;
@@ -693,7 +916,6 @@
         let activeSoundId = null;
         let analyserNode = null;
         let masterGainNode = null;
-        let audioSourceNode = null;
         let animFrameId = null;
 
         // Download State Holder
@@ -711,7 +933,56 @@
 
         // Temporary File Buffer for Uploads
         let currentSelectedAudioBlob = null;
-        let activeSoundsList = [];
+        let activeSoundsList = [...MOCK_INITIAL_SOUNDS];
+
+        // ==========================================
+        // SINGLE LIKE PER POST TRACKING (ENFORCED)
+        // ==========================================
+        function getLikedPosts() {
+            try {
+                const stored = localStorage.getItem('ag_user_liked_posts');
+                return stored ? JSON.parse(stored) : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveLikedPosts(likedArray) {
+            try {
+                localStorage.setItem('ag_user_liked_posts', JSON.stringify(likedArray));
+            } catch (e) {}
+        }
+
+        // Enforce 1 like per post per user (Toggle mechanism)
+        function likeSound(soundId) {
+            const snd = activeSoundsList.find(s => s.id === soundId);
+            if (!snd) return;
+
+            let likedArray = getLikedPosts();
+            const hasLiked = likedArray.includes(soundId);
+
+            if (hasLiked) {
+                // User already gave 1 like -> remove the single like
+                snd.likes_count = Math.max(0, (snd.likes_count || 1) - 1);
+                likedArray = likedArray.filter(id => id !== soundId);
+                saveLikedPosts(likedArray);
+                showToast(`Removed like from "${snd.title}"`, "info");
+            } else {
+                // User gives their 1 allowed like to this post
+                snd.likes_count = (snd.likes_count || 0) + 1;
+                likedArray.push(soundId);
+                saveLikedPosts(likedArray);
+                showToast(`Liked "${snd.title}"! (1 like applied)`, "success");
+            }
+
+            // Sync with Supabase if online
+            if (supabaseClient) {
+                supabaseClient.from('sounds').update({ likes_count: snd.likes_count }).eq('id', soundId).then(() => {});
+            }
+
+            renderHomeboard();
+            renderProfileSounds();
+        }
 
         // UI Toast Notification Helper
         function showToast(message, type = 'info') {
@@ -727,7 +998,7 @@
                              type === 'error' ? 'fa-circle-xmark text-red-400' :
                              'fa-circle-info text-indigo-400';
 
-            toast.className = `pointer-events-auto px-4 py-3 rounded-xl border backdrop-blur-md shadow-2xl text-xs font-semibold flex items-center gap-3 animate-bounce-short transition-all ${colorClass}`;
+            toast.className = `pointer-events-auto px-4 py-3 rounded-xl border backdrop-blur-md shadow-2xl text-xs font-semibold flex items-center gap-3 transition-all ${colorClass}`;
             toast.innerHTML = `<i class="fa-solid ${iconClass} text-base"></i><span>${message}</span>`;
             
             container.appendChild(toast);
@@ -738,7 +1009,6 @@
             }, 3500);
         }
 
-        // Helper: Format Seconds into mm:ss
         function formatTime(seconds) {
             if (isNaN(seconds) || seconds === Infinity) return "0:00";
             const mins = Math.floor(seconds / 60);
@@ -746,11 +1016,20 @@
             return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
         }
 
-        // Auto-clean input when user types @
         function cleanUsernameInput(inputEl) {
             if (inputEl.value.startsWith('@')) {
                 inputEl.value = inputEl.value.replace(/^@+/, '');
             }
+        }
+
+        function openModal(modalId) {
+            const el = document.getElementById(modalId);
+            if (el) el.classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            const el = document.getElementById(modalId);
+            if (el) el.classList.add('hidden');
         }
 
         // ==========================================
@@ -775,12 +1054,13 @@
                             currentUser = session.user;
                             await fetchSupabaseProfile(currentUser.id);
                             updateUserUI();
-                            await renderSoundboard();
+                            await fetchLiveSoundsFromSupabase();
                         } else if (event === 'SIGNED_OUT') {
                             currentUser = null;
                             userProfile = null;
                             updateUserUI();
-                            await renderSoundboard();
+                            renderHomeboard();
+                            renderProfileSounds();
                         }
                     });
 
@@ -788,11 +1068,13 @@
                 } catch (e) {
                     console.error("Supabase init error:", e);
                     updateBackendBadge(false);
-                    renderSoundboard();
+                    renderHomeboard();
+                    renderProfileSounds();
                 }
             } else {
                 updateBackendBadge(false);
-                renderSoundboard();
+                renderHomeboard();
+                renderProfileSounds();
             }
         }
 
@@ -825,7 +1107,7 @@
                 await fetchSupabaseProfile(currentUser.id);
             }
             updateUserUI();
-            await renderSoundboard();
+            await fetchLiveSoundsFromSupabase();
         }
 
         async function fetchSupabaseProfile(userId) {
@@ -854,453 +1136,53 @@
             updateUserUI();
         }
 
-        let authMode = 'login';
-
-        function switchAuthTab(mode) {
-            authMode = mode;
-            const loginBtn = document.getElementById('tab-login-btn');
-            const signupBtn = document.getElementById('tab-signup-btn');
-            const submitBtn = document.getElementById('auth-submit-btn');
-            const signupRules = document.getElementById('signup-rules');
-
-            if (mode === 'login') {
-                loginBtn.className = 'flex-1 pb-3 text-sm font-bold border-b-2 border-emerald-500 text-emerald-400';
-                signupBtn.className = 'flex-1 pb-3 text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-200';
-                submitBtn.innerText = 'Sign In';
-                signupRules.classList.add('hidden');
-            } else {
-                signupBtn.className = 'flex-1 pb-3 text-sm font-bold border-b-2 border-emerald-500 text-emerald-400';
-                loginBtn.className = 'flex-1 pb-3 text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-200';
-                submitBtn.innerText = 'Create Account';
-                signupRules.classList.remove('hidden');
-            }
-        }
-
-        function checkPasswordComplexity(pw) {
-            const ruleLen = document.getElementById('rule-length');
-            const ruleUpper = document.getElementById('rule-uppercase');
-            const ruleLower = document.getElementById('rule-lowercase');
-            const ruleNum = document.getElementById('rule-number');
-
-            if (!ruleLen) return;
-
-            ruleLen.className = pw.length >= 8 ? 'text-emerald-400' : 'text-slate-500';
-            ruleUpper.className = /[A-Z]/.test(pw) ? 'text-emerald-400' : 'text-slate-500';
-            ruleLower.className = /[a-z]/.test(pw) ? 'text-emerald-400' : 'text-slate-500';
-            ruleNum.className = /[0-9]/.test(pw) ? 'text-emerald-400' : 'text-slate-500';
-        }
-
-        // ==========================================
-        // AUTHENTICATION & ACCOUNT HANDLERS
-        // ==========================================
-        async function handleAuthSubmit(e) {
-            e.preventDefault();
+        async function fetchLiveSoundsFromSupabase() {
             if (!supabaseClient) {
-                showToast("Supabase is not connected. Please configure your credentials.", "error");
-                openModal('supabase-modal');
-                return;
-            }
-
-            const email = document.getElementById('auth-email').value.trim();
-            const password = document.getElementById('auth-password').value;
-
-            if (!email || !password) {
-                showToast("Please enter both email and password", "error");
-                return;
-            }
-
-            const submitBtn = document.getElementById('auth-submit-btn');
-            if (submitBtn) submitBtn.disabled = true;
-
-            try {
-                if (authMode === 'login') {
-                    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-                    if (error) throw error;
-                    
-                    showToast("Successfully signed in!", "success");
-                    closeModal('auth-modal');
-                    if (data?.user) {
-                        currentUser = data.user;
-                        await fetchSupabaseProfile(currentUser.id);
-                        updateUserUI();
-                        await renderSoundboard();
-                    }
-                } else {
-                    // ACCOUNT CREATION (SIGN UP)
-                    const { data, error } = await supabaseClient.auth.signUp({
-                        email,
-                        password,
-                        options: {
-                            emailRedirectTo: window.location.origin + window.location.pathname
-                        }
-                    });
-
-                    if (error) throw error;
-
-                    if (data?.session) {
-                        // Direct session created (No email confirmation required on project)
-                        currentUser = data.user;
-                        showToast("Account created successfully!", "success");
-                        closeModal('auth-modal');
-                        openModal('username-modal'); // Prompt for custom handle
-                        updateUserUI();
-                        await renderSoundboard();
-                    } else if (data?.user) {
-                        // Project has email confirmation enabled
-                        if (data.user.identities && data.user.identities.length === 0) {
-                            showToast("User already exists with this email. Please sign in.", "error");
-                            switchAuthTab('login');
-                        } else {
-                            showToast("Account created! Check email if confirmation is required, or sign in.", "success");
-                            closeModal('auth-modal');
-                        }
-                    } else {
-                        showToast("Account created successfully!", "success");
-                        closeModal('auth-modal');
-                    }
-                }
-            } catch (err) {
-                console.error("Auth submit error:", err);
-                showToast(err.message || "Authentication failed. Please check your details.", "error");
-            } finally {
-                if (submitBtn) submitBtn.disabled = false;
-            }
-        }
-
-        async function handleGitHubAuth() {
-            if (!supabaseClient) {
-                showToast("Supabase is not connected. Please configure credentials first.", "error");
-                openModal('supabase-modal');
-                return;
-            }
-            try {
-                const { error } = await supabaseClient.auth.signInWithOAuth({
-                    provider: 'github',
-                    options: {
-                        redirectTo: window.location.origin + window.location.pathname
-                    }
-                });
-                if (error) throw error;
-            } catch (err) {
-                console.error("GitHub auth error:", err);
-                showToast(err.message || "GitHub authentication failed", "error");
-            }
-        }
-
-        async function handleUsernameSetup(e) {
-            e.preventDefault();
-            if (!currentUser || !supabaseClient) return;
-
-            let username = document.getElementById('setup-username').value.trim();
-            if (!username) return;
-
-            if (!username.startsWith('@')) {
-                username = '@' + username;
-            }
-
-            try {
-                const { error } = await supabaseClient
-                    .from('profiles')
-                    .upsert({ id: currentUser.id, username: username, created_at: new Date() });
-
-                if (error) throw error;
-
-                userProfile = { id: currentUser.id, username: username };
-                showToast(`Username set to ${username}!`, "success");
-                closeModal('username-modal');
-                updateUserUI();
-                await renderSoundboard();
-            } catch (err) {
-                console.error("Username setup error:", err);
-                showToast(err.message || "Failed to save username", "error");
-            }
-        }
-
-        async function handlePasswordUpdate(e) {
-            e.preventDefault();
-            if (!currentUser || !supabaseClient) {
-                showToast("Must be signed in to update password", "error");
-                return;
-            }
-
-            const newPassword = document.getElementById('new-password').value;
-            if (!newPassword || newPassword.length < 8) {
-                showToast("Password must be at least 8 characters", "error");
+                renderHomeboard();
+                renderProfileSounds();
                 return;
             }
 
             try {
-                const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
-                if (error) throw error;
-                showToast("Password updated successfully!", "success");
-                document.getElementById('new-password').value = '';
+                const { data, error } = await supabaseClient
+                    .from('sounds')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (!error && data && data.length > 0) {
+                    activeSoundsList = data;
+                }
             } catch (err) {
-                console.error("Password update error:", err);
-                showToast(err.message || "Failed to update password", "error");
+                console.log("Using local sounds fallback", err);
             }
-        }
-
-        async function handleSignOut() {
-            if (supabaseClient) {
-                await supabaseClient.auth.signOut();
-            }
-            currentUser = null;
-            userProfile = null;
-            updateUserUI();
-            showToast("Signed out successfully", "info");
-            switchTab('soundboard');
-            await renderSoundboard();
-        }
-
-        async function fetchUserStorageFiles() {
-            const listEl = document.getElementById('user-files-list');
-            if (!listEl) return;
-
-            if (!currentUser || !supabaseClient) {
-                listEl.innerHTML = '<p class="text-xs text-slate-500 italic">Sign in to view your files in storage.</p>';
-                return;
-            }
-
-            try {
-                const { data, error } = await supabaseClient.storage.from('user-files').list(currentUser.id, {
-                    limit: 100,
-                    offset: 0,
-                    sortBy: { column: 'created_at', order: 'desc' }
-                });
-
-                if (error) throw error;
-
-                if (!data || data.length === 0) {
-                    listEl.innerHTML = '<p class="text-xs text-slate-500 italic">No uploaded files in storage.</p>';
-                    return;
-                }
-
-                listEl.innerHTML = data.map(file => `
-                    <div class="flex items-center justify-between bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-xs">
-                        <div class="flex items-center gap-2 truncate">
-                            <i class="fa-solid fa-file-audio text-emerald-400"></i>
-                            <span class="text-slate-200 truncate font-mono">${file.name}</span>
-                        </div>
-                        <span class="text-slate-500 font-mono text-[10px] shrink-0">${formatBytes(file.metadata?.size || 0)}</span>
-                    </div>
-                `).join('');
-            } catch (err) {
-                console.error("Fetch storage files error:", err);
-                listEl.innerHTML = '<p class="text-xs text-red-400 italic">Failed to load storage files.</p>';
-            }
-        }
-
-        function saveSupabaseConfig(e) {
-            e.preventDefault();
-            const url = document.getElementById('sb-url-input').value.trim();
-            const key = document.getElementById('sb-key-input').value.trim();
-
-            if (!url || !key) {
-                showToast("Please enter both Supabase URL and Anon Key", "error");
-                return;
-            }
-
-            localStorage.setItem('ag_sb_url', url);
-            localStorage.setItem('ag_sb_key', key);
-            initSupabaseFromStorage();
-            closeModal('supabase-modal');
-            showToast("Supabase configuration saved!", "success");
-        }
-
-        function selectCategory(cat) {
-            currentCategory = cat;
-            document.querySelectorAll('.category-btn').forEach(btn => {
-                if (btn.getAttribute('data-cat') === cat) {
-                    btn.className = 'category-btn active bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-xs font-semibold px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all';
-                } else {
-                    btn.className = 'category-btn bg-slate-800/80 text-slate-300 border border-slate-700/60 hover:bg-slate-800 text-xs font-semibold px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all';
-                }
-            });
-            renderSoundboard();
-        }
-
-        function applyFilters() {
-            renderSoundboard();
-        }
-
-        async function renderSoundboard() {
-            const grid = document.getElementById('sounds-grid');
-            const emptyState = document.getElementById('empty-state');
-            if (!grid) return;
-
-            if (!supabaseClient) {
-                grid.innerHTML = '';
-                if (emptyState) {
-                    emptyState.classList.remove('hidden');
-                    emptyState.querySelector('h3').innerText = 'Supabase Disconnected';
-                    emptyState.querySelector('p').innerText = 'Connect your Supabase project using the configuration button at the top to view and publish live sounds.';
-                }
-                return;
-            }
-
-            const queryStr = (document.getElementById('search-input')?.value || '').toLowerCase().trim();
-            const sortVal = document.getElementById('sort-select')?.value || 'newest';
-
-            let query = supabaseClient.from('sounds').select('*');
-
-            if (currentCategory === 'Private') {
-                if (currentUser) {
-                    query = query.eq('is_private', true).eq('user_id', currentUser.id);
-                } else {
-                    query = query.eq('is_private', true);
-                }
-            } else if (currentCategory !== 'All') {
-                query = query.eq('category', currentCategory).eq('is_private', false);
-            } else {
-                query = query.eq('is_private', false);
-            }
-
-            const { data: sounds, error } = await query;
-
-            if (error || !sounds || sounds.length === 0) {
-                grid.innerHTML = '';
-                if (emptyState) {
-                    emptyState.classList.remove('hidden');
-                    emptyState.querySelector('h3').innerText = 'No Sound Effects Found';
-                    emptyState.querySelector('p').innerText = 'Try adjusting your search filters or generate a sound in our synthesizer!';
-                }
-                return;
-            }
-
-            activeSoundsList = sounds;
-            let filteredSounds = [...sounds];
-
-            if (queryStr) {
-                filteredSounds = filteredSounds.filter(s => 
-                    (s.title && s.title.toLowerCase().includes(queryStr)) ||
-                    (s.username && s.username.toLowerCase().includes(queryStr)) ||
-                    (s.description && s.description.toLowerCase().includes(queryStr))
-                );
-            }
-
-            if (sortVal === 'newest') {
-                filteredSounds.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-            } else if (sortVal === 'oldest') {
-                filteredSounds.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-            } else if (sortVal === 'popular') {
-                filteredSounds.sort((a, b) => (b.plays || 0) - (a.plays || 0));
-            } else if (sortVal === 'least-popular') {
-                filteredSounds.sort((a, b) => (a.plays || 0) - (b.plays || 0));
-            }
-
-            if (filteredSounds.length === 0) {
-                grid.innerHTML = '';
-                if (emptyState) emptyState.classList.remove('hidden');
-                return;
-            }
-
-            if (emptyState) emptyState.classList.add('hidden');
-
-            grid.innerHTML = filteredSounds.map(sound => {
-                const isOwner = currentUser && sound.user_id === currentUser.id;
-                const isPlaying = activeSoundId === sound.id;
-
-                return `
-                    <div class="sound-pad-glow bg-slate-900/90 rounded-2xl border border-slate-800 p-4 flex flex-col justify-between relative group" style="--pad-color-glow: ${sound.button_color || '#10b981'}40;">
-                        <div>
-                            <div class="flex items-start justify-between gap-2 mb-3">
-                                <div class="flex items-center gap-2">
-                                    <span class="w-3 h-3 rounded-full" style="background-color: ${sound.button_color || '#10b981'};"></span>
-                                    <span class="text-[11px] font-semibold text-slate-400">${sound.category}</span>
-                                </div>
-                                ${sound.is_private ? '<span class="text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-full font-bold">🔒 Private</span>' : ''}
-                            </div>
-
-                            <h3 class="font-bold text-slate-100 text-base line-clamp-1 group-hover:text-emerald-400 transition-colors">${sound.title}</h3>
-                            <p class="text-xs text-slate-400 mt-1 line-clamp-2">${sound.description || 'No description provided.'}</p>
-                        </div>
-
-                        <div class="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between">
-                            <div class="flex items-center gap-1.5">
-                                <span class="text-xs font-semibold text-emerald-400">${sound.username || '@creator'}</span>
-                            </div>
-
-                            <div class="flex items-center gap-1.5">
-                                ${isOwner ? `
-                                    <button onclick="deleteSound('${sound.id}')" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-red-500/20 hover:text-red-400 text-slate-400 flex items-center justify-center text-xs transition-all" title="Delete Sound">
-                                        <i class="fa-solid fa-trash"></i>
-                                    </button>
-                                ` : ''}
-                                
-                                <button onclick="requestDownload('${sound.id}')" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-emerald-500/20 hover:text-emerald-400 text-slate-300 flex items-center justify-center text-xs transition-all" title="Download Audio SFX">
-                                    <i class="fa-solid fa-download"></i>
-                                </button>
-
-                                <button onclick="playSound('${sound.id}')" class="w-10 h-10 rounded-xl ${isPlaying ? 'bg-amber-500 text-slate-950' : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950'} font-bold flex items-center justify-center text-sm shadow-md transition-all active:scale-95">
-                                    <i class="fa-solid ${isPlaying ? 'fa-pause' : 'fa-play'}"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function switchTab(tabId) {
-            const tabs = ['soundboard', 'synth', 'upload', 'settings'];
-            tabs.forEach(t => {
-                const el = document.getElementById(`tab-${t}`);
-                const nav = document.getElementById(`nav-${t}`);
-                if (el) el.classList.add('hidden');
-                if (nav) nav.className = 'px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 transition-all';
-            });
-
-            const targetTab = document.getElementById(`tab-${tabId}`);
-            const targetNav = document.getElementById(`nav-${tabId}`);
-            if (targetTab) targetTab.classList.remove('hidden');
-            if (targetNav) targetNav.className = 'px-4 py-2 rounded-lg text-sm font-medium transition-all bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
-            
-            if (tabId === 'upload') {
-                fetchUserStorageFiles();
-            }
-        }
-
-        function openModal(modalId) {
-            const modal = document.getElementById(modalId);
-            if (modal) {
-                if (modalId === 'supabase-modal') {
-                    const urlInput = document.getElementById('sb-url-input');
-                    const keyInput = document.getElementById('sb-key-input');
-                    if (urlInput) urlInput.value = localStorage.getItem('ag_sb_url') || DEFAULT_SUPABASE_URL;
-                    if (keyInput) keyInput.value = localStorage.getItem('ag_sb_key') || DEFAULT_SUPABASE_KEY;
-                }
-                modal.classList.remove('hidden');
-            }
-        }
-
-        function closeModal(modalId) {
-            const modal = document.getElementById(modalId);
-            if (modal) modal.classList.add('hidden');
+            renderHomeboard();
+            renderProfileSounds();
         }
 
         function updateUserUI() {
             const authSection = document.getElementById('user-auth-section');
-            const privateCatBtn = document.getElementById('cat-btn-private');
-            const uploadAuthBanner = document.getElementById('upload-auth-banner');
             const handleDisplay = document.getElementById('account-handle-display');
             const emailDisplay = document.getElementById('account-email-display');
+            const profileHandle = document.getElementById('profile-creator-handle');
+            const profileEmail = document.getElementById('profile-creator-email');
+            const uploadAuthBanner = document.getElementById('upload-auth-banner');
+
+            const handle = userProfile?.username || (currentUser ? '@' + currentUser.email.split('@')[0] : '@guest_creator');
 
             if (currentUser) {
-                closeModal('auth-modal');
-                const userEmail = currentUser.email || currentUser?.user_metadata?.email || 'Authenticated User';
-
                 if (authSection) {
                     authSection.innerHTML = `
-                        <button onclick="switchTab('settings')" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium px-3.5 py-1.5 rounded-xl text-xs border border-slate-700 transition-all">
-                            <i class="fa-solid fa-circle-user text-emerald-400 text-sm"></i>
-                            <span>${userProfile ? userProfile.username : '@creator'}</span>
+                        <button onclick="switchTab('settings')" class="bg-slate-800 hover:bg-slate-700 text-emerald-400 font-bold px-3.5 py-2 rounded-xl text-xs transition-all border border-slate-700 flex items-center gap-2">
+                            <i class="fa-solid fa-circle-user text-sm"></i>
+                            <span>${handle}</span>
                         </button>
                     `;
                 }
-                if (privateCatBtn) privateCatBtn.classList.remove('hidden');
+                if (handleDisplay) handleDisplay.innerText = handle;
+                if (emailDisplay) emailDisplay.innerText = currentUser.email;
+                if (profileHandle) profileHandle.innerText = handle;
+                if (profileEmail) profileEmail.innerText = currentUser.email;
                 if (uploadAuthBanner) uploadAuthBanner.classList.add('hidden');
-                if (handleDisplay) handleDisplay.innerText = userProfile ? userProfile.username : '@creator';
-                if (emailDisplay) emailDisplay.innerText = userEmail;
             } else {
                 if (authSection) {
                     authSection.innerHTML = `
@@ -1310,113 +1192,470 @@
                         </button>
                     `;
                 }
-                if (privateCatBtn) privateCatBtn.classList.add('hidden');
+                if (handleDisplay) handleDisplay.innerText = "@guest_creator";
+                if (emailDisplay) emailDisplay.innerText = "Guest User (Simulated Session)";
+                if (profileHandle) profileHandle.innerText = "@guest_creator";
+                if (profileEmail) profileEmail.innerText = "Guest Creator Mode";
                 if (uploadAuthBanner) uploadAuthBanner.classList.remove('hidden');
-                if (handleDisplay) handleDisplay.innerText = '@guest_creator';
-                if (emailDisplay) emailDisplay.innerText = 'Guest Session';
             }
         }
 
+        // ==========================================
+        // TAB SWITCHING NAVIGATION
+        // ==========================================
+        function switchTab(tabName) {
+            currentTab = tabName;
+            
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            
+            const activeSec = document.getElementById(`tab-${tabName}`);
+            if (activeSec) activeSec.classList.remove('hidden');
+
+            document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+                btn.className = 'nav-tab-btn px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 transition-all';
+            });
+
+            const activeBtn = document.getElementById(`nav-${tabName}`);
+            if (activeBtn) {
+                activeBtn.className = 'nav-tab-btn px-4 py-2 rounded-lg text-sm font-medium transition-all bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+            }
+
+            if (tabName === 'homeboard') {
+                renderHomeboard();
+            } else if (tabName === 'profile') {
+                renderProfileSounds();
+            } else if (tabName === 'upload' && currentUser) {
+                fetchUserStorageFiles();
+            }
+        }
+
+        // ==========================================
+        // HOMEBOARD SFX RENDER & FILTERS
+        // ==========================================
+        function selectCategory(category) {
+            currentCategory = category;
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                if (btn.dataset.cat === category) {
+                    btn.className = 'category-btn active bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-xs font-semibold px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all';
+                } else {
+                    btn.className = 'category-btn bg-slate-800/80 text-slate-300 border border-slate-700/60 hover:bg-slate-800 text-xs font-semibold px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all';
+                }
+            });
+            applyFilters();
+        }
+
+        function applyFilters() {
+            renderHomeboard();
+        }
+
+        function renderHomeboard() {
+            const grid = document.getElementById('sounds-grid');
+            const emptyState = document.getElementById('empty-state');
+            if (!grid) return;
+
+            const searchVal = (document.getElementById('search-input')?.value || '').toLowerCase().trim();
+            const sortVal = document.getElementById('sort-select')?.value || 'newest';
+
+            let filtered = activeSoundsList.filter(snd => !snd.is_private);
+
+            if (currentCategory !== 'All') {
+                filtered = filtered.filter(snd => snd.category === currentCategory);
+            }
+
+            if (searchVal) {
+                filtered = filtered.filter(snd => 
+                    snd.title.toLowerCase().includes(searchVal) ||
+                    snd.creator_handle.toLowerCase().includes(searchVal) ||
+                    (snd.description && snd.description.toLowerCase().includes(searchVal))
+                );
+            }
+
+            filtered.sort((a, b) => {
+                if (sortVal === 'newest') return new Date(b.created_at) - new Date(a.created_at);
+                if (sortVal === 'oldest') return new Date(a.created_at) - new Date(b.created_at);
+                if (sortVal === 'popular') return (b.likes_count || 0) - (a.likes_count || 0);
+                if (sortVal === 'least-popular') return (a.likes_count || 0) - (b.likes_count || 0);
+                return 0;
+            });
+
+            grid.innerHTML = '';
+
+            if (filtered.length === 0) {
+                if (emptyState) emptyState.classList.remove('hidden');
+                return;
+            } else {
+                if (emptyState) emptyState.classList.add('hidden');
+            }
+
+            filtered.forEach(snd => {
+                const card = createSoundCardHTML(snd, false);
+                grid.appendChild(card);
+            });
+        }
+
+        // ==========================================
+        // PROFILE TAB: USER POSTS & PRIVACY SWITCH
+        // ==========================================
+        function setProfilePostVisibility(visibility) {
+            profilePostVisibility = visibility;
+            const btnPublic = document.getElementById('profile-switch-public');
+            const btnPrivate = document.getElementById('profile-switch-private');
+
+            if (visibility === 'public') {
+                btnPublic.className = 'px-4 py-2 rounded-lg text-xs font-bold transition-all bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-sm flex items-center gap-2';
+                btnPrivate.className = 'px-4 py-2 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-slate-200 flex items-center gap-2';
+            } else {
+                btnPrivate.className = 'px-4 py-2 rounded-lg text-xs font-bold transition-all bg-purple-500/20 text-purple-300 border border-purple-500/30 shadow-sm flex items-center gap-2';
+                btnPublic.className = 'px-4 py-2 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-slate-200 flex items-center gap-2';
+            }
+
+            renderProfileSounds();
+        }
+
+        function renderProfileSounds() {
+            const grid = document.getElementById('profile-sounds-grid');
+            const emptyState = document.getElementById('profile-empty-state');
+            const emptyTitle = document.getElementById('profile-empty-title');
+            const emptyMsg = document.getElementById('profile-empty-msg');
+            const statPublic = document.getElementById('stat-public-count');
+            const statPrivate = document.getElementById('stat-private-count');
+
+            if (!grid) return;
+
+            const currentUserHandle = userProfile?.username || (currentUser ? '@' + currentUser.email.split('@')[0] : '@guest_creator');
+            const currentUserId = currentUser?.id || 'guest_user';
+
+            const userSounds = activeSoundsList.filter(snd => 
+                (snd.user_id && snd.user_id === currentUserId) || 
+                snd.creator_handle === currentUserHandle ||
+                (currentUserId === 'guest_user' && snd.creator_handle === '@guest_creator')
+            );
+
+            const publicCount = userSounds.filter(s => !s.is_private).length;
+            const privateCount = userSounds.filter(s => s.is_private).length;
+
+            if (statPublic) statPublic.innerText = publicCount;
+            if (statPrivate) statPrivate.innerText = privateCount;
+
+            const filtered = userSounds.filter(snd => 
+                profilePostVisibility === 'private' ? snd.is_private : !snd.is_private
+            );
+
+            grid.innerHTML = '';
+
+            if (filtered.length === 0) {
+                if (emptyState) {
+                    emptyState.classList.remove('hidden');
+                    if (profilePostVisibility === 'private') {
+                        if (emptyTitle) emptyTitle.innerText = "No Private SFX Found";
+                        if (emptyMsg) emptyMsg.innerText = "You haven't set any sound effects as private yet.";
+                    } else {
+                        if (emptyTitle) emptyTitle.innerText = "No Public SFX Found";
+                        if (emptyMsg) emptyMsg.innerText = "You haven't published any public sound effects yet.";
+                    }
+                }
+                return;
+            } else {
+                if (emptyState) emptyState.classList.add('hidden');
+            }
+
+            filtered.forEach(snd => {
+                const card = createSoundCardHTML(snd, true);
+                grid.appendChild(card);
+            });
+        }
+
+        // ==========================================
+        // BUILD SOUND PAD CARD ELEMENT (EXPLICIT USER & 1-LIKE LIMIT)
+        // ==========================================
+        function createSoundCardHTML(snd, isProfileView = false) {
+            const card = document.createElement('div');
+            const glowColor = snd.color || '#10b981';
+            const isPlaying = activeSoundId === snd.id;
+            const likedPosts = getLikedPosts();
+            const isLiked = likedPosts.includes(snd.id);
+            const creatorHandle = snd.creator_handle || '@creator';
+
+            card.style.setProperty('--pad-color-glow', glowColor);
+            card.className = `sound-pad-glow bg-slate-900/90 rounded-2xl border ${isPlaying ? 'border-emerald-500 shadow-xl ring-2 ring-emerald-500/50' : 'border-slate-800/80'} p-4 flex flex-col justify-between space-y-3 relative group overflow-hidden transition-all`;
+
+            card.innerHTML = `
+                <!-- Top Header: Category & Creator Handle Badge -->
+                <div>
+                    <div class="flex items-center justify-between gap-2 mb-2">
+                        <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider bg-slate-950 text-slate-400 border border-slate-800">
+                            ${snd.category || 'SFX'}
+                        </span>
+                        
+                        <!-- Explicit Creator User Badge -->
+                        <div class="flex items-center gap-1.5 text-[11px] font-semibold bg-slate-950 px-2.5 py-0.5 rounded-full border border-slate-800 text-slate-300" title="Posted by ${escapeHTML(creatorHandle)}">
+                            <i class="fa-solid fa-circle-user text-emerald-400 text-xs"></i>
+                            <span class="truncate max-w-[110px]">${escapeHTML(creatorHandle)}</span>
+                        </div>
+                    </div>
+
+                    <!-- Sound Pad Play Trigger Box -->
+                    <div onclick="playSoundPad('${snd.id}')" class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 cursor-pointer hover:border-emerald-500/40 transition-all flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center text-slate-950 font-bold transition-all shadow-md shrink-0" style="background-color: ${glowColor}">
+                            <i class="fa-solid ${isPlaying ? 'fa-square' : 'fa-play'} text-slate-950"></i>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <h3 class="font-bold text-sm text-slate-100 truncate">${escapeHTML(snd.title)}</h3>
+                            <p class="text-[11px] text-slate-400 truncate flex items-center gap-1 mt-0.5">
+                                <i class="fa-solid fa-user text-[10px] text-slate-500"></i>
+                                <span>Posted by <strong class="text-slate-300 font-medium">${escapeHTML(creatorHandle)}</strong></span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Description & Hashtags -->
+                <p class="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+                    ${escapeHTML(snd.description || 'No description provided.')}
+                </p>
+
+                <!-- Footer Action Bar (1 Like Limit Per User Enforced) -->
+                <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+                    <div class="flex items-center gap-2">
+                        <!-- Enforced 1-Like Button -->
+                        <button onclick="likeSound('${snd.id}')" title="${isLiked ? 'You liked this post (click to remove)' : 'Like this post (1 per user)'}" class="${isLiked ? 'bg-red-500/15 text-red-400 border border-red-500/30 font-bold px-2.5 py-1 rounded-lg' : 'hover:text-red-400 text-slate-400 px-2 py-1'} transition-all flex items-center gap-1.5">
+                            <i class="fa-solid fa-heart ${isLiked ? 'text-red-500 animate-pulse' : 'text-slate-500'}"></i>
+                            <span>${snd.likes_count || 0}</span>
+                        </button>
+                        
+                        <button onclick="promptDownload('${snd.id}')" class="hover:text-emerald-400 transition-all flex items-center gap-1 px-2 py-1">
+                            <i class="fa-solid fa-download text-emerald-500/80"></i>
+                            <span>${snd.downloads_count || 0}</span>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center gap-1">
+                        ${snd.is_private ? 
+                            `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-950/80 text-purple-300 border border-purple-500/40 flex items-center gap-1"><i class="fa-solid fa-lock text-[9px]"></i> Private</span>` : 
+                            `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950/60 text-emerald-400 border border-emerald-500/30 flex items-center gap-1"><i class="fa-solid fa-globe text-[9px]"></i> Public</span>`
+                        }
+                        ${isProfileView ? `
+                            <button onclick="openEditPostModal('${snd.id}')" class="bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 font-bold px-2.5 py-1 rounded-lg text-[11px] border border-indigo-500/30 transition-all flex items-center gap-1">
+                                <i class="fa-solid fa-pen-to-square text-[10px]"></i> Edit
+                            </button>
+                            <button onclick="confirmDeletePost('${snd.id}')" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold px-2 py-1 rounded-lg text-[11px] border border-red-500/30 transition-all">
+                                <i class="fa-solid fa-trash text-[10px]"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+
+            return card;
+        }
+
+        // ==========================================
+        // EDIT POST METADATA HANDLERS
+        // ==========================================
+        function openEditPostModal(soundId) {
+            const sound = activeSoundsList.find(s => s.id === soundId);
+            if (!sound) return;
+
+            document.getElementById('edit-post-id').value = sound.id;
+            document.getElementById('edit-post-title').value = sound.title || '';
+            document.getElementById('edit-post-category').value = sound.category || '8-Bit & Gaming';
+            document.getElementById('edit-post-description').value = sound.description || '';
+            document.getElementById('edit-post-color').value = sound.color || '#10b981';
+            document.getElementById('edit-post-visibility').value = sound.is_private ? 'private' : 'public';
+
+            openModal('edit-post-modal');
+        }
+
+        async function handlePostEditSubmit(e) {
+            e.preventDefault();
+            const soundId = document.getElementById('edit-post-id').value;
+            const soundIndex = activeSoundsList.findIndex(s => s.id === soundId);
+            if (soundIndex === -1) return;
+
+            const newTitle = document.getElementById('edit-post-title').value.trim();
+            const newCategory = document.getElementById('edit-post-category').value;
+            const newDescription = document.getElementById('edit-post-description').value.trim();
+            const newColor = document.getElementById('edit-post-color').value;
+            const newVisibility = document.getElementById('edit-post-visibility').value === 'private';
+
+            activeSoundsList[soundIndex].title = newTitle;
+            activeSoundsList[soundIndex].category = newCategory;
+            activeSoundsList[soundIndex].description = newDescription;
+            activeSoundsList[soundIndex].color = newColor;
+            activeSoundsList[soundIndex].is_private = newVisibility;
+
+            if (supabaseClient) {
+                try {
+                    await supabaseClient
+                        .from('sounds')
+                        .update({
+                            title: newTitle,
+                            category: newCategory,
+                            description: newDescription,
+                            color: newColor,
+                            is_private: newVisibility
+                        })
+                        .eq('id', soundId);
+                } catch (err) {
+                    console.error("Supabase update error:", err);
+                }
+            }
+
+            closeModal('edit-post-modal');
+            showToast("Post updated successfully!", "success");
+            renderHomeboard();
+            renderProfileSounds();
+        }
+
+        function confirmDeletePost(soundId) {
+            const sound = activeSoundsList.find(s => s.id === soundId);
+            if (!sound) return;
+
+            const actionBtn = document.getElementById('confirm-modal-action-btn');
+            document.getElementById('confirm-modal-title').innerText = "Delete Sound Effect?";
+            document.getElementById('confirm-modal-msg').innerText = `Are you sure you want to delete "${sound.title}"?`;
+
+            actionBtn.onclick = async () => {
+                activeSoundsList = activeSoundsList.filter(s => s.id !== soundId);
+                if (supabaseClient) {
+                    try {
+                        await supabaseClient.from('sounds').delete().eq('id', soundId);
+                    } catch (e) {
+                        console.error("Delete error", e);
+                    }
+                }
+                closeModal('confirm-modal');
+                showToast("Post deleted", "info");
+                renderHomeboard();
+                renderProfileSounds();
+            };
+
+            openModal('confirm-modal');
+        }
+
+        function escapeHTML(str) {
+            return String(str || '').replace(/[&<>"']/g, match => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            })[match]);
+        }
+
+        // ==========================================
+        // REAL-TIME AUDIO PLAYBACK ENGINE & SYNTH
+        // ==========================================
         function initAudioContext() {
             if (!audioCtx) {
-                const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
-                audioCtx = new AudioCtxClass();
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 analyserNode = audioCtx.createAnalyser();
-                analyserNode.fftSize = 64;
+                analyserNode.fftSize = 128;
                 masterGainNode = audioCtx.createGain();
+                masterGainNode.gain.value = 0.8;
                 masterGainNode.connect(audioCtx.destination);
+                analyserNode.connect(masterGainNode);
             }
             if (audioCtx.state === 'suspended') {
                 audioCtx.resume();
             }
         }
 
-        function setupVisualizerCanvas() {
-            const canvas = document.getElementById('visualizer-canvas');
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
+        function playSoundPad(soundId) {
+            initAudioContext();
+            const snd = activeSoundsList.find(s => s.id === soundId);
+            if (!snd) return;
 
-            function resize() {
-                canvas.width = canvas.parentElement.clientWidth || 300;
-                canvas.height = canvas.parentElement.clientHeight || 48;
+            if (activeSoundId === soundId && currentAudio && !currentAudio.paused) {
+                currentAudio.pause();
+                activeSoundId = null;
+                updateDockPlaybackUI(null, false);
+                renderHomeboard();
+                renderProfileSounds();
+                return;
             }
-            resize();
-            window.addEventListener('resize', resize);
 
-            function draw() {
-                animFrameId = requestAnimationFrame(draw);
-                const width = canvas.width;
-                const height = canvas.height;
-                ctx.clearRect(0, 0, width, height);
+            activeSoundId = soundId;
 
-                if (analyserNode && activeSoundId) {
-                    const bufferLength = analyserNode.frequencyBinCount;
-                    const dataArray = new Uint8Array(bufferLength);
-
-                    if (currentVisualizerMode === 'waveform') {
-                        analyserNode.getByteTimeDomainData(dataArray);
-                        ctx.lineWidth = 2;
-                        ctx.strokeStyle = '#10b981';
-                        ctx.beginPath();
-                        const sliceWidth = width / bufferLength;
-                        let x = 0;
-                        for (let i = 0; i < bufferLength; i++) {
-                            const v = dataArray[i] / 128.0;
-                            const y = (v * height) / 2;
-                            if (i === 0) ctx.moveTo(x, y);
-                            else ctx.lineTo(x, y);
-                            x += sliceWidth;
-                        }
-                        ctx.stroke();
-                    } else {
-                        analyserNode.getByteFrequencyData(dataArray);
-                        const barWidth = (width / bufferLength) * 2;
-                        let x = 0;
-                        for (let i = 0; i < bufferLength; i++) {
-                            const barHeight = (dataArray[i] / 255) * height;
-                            const gradient = ctx.createLinearGradient(0, height, 0, 0);
-                            gradient.addColorStop(0, '#10b981');
-                            gradient.addColorStop(1, '#6366f1');
-                            ctx.fillStyle = gradient;
-                            ctx.fillRect(x, height - barHeight, barWidth, barHeight);
-                            x += barWidth + 2;
-                        }
-                    }
-                } else {
-                    // Ambient idle animation
-                    ctx.strokeStyle = 'rgba(16, 185, 129, 0.3)';
-                    ctx.lineWidth = 1.5;
-                    ctx.beginPath();
-                    const time = Date.now() * 0.003;
-                    for (let x = 0; x < width; x += 5) {
-                        const y = height / 2 + Math.sin(x * 0.05 + time) * 6;
-                        if (x === 0) ctx.moveTo(x, y);
-                        else ctx.lineTo(x, y);
-                    }
-                    ctx.stroke();
+            if (snd.audio_url.startsWith('synth:')) {
+                const presetName = snd.audio_url.split(':')[1];
+                loadSynthPreset(presetName);
+                playSynthSFX();
+                updateDockPlaybackUI(snd, true);
+            } else {
+                if (currentAudio) currentAudio.pause();
+                currentAudio = new Audio(snd.audio_url);
+                currentAudio.crossOrigin = "anonymous";
+                
+                try {
+                    const src = audioCtx.createMediaElementSource(currentAudio);
+                    src.connect(analyserNode);
+                } catch (e) {
+                    // Element source re-binding fallback
                 }
+
+                currentAudio.play().then(() => {
+                    updateDockPlaybackUI(snd, true);
+                }).catch(err => {
+                    playSynthSFX();
+                    updateDockPlaybackUI(snd, true);
+                });
             }
-            draw();
+
+            renderHomeboard();
+            renderProfileSounds();
         }
 
-        function setVisualizerMode(mode) {
-            currentVisualizerMode = mode;
-            document.querySelectorAll('.vmode-btn').forEach(btn => {
-                btn.className = 'vmode-btn px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-950/80 text-slate-400 border border-slate-800';
-            });
-            const activeBtn = document.getElementById(`vmode-${mode}`);
-            if (activeBtn) {
-                activeBtn.className = 'vmode-btn active px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/30 text-emerald-300 border border-emerald-500/40';
+        function updateDockPlaybackUI(snd, isPlaying) {
+            const titleEl = document.getElementById('dock-title');
+            const subEl = document.getElementById('dock-subtitle');
+            const playBtn = document.getElementById('dock-play-btn');
+            const downloadBtn = document.getElementById('dock-download-btn');
+            const thumb = document.getElementById('dock-pad-thumb');
+
+            if (snd) {
+                titleEl.innerText = snd.title;
+                subEl.innerText = `${snd.creator_handle || '@creator'} • ${snd.category}`;
+                downloadBtn.disabled = false;
+                pendingDownloadSound = snd;
+                if (thumb) thumb.style.borderColor = snd.color || '#10b981';
+            }
+
+            if (playBtn) {
+                playBtn.innerHTML = isPlaying ? '<i class="fa-solid fa-pause"></i>' : '<i class="fa-solid fa-play ml-0.5"></i>';
             }
         }
 
-        function setSynthWave(wave) {
-            synthParams.wave = wave;
-            document.querySelectorAll('.wave-btn').forEach(btn => {
-                btn.className = 'wave-btn py-2 rounded bg-slate-900 text-slate-400 border border-slate-800 text-xs font-bold';
+        function toggleDockPlayPause() {
+            if (activeSoundId) {
+                playSoundPad(activeSoundId);
+            } else if (activeSoundsList.length > 0) {
+                playSoundPad(activeSoundsList[0].id);
+            }
+        }
+
+        function setAudioVolume(val) {
+            if (masterGainNode) {
+                masterGainNode.gain.value = parseFloat(val);
+            }
+        }
+
+        function seekAudio(val) {
+            if (currentAudio && currentAudio.duration) {
+                currentAudio.currentTime = (parseFloat(val) / 100) * currentAudio.duration;
+            }
+        }
+
+        // ==========================================
+        // 8-BIT DSP SYNTHESIZER GENERATOR ENGINE
+        // ==========================================
+        function setSynthWave(shape) {
+            synthParams.wave = shape;
+            document.querySelectorAll('.wave-btn').forEach(b => {
+                b.className = 'wave-btn py-2 rounded bg-slate-900 text-slate-400 border border-slate-800 text-xs font-bold';
             });
-            const active = document.getElementById(`wave-${wave}`);
-            if (active) active.className = 'wave-btn active py-2 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-xs font-bold';
+            const activeBtn = document.getElementById(`wave-${shape}`);
+            if (activeBtn) activeBtn.className = 'wave-btn active py-2 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-xs font-bold';
         }
 
         function updateSynthVal(param, val) {
@@ -1427,15 +1666,15 @@
 
         function loadSynthPreset(preset) {
             const presets = {
-                jump: { wave: 'square', freq: 150, sweep: 600, attack: 0.01, decay: 0.2, vibrato: 0 },
-                laser: { wave: 'sawtooth', freq: 850, sweep: -750, attack: 0.001, decay: 0.15, vibrato: 0 },
-                explosion: { wave: 'noise', freq: 100, sweep: -80, attack: 0.01, decay: 0.6, vibrato: 0 },
-                coin: { wave: 'square', freq: 987, sweep: 300, attack: 0.005, decay: 0.3, vibrato: 5 },
-                powerup: { wave: 'triangle', freq: 300, sweep: 900, attack: 0.02, decay: 0.5, vibrato: 12 }
+                jump: { wave: 'square', freq: 150, sweep: 600, attack: 0.005, decay: 0.2, vibrato: 0 },
+                laser: { wave: 'sawtooth', freq: 850, sweep: -750, attack: 0.001, decay: 0.15, vibrato: 10 },
+                explosion: { wave: 'noise', freq: 200, sweep: -150, attack: 0.01, decay: 0.6, vibrato: 0 },
+                coin: { wave: 'square', freq: 988, sweep: 300, attack: 0.005, decay: 0.3, vibrato: 5 },
+                powerup: { wave: 'triangle', freq: 300, sweep: 900, attack: 0.01, decay: 0.45, vibrato: 15 }
             };
 
-            const p = presets[preset];
-            if (!p) return;
+            const p = presets[preset] || presets.laser;
+            synthParams = { ...p };
 
             setSynthWave(p.wave);
             document.getElementById('synth-freq').value = p.freq;
@@ -1449,414 +1688,258 @@
             updateSynthVal('attack', p.attack);
             updateSynthVal('decay', p.decay);
             updateSynthVal('vibrato', p.vibrato);
-
-            showToast(`Loaded '${preset.toUpperCase()}' preset`, 'info');
         }
 
         function playSynthSFX() {
             initAudioContext();
             const now = audioCtx.currentTime;
-            const gain = audioCtx.createGain();
 
             if (synthParams.wave === 'noise') {
-                const bufferSize = Math.floor(audioCtx.sampleRate * (synthParams.attack + synthParams.decay));
+                const bufferSize = audioCtx.sampleRate * synthParams.decay;
                 const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-                const data = buffer.getChannelData(0);
+                const output = buffer.getChannelData(0);
                 for (let i = 0; i < bufferSize; i++) {
-                    data[i] = Math.random() * 2 - 1;
+                    output[i] = Math.random() * 2 - 1;
                 }
-                const noiseSource = audioCtx.createBufferSource();
-                noiseSource.buffer = buffer;
-                noiseSource.connect(gain);
+                const noise = audioCtx.createBufferSource();
+                noise.buffer = buffer;
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(synthParams.freq, now);
+                filter.frequency.exponentialRampToValueAtTime(Math.max(40, synthParams.freq + synthParams.sweep), now + synthParams.decay);
                 
+                const gain = audioCtx.createGain();
                 gain.gain.setValueAtTime(0.01, now);
-                gain.gain.linearRampToValueAtTime(0.4, now + synthParams.attack);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + synthParams.attack + synthParams.decay);
+                gain.gain.linearRampToValueAtTime(0.8, now + synthParams.attack);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + synthParams.decay);
 
+                noise.connect(filter);
+                filter.connect(gain);
                 gain.connect(analyserNode);
-                analyserNode.connect(audioCtx.destination);
+                noise.start(now);
+            } else {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
 
-                noiseSource.start(now);
-                noiseSource.stop(now + synthParams.attack + synthParams.decay);
-                return;
+                osc.type = synthParams.wave;
+                osc.frequency.setValueAtTime(synthParams.freq, now);
+                osc.frequency.exponentialRampToValueAtTime(Math.max(30, synthParams.freq + synthParams.sweep), now + synthParams.decay);
+
+                if (synthParams.vibrato > 0) {
+                    const lfo = audioCtx.createOscillator();
+                    const lfoGain = audioCtx.createGain();
+                    lfo.frequency.value = synthParams.vibrato;
+                    lfoGain.gain.value = 25;
+                    lfo.connect(osc.frequency);
+                    lfo.start(now);
+                }
+
+                gain.gain.setValueAtTime(0.001, now);
+                gain.gain.linearRampToValueAtTime(0.8, now + synthParams.attack);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + synthParams.decay);
+
+                osc.connect(gain);
+                gain.connect(analyserNode);
+                osc.start(now);
+                osc.stop(now + synthParams.decay);
             }
-
-            const osc = audioCtx.createOscillator();
-            osc.type = synthParams.wave;
-            osc.frequency.setValueAtTime(synthParams.freq, now);
-            if (synthParams.sweep !== 0) {
-                osc.frequency.exponentialRampToValueAtTime(
-                    Math.max(20, synthParams.freq + synthParams.sweep),
-                    now + synthParams.attack + synthParams.decay
-                );
-            }
-
-            gain.gain.setValueAtTime(0.001, now);
-            gain.gain.linearRampToValueAtTime(0.4, now + synthParams.attack);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + synthParams.attack + synthParams.decay);
-
-            osc.connect(gain);
-            gain.connect(analyserNode);
-            analyserNode.connect(audioCtx.destination);
-
-            osc.start(now);
-            osc.stop(now + synthParams.attack + synthParams.decay);
         }
 
         function exportSynthToUpload() {
             switchTab('upload');
-            document.getElementById('upload-title').value = `Retro Synth SFX (${synthParams.wave})`;
-            document.getElementById('file-status-text').innerText = `Configured: 8-Bit Synth Preset (${synthParams.wave.toUpperCase()})`;
-            showToast("Exported synth configuration to publish form!", "success");
+            document.getElementById('upload-title').value = `Custom ${synthParams.wave.toUpperCase()} SFX #${synthParams.wave}`;
+            document.getElementById('upload-category').value = '8-Bit & Gaming';
+            document.getElementById('upload-description').value = `Synthesized retro chiptune SFX (Freq: ${synthParams.freq}Hz, Sweep: ${synthParams.sweep}).`;
+            currentSelectedAudioBlob = new Blob(["synth-placeholder"], { type: 'audio/wav' });
+            document.getElementById('file-status-text').innerText = "✓ Exported Synthesizer SFX Preset";
+            showToast("Exported synth sound to publication form!", "success");
         }
 
-        function processAudioFile(file) {
-            if (!file) return;
-
-            const MAX_SIZE = 10 * 1024 * 1024; // 10MB in bytes
-            if (file.size > MAX_SIZE) {
-                showToast(`File is too large (${(file.size / (1024 * 1024)).toFixed(2)} MB). Max limit is 10 MB.`, "error");
-                currentSelectedAudioBlob = null;
-                document.getElementById('file-status-text').innerText = "Click to browse or drop audio file here";
-                return;
-            }
-
-            const isAudioMime = file.type && file.type.startsWith('audio/');
-            const isAudioExt = /\.(mp3|wav|ogg|m4a|aac|flac|wma|aiff|aif)$/i.test(file.name);
-
-            if (!isAudioMime && !isAudioExt) {
-                showToast("Invalid file type! Only genuine audio files (MP3, WAV, etc.) are allowed.", "error");
-                currentSelectedAudioBlob = null;
-                document.getElementById('file-status-text').innerText = "Click to browse or drop audio file here";
-                return;
-            }
-
-            currentSelectedAudioBlob = file;
-            document.getElementById('file-status-text').innerText = `Selected: ${file.name} (${formatBytes(file.size)})`;
-            showToast("Audio file attached successfully", "success");
+        // ==========================================
+        // CANAL REAL-TIME AUDIO VISUALIZER
+        // ==========================================
+        function setVisualizerMode(mode) {
+            currentVisualizerMode = mode;
+            document.querySelectorAll('.vmode-btn').forEach(b => {
+                b.className = 'vmode-btn px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-950/80 text-slate-400 border border-slate-800';
+            });
+            const activeBtn = document.getElementById(`vmode-${mode}`);
+            if (activeBtn) activeBtn.className = 'vmode-btn active px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/30 text-emerald-300 border border-emerald-500/40';
         }
 
+        function setupVisualizerCanvas() {
+            const canvas = document.getElementById('visualizer-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+
+            function draw() {
+                animFrameId = requestAnimationFrame(draw);
+                canvas.width = canvas.parentElement.clientWidth;
+                canvas.height = canvas.parentElement.clientHeight;
+
+                ctx.fillStyle = '#090d16';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                if (!analyserNode) {
+                    ctx.beginPath();
+                    ctx.strokeStyle = '#1e293b';
+                    ctx.lineWidth = 2;
+                    ctx.moveTo(0, canvas.height / 2);
+                    ctx.lineTo(canvas.width, canvas.height / 2);
+                    ctx.stroke();
+                    return;
+                }
+
+                const bufferLength = analyserNode.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+
+                if (currentVisualizerMode === 'waveform') {
+                    analyserNode.getByteTimeDomainData(dataArray);
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = '#10b981';
+                    ctx.beginPath();
+                    const sliceWidth = canvas.width * 1.0 / bufferLength;
+                    let x = 0;
+                    for (let i = 0; i < bufferLength; i++) {
+                        const v = dataArray[i] / 128.0;
+                        const y = v * canvas.height / 2;
+                        if (i === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                        x += sliceWidth;
+                    }
+                    ctx.lineTo(canvas.width, canvas.height / 2);
+                    ctx.stroke();
+                } else {
+                    analyserNode.getByteFrequencyData(dataArray);
+                    const barWidth = (canvas.width / bufferLength) * 2.5;
+                    let x = 0;
+                    for (let i = 0; i < bufferLength; i++) {
+                        const barHeight = (dataArray[i] / 255) * canvas.height;
+                        const gradient = ctx.createLinearGradient(0, canvas.height, 0, 0);
+                        gradient.addColorStop(0, '#10b981');
+                        gradient.addColorStop(1, '#6366f1');
+
+                        ctx.fillStyle = gradient;
+                        ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+                        x += barWidth + 2;
+                    }
+                }
+            }
+            draw();
+        }
+
+        // ==========================================
+        // FILE UPLOAD & PUBLISHING LOGIC
+        // ==========================================
         function handleFileSelect(e) {
             const file = e.target.files[0];
-            processAudioFile(file);
+            if (file) processSelectedAudioFile(file);
         }
 
         function handleDragOver(e) {
             e.preventDefault();
-            e.stopPropagation();
-            const dropZone = document.getElementById('drop-zone');
-            if (dropZone) dropZone.classList.add('border-emerald-500');
+            document.getElementById('drop-zone').classList.add('border-emerald-500');
         }
 
         function handleDragLeave(e) {
             e.preventDefault();
-            e.stopPropagation();
-            const dropZone = document.getElementById('drop-zone');
-            if (dropZone) dropZone.classList.remove('border-emerald-500');
+            document.getElementById('drop-zone').classList.remove('border-emerald-500');
         }
 
         function handleDrop(e) {
             e.preventDefault();
-            e.stopPropagation();
-            const dropZone = document.getElementById('drop-zone');
-            if (dropZone) dropZone.classList.remove('border-emerald-500');
-            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                processAudioFile(e.dataTransfer.files[0]);
-            }
+            document.getElementById('drop-zone').classList.remove('border-emerald-500');
+            if (e.dataTransfer.files.length) processSelectedAudioFile(e.dataTransfer.files[0]);
         }
 
-        function formatBytes(bytes, decimals = 2) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const dm = decimals < 0 ? 0 : decimals;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        function processSelectedAudioFile(file) {
+            if (file.size > 10 * 1024 * 1024) {
+                showToast("File size exceeds 10MB limit.", "error");
+                return;
+            }
+            currentSelectedAudioBlob = file;
+            document.getElementById('file-status-text').innerText = `✓ Selected: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
         }
 
         async function handleSoundUpload(e) {
             e.preventDefault();
-            if (!currentUser) {
-                showToast("Please sign in to publish sound effects", "error");
-                openModal('auth-modal');
-                return;
-            }
 
             const title = document.getElementById('upload-title').value.trim();
             const category = document.getElementById('upload-category').value;
             const description = document.getElementById('upload-description').value.trim();
             const color = document.getElementById('upload-color').value;
-            const isPrivate = document.querySelector('input[name="upload-visibility"]:checked')?.value === 'private';
+            const isPrivate = document.querySelector('input[name="upload-visibility"]:checked').value === 'private';
 
-            if (!title) {
-                showToast("Please enter a sound title", "error");
-                return;
+            const userHandle = userProfile?.username || (currentUser ? '@' + currentUser.email.split('@')[0] : '@guest_creator');
+            const userId = currentUser?.id || 'guest_user';
+
+            let audioUrl = 'synth:laser';
+
+            if (currentSelectedAudioBlob && currentSelectedAudioBlob.name) {
+                audioUrl = URL.createObjectURL(currentSelectedAudioBlob);
             }
 
-            const submitBtn = document.getElementById('submit-upload-btn');
-            if (submitBtn) submitBtn.disabled = true;
+            const newSound = {
+                id: 'sfx_' + Date.now(),
+                title: title,
+                creator_handle: userHandle,
+                user_id: userId,
+                category: category,
+                description: description,
+                color: color,
+                is_private: isPrivate,
+                audio_url: audioUrl,
+                downloads_count: 0,
+                likes_count: 0,
+                created_at: new Date().toISOString()
+            };
 
-            try {
-                let filePath = null;
-
-                if (currentSelectedAudioBlob) {
-                    const progressContainer = document.getElementById('upload-progress-container');
-                    const progressBar = document.getElementById('upload-progress-bar');
-                    const progressPercent = document.getElementById('upload-progress-percent');
-                    if (progressContainer) progressContainer.classList.remove('hidden');
-
-                    const ext = currentSelectedAudioBlob.name ? currentSelectedAudioBlob.name.split('.').pop() : 'mp3';
-                    const fileName = `${currentUser.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
-
-                    if (progressBar) progressBar.style.width = '50%';
-                    if (progressPercent) progressPercent.innerText = '50%';
-
-                    const { data, error: uploadErr } = await supabaseClient.storage
-                        .from('user-files')
-                        .upload(fileName, currentSelectedAudioBlob, {
-                            cacheControl: '3600',
-                            upsert: false
-                        });
-
-                    if (uploadErr) throw uploadErr;
-
-                    if (progressBar) progressBar.style.width = '100%';
-                    if (progressPercent) progressPercent.innerText = '100%';
-                    filePath = fileName;
-                }
-
-                const username = userProfile ? userProfile.username : '@creator';
-                const soundData = {
-                    user_id: currentUser.id,
-                    username: username,
-                    title: title,
-                    category: category,
-                    description: description,
-                    button_color: color,
-                    is_private: isPrivate,
-                    file_path: filePath,
-                    synth_config: currentSelectedAudioBlob ? null : synthParams
-                };
-
-                const { error: insertErr } = await supabaseClient.from('sounds').insert([soundData]);
-                if (insertErr) throw insertErr;
-
-                showToast("Sound published successfully!", "success");
-                document.getElementById('upload-form').reset();
-                currentSelectedAudioBlob = null;
-                document.getElementById('file-status-text').innerText = "Click to browse or drop audio file here";
-                const progressContainer = document.getElementById('upload-progress-container');
-                if (progressContainer) progressContainer.classList.add('hidden');
-
-                switchTab('soundboard');
-                await renderSoundboard();
-            } catch (err) {
-                console.error("Upload error:", err);
-                showToast("Failed to publish sound: " + (err.message || err), "error");
-            } finally {
-                if (submitBtn) submitBtn.disabled = false;
-            }
-        }
-
-        function deleteSound(soundId) {
-            if (!currentUser) return;
-            const sound = activeSoundsList.find(s => s.id === soundId);
-            if (!sound) return;
-
-            const modalTitle = document.getElementById('confirm-modal-title');
-            const modalMsg = document.getElementById('confirm-modal-msg');
-            const actionBtn = document.getElementById('confirm-modal-action-btn');
-
-            if (modalTitle) modalTitle.innerText = "Delete Sound Effect?";
-            if (modalMsg) modalMsg.innerText = `Are you sure you want to delete '${sound.title}'? This action cannot be undone.`;
-
-            if (actionBtn) {
-                actionBtn.onclick = async function() {
-                    closeModal('confirm-modal');
-                    try {
-                        const { error } = await supabaseClient.from('sounds').delete().eq('id', soundId);
-                        if (error) throw error;
-                        showToast("Sound deleted successfully", "success");
-                        if (activeSoundId === soundId) {
-                            if (currentAudio) {
-                                currentAudio.pause();
-                                currentAudio = null;
-                            }
-                            activeSoundId = null;
-                        }
-                        await renderSoundboard();
-                    } catch (err) {
-                        showToast("Failed to delete sound: " + err.message, "error");
-                    }
-                };
-            }
-            openModal('confirm-modal');
-        }
-
-        async function playSound(soundId) {
-            const sound = activeSoundsList.find(s => s.id === soundId);
-            if (!sound) return;
-
-            initAudioContext();
-
-            if (activeSoundId === soundId && currentAudio) {
-                if (currentAudio.paused) {
-                    currentAudio.play();
-                    updateDockPlayBtn(true);
-                } else {
-                    currentAudio.pause();
-                    updateDockPlayBtn(false);
-                }
-                renderSoundboard();
-                return;
-            }
-
-            if (currentAudio) {
-                currentAudio.pause();
-                currentAudio = null;
-            }
-
-            activeSoundId = soundId;
-
-            const dockTitle = document.getElementById('dock-title');
-            const dockSubtitle = document.getElementById('dock-subtitle');
-            const dockPadThumb = document.getElementById('dock-pad-thumb');
-            const downloadBtn = document.getElementById('dock-download-btn');
-
-            if (dockTitle) dockTitle.innerText = sound.title;
-            if (dockSubtitle) dockSubtitle.innerText = `${sound.category} • ${sound.username || '@creator'}`;
-            if (dockPadThumb) {
-                dockPadThumb.style.backgroundColor = `${sound.button_color || '#10b981'}20`;
-                dockPadThumb.style.borderColor = `${sound.button_color || '#10b981'}60`;
-            }
-
-            if (downloadBtn) {
-                downloadBtn.disabled = false;
-                downloadBtn.onclick = () => requestDownload(soundId);
-            }
-
-            if (sound.synth_config) {
-                synthParams = sound.synth_config;
-                playSynthSFX();
-                updateDockPlayBtn(true);
-                renderSoundboard();
-                
-                if (supabaseClient && sound.id) {
-                    supabaseClient.from('sounds').update({ plays: (sound.plays || 0) + 1 }).eq('id', sound.id);
-                }
-                return;
-            }
-
-            if (sound.file_path) {
-                let audioUrl = sound.file_path;
-                if (!audioUrl.startsWith('http://') && !audioUrl.startsWith('https://')) {
-                    if (supabaseClient) {
-                        const { data } = supabaseClient.storage.from('user-files').getPublicUrl(sound.file_path);
-                        if (data && data.publicUrl) audioUrl = data.publicUrl;
-                    }
-                }
-
+            if (supabaseClient && currentUser) {
                 try {
-                    currentAudio = new Audio(audioUrl);
-                    currentAudio.crossOrigin = "anonymous";
-                    
-                    if (audioSourceNode) {
-                        try { audioSourceNode.disconnect(); } catch(e){}
-                    }
-                    audioSourceNode = audioCtx.createMediaElementSource(currentAudio);
-                    audioSourceNode.connect(analyserNode);
-                    analyserNode.connect(masterGainNode);
-
-                    currentAudio.addEventListener('timeupdate', updatePlaybackTimeline);
-                    currentAudio.addEventListener('ended', () => {
-                        updateDockPlayBtn(false);
-                        activeSoundId = null;
-                        renderSoundboard();
-                    });
-
-                    await currentAudio.play();
-                    updateDockPlayBtn(true);
-                    renderSoundboard();
-
-                    if (supabaseClient && sound.id) {
-                        supabaseClient.from('sounds').update({ plays: (sound.plays || 0) + 1 }).eq('id', sound.id);
-                    }
+                    await supabaseClient.from('sounds').insert([{
+                        title,
+                        creator_handle: userHandle,
+                        user_id: userId,
+                        category,
+                        description,
+                        color,
+                        is_private: isPrivate,
+                        audio_url: audioUrl,
+                        downloads_count: 0,
+                        likes_count: 0
+                    }]);
                 } catch (err) {
-                    console.error("Playback error:", err);
-                    showToast("Failed to play audio file", "error");
+                    console.error("Supabase insert error:", err);
                 }
             }
-        }
 
-        function updateDockPlayBtn(isPlaying) {
-            const playBtn = document.getElementById('dock-play-btn');
-            if (!playBtn) return;
-            if (isPlaying) {
-                playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
-                playBtn.className = 'w-7 h-7 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center text-xs font-bold hover:scale-105 transition-all';
-            } else {
-                playBtn.innerHTML = '<i class="fa-solid fa-play ml-0.5"></i>';
-                playBtn.className = 'w-7 h-7 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center text-xs font-bold hover:scale-105 transition-all';
-            }
-        }
-
-        function toggleDockPlayPause() {
-            if (!activeSoundId) return;
-            playSound(activeSoundId);
-        }
-
-        function updatePlaybackTimeline() {
-            if (!currentAudio) return;
-            const curTime = document.getElementById('dock-current-time');
-            const durTime = document.getElementById('dock-duration');
-            const seekBar = document.getElementById('dock-seek-bar');
-
-            if (curTime) curTime.innerText = formatTime(currentAudio.currentTime);
-            if (durTime) durTime.innerText = formatTime(currentAudio.duration);
-            if (seekBar && currentAudio.duration) {
-                seekBar.value = (currentAudio.currentTime / currentAudio.duration) * 100;
-            }
-        }
-
-        function seekAudio(val) {
-            if (!currentAudio || !currentAudio.duration) return;
-            currentAudio.currentTime = (val / 100) * currentAudio.duration;
-        }
-
-        function setAudioVolume(val) {
-            if (masterGainNode) {
-                masterGainNode.gain.value = parseFloat(val);
-            }
+            activeSoundsList.unshift(newSound);
+            showToast("Sound effect published successfully!", "success");
+            e.target.reset();
+            document.getElementById('file-status-text').innerText = "Click to browse or drop audio file here";
+            currentSelectedAudioBlob = null;
+            switchTab('homeboard');
         }
 
         // ==========================================
-        // DOWNLOAD ENGINE & WARNING MODAL HANDLERS
+        // DOWNLOAD HANDLING & AUDIO CONVERSION
         // ==========================================
-        function requestDownload(soundId) {
-            let sound = null;
-            if (soundId) {
-                sound = activeSoundsList.find(s => s.id === soundId);
-            } else if (activeSoundId) {
-                sound = activeSoundsList.find(s => s.id === activeSoundId);
-            }
-
-            if (!sound) {
-                showToast("No sound selected to download", "error");
-                return;
-            }
-
-            pendingDownloadSound = sound;
+        function promptDownload(soundId) {
+            const snd = activeSoundsList.find(s => s.id === soundId);
+            if (!snd) return;
+            pendingDownloadSound = snd;
 
             const titleEl = document.getElementById('download-target-title');
             const infoEl = document.getElementById('download-target-info');
-            if (titleEl) titleEl.innerText = sound.title || 'Audio Sound Effect';
-            if (infoEl) infoEl.innerText = `Category: ${sound.category || 'SFX'} • Creator: ${sound.username || '@creator'}`;
-
             const confirmBtn = document.getElementById('confirm-download-btn');
+
+            if (titleEl) titleEl.innerText = snd.title;
+            if (infoEl) infoEl.innerText = `Posted by ${snd.creator_handle || '@creator'} • Category: ${snd.category}`;
+
             if (confirmBtn) {
-                confirmBtn.onclick = function() {
+                confirmBtn.onclick = () => {
+                    executeDownload();
                     closeModal('download-warning-modal');
-                    executeDownload(pendingDownloadSound);
                 };
             }
 
@@ -1864,176 +1947,321 @@
         }
 
         function downloadCurrentSound() {
-            if (activeSoundId) {
-                requestDownload(activeSoundId);
-            } else {
-                showToast("Please select a sound effect first", "info");
+            if (pendingDownloadSound) {
+                promptDownload(pendingDownloadSound.id);
+            } else if (activeSoundId) {
+                promptDownload(activeSoundId);
             }
         }
 
-        async function executeDownload(sound) {
-            if (!sound) return;
+        function executeDownload() {
+            if (!pendingDownloadSound) return;
+            const snd = pendingDownloadSound;
 
-            showToast("Preparing download...", "info");
-
-            if (sound.file_path) {
-                let fileUrl = sound.file_path;
-                if (!fileUrl.startsWith('http://') && !fileUrl.startsWith('https://')) {
-                    if (supabaseClient) {
-                        const { data } = supabaseClient.storage.from('user-files').getPublicUrl(sound.file_path);
-                        if (data && data.publicUrl) fileUrl = data.publicUrl;
-                    }
-                }
-
-                try {
-                    const response = await fetch(fileUrl);
-                    if (!response.ok) throw new Error("Network request failed");
-                    const blob = await response.blob();
-                    const blobUrl = URL.createObjectURL(blob);
-                    
-                    const ext = sound.file_path.split('.').pop().split('?')[0] || 'mp3';
-                    const cleanTitle = (sound.title || 'audio_sfx').replace(/[^a-zA-Z0-9_-]/g, '_');
-                    
-                    const a = document.createElement('a');
-                    a.href = blobUrl;
-                    a.download = `${cleanTitle}.${ext}`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(blobUrl);
-                    
-                    showToast("Download started!", "success");
-                } catch (err) {
-                    console.warn("Direct blob fetch failed, triggering fallback download link:", err);
-                    const a = document.createElement('a');
-                    a.href = fileUrl;
-                    a.target = '_blank';
-                    a.download = sound.title || 'audio_sfx';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    showToast("Opening audio file...", "info");
-                }
-            } else if (sound.synth_config) {
-                try {
-                    await downloadSynthAsWav(sound.synth_config, sound.title);
-                    showToast("8-Bit Synth WAV downloaded!", "success");
-                } catch (err) {
-                    console.error("Synth download failed:", err);
-                    showToast("Failed to render synth download", "error");
-                }
-            } else {
-                showToast("Audio source not found", "error");
+            snd.downloads_count = (snd.downloads_count || 0) + 1;
+            if (supabaseClient) {
+                supabaseClient.from('sounds').update({ downloads_count: snd.downloads_count }).eq('id', snd.id).then(() => {});
             }
-        }
 
-        // Convert Synthesizer Web Audio parameters into offline downloadable WAV Blob
-        async function downloadSynthAsWav(config, title) {
-            const duration = (config.attack || 0.01) + (config.decay || 0.25) + 0.1;
-            const sampleRate = 44100;
-            const OfflineContext = window.OfflineAudioContext || window.webkitOfflineAudioContext;
-            const offlineCtx = new OfflineContext(1, Math.ceil(sampleRate * duration), sampleRate);
-            const now = 0;
-            const gain = offlineCtx.createGain();
+            showToast(`Starting download for "${snd.title}"...`, "success");
 
-            if (config.wave === 'noise') {
-                const bufferSize = Math.floor(sampleRate * duration);
-                const buffer = offlineCtx.createBuffer(1, bufferSize, sampleRate);
-                const data = buffer.getChannelData(0);
-                for (let i = 0; i < bufferSize; i++) {
-                    data[i] = Math.random() * 2 - 1;
-                }
-                const noiseSource = offlineCtx.createBufferSource();
-                noiseSource.buffer = buffer;
-                noiseSource.connect(gain);
-
-                gain.gain.setValueAtTime(0.01, now);
-                gain.gain.linearRampToValueAtTime(0.4, now + (config.attack || 0.01));
-                gain.gain.exponentialRampToValueAtTime(0.001, now + (config.attack || 0.01) + (config.decay || 0.25));
-
-                gain.connect(offlineCtx.destination);
-                noiseSource.start(now);
-                noiseSource.stop(now + duration);
-            } else {
+            if (snd.audio_url.startsWith('synth:')) {
+                initAudioContext();
+                const duration = synthParams.decay || 0.5;
+                const sampleRate = audioCtx.sampleRate;
+                const numFrames = sampleRate * duration;
+                const offlineCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, numFrames, sampleRate);
+                
                 const osc = offlineCtx.createOscillator();
-                osc.type = config.wave || 'square';
-                osc.frequency.setValueAtTime(config.freq || 440, now);
-                if (config.sweep && config.sweep !== 0) {
-                    osc.frequency.exponentialRampToValueAtTime(
-                        Math.max(20, (config.freq || 440) + config.sweep),
-                        now + (config.attack || 0.01) + (config.decay || 0.25)
-                    );
-                }
-
-                gain.gain.setValueAtTime(0.001, now);
-                gain.gain.linearRampToValueAtTime(0.4, now + (config.attack || 0.01));
-                gain.gain.exponentialRampToValueAtTime(0.0001, now + (config.attack || 0.01) + (config.decay || 0.25));
-
+                const gain = offlineCtx.createGain();
+                osc.type = synthParams.wave === 'noise' ? 'sawtooth' : synthParams.wave;
+                osc.frequency.setValueAtTime(synthParams.freq, 0);
+                osc.frequency.exponentialRampToValueAtTime(Math.max(30, synthParams.freq + synthParams.sweep), duration);
+                gain.gain.setValueAtTime(0.8, 0);
+                gain.gain.exponentialRampToValueAtTime(0.001, duration);
                 osc.connect(gain);
                 gain.connect(offlineCtx.destination);
+                osc.start(0);
 
-                osc.start(now);
-                osc.stop(now + duration);
+                offlineCtx.startRendering().then(renderedBuffer => {
+                    const wavData = audioBufferToWav(renderedBuffer);
+                    const blob = new Blob([wavData], { type: 'audio/wav' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${snd.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.wav`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                });
+            } else {
+                const a = document.createElement('a');
+                a.href = snd.audio_url;
+                a.download = `${snd.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.mp3`;
+                a.target = '_blank';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
             }
 
-            const renderedBuffer = await offlineCtx.startRendering();
-            const wavBlob = audioBufferToWavBlob(renderedBuffer);
-            const blobUrl = URL.createObjectURL(wavBlob);
-
-            const cleanTitle = (title || 'synth_sfx').replace(/[^a-zA-Z0-9_-]/g, '_');
-            const a = document.createElement('a');
-            a.href = blobUrl;
-            a.download = `${cleanTitle}.wav`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(blobUrl);
+            renderHomeboard();
+            renderProfileSounds();
         }
 
-        // Helper: Convert AudioBuffer to WAV Blob
-        function audioBufferToWavBlob(buffer) {
+        function audioBufferToWav(buffer) {
             const numChannels = buffer.numberOfChannels;
             const sampleRate = buffer.sampleRate;
-            const format = 1; // PCM
+            const format = 1;
             const bitDepth = 16;
-            const bytesPerSample = bitDepth / 8;
-            const blockAlign = numChannels * bytesPerSample;
-
-            const data = buffer.getChannelData(0);
-            const dataLength = data.length * bytesPerSample;
-            const bufferLength = 44 + dataLength;
-
-            const arrayBuffer = new ArrayBuffer(bufferLength);
-            const view = new DataView(arrayBuffer);
-
-            function writeString(offset, string) {
-                for (let i = 0; i < string.length; i++) {
-                    view.setUint8(offset + i, string.charCodeAt(i));
-                }
+            
+            let result;
+            if (numChannels === 2) {
+                result = interleave(buffer.getChannelData(0), buffer.getChannelData(1));
+            } else {
+                result = buffer.getChannelData(0);
             }
 
-            writeString(0, 'RIFF');
+            const dataLength = result.length * (bitDepth / 8);
+            const bufferArray = new ArrayBuffer(44 + dataLength);
+            const view = new DataView(bufferArray);
+
+            writeString(view, 0, 'RIFF');
             view.setUint32(4, 36 + dataLength, true);
-            writeString(8, 'WAVE');
-            writeString(12, 'fmt ');
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
             view.setUint32(16, 16, true);
             view.setUint16(20, format, true);
             view.setUint16(22, numChannels, true);
             view.setUint32(24, sampleRate, true);
-            view.setUint32(28, sampleRate * blockAlign, true);
-            view.setUint16(32, blockAlign, true);
+            view.setUint32(28, sampleRate * numChannels * (bitDepth / 8), true);
+            view.setUint16(32, numChannels * (bitDepth / 8), true);
             view.setUint16(34, bitDepth, true);
-            writeString(36, 'data');
+            writeString(view, 36, 'data');
             view.setUint32(40, dataLength, true);
 
             let offset = 44;
-            for (let i = 0; i < data.length; i++) {
-                const sample = Math.max(-1, Math.min(1, data[i]));
-                view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
-                offset += 2;
+            for (let i = 0; i < result.length; i++, offset += 2) {
+                const s = Math.max(-1, Math.min(1, result[i]));
+                view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
             }
 
-            return new Blob([arrayBuffer], { type: 'audio/wav' });
+            return bufferArray;
+        }
+
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
+
+        function interleave(inputL, inputR) {
+            const length = inputL.length + inputR.length;
+            const result = new Float32Array(length);
+            let index = 0;
+            let inputIndex = 0;
+            while (index < length) {
+                result[index++] = inputL[inputIndex];
+                result[index++] = inputR[inputIndex];
+                inputIndex++;
+            }
+            return result;
+        }
+
+        // ==========================================
+        // AUTHENTICATION & USER MANAGEMENT
+        // ==========================================
+        function switchAuthTab(mode) {
+            authMode = mode;
+            const loginBtn = document.getElementById('tab-login-btn');
+            const signupBtn = document.getElementById('tab-signup-btn');
+            const submitBtn = document.getElementById('auth-submit-btn');
+            const signupRules = document.getElementById('signup-rules');
+
+            if (mode === 'login') {
+                loginBtn.className = 'flex-1 pb-3 text-sm font-bold border-b-2 border-emerald-500 text-emerald-400';
+                signupBtn.className = 'flex-1 pb-3 text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-200';
+                submitBtn.innerText = 'Sign In';
+                if (signupRules) signupRules.classList.add('hidden');
+            } else {
+                signupBtn.className = 'flex-1 pb-3 text-sm font-bold border-b-2 border-emerald-500 text-emerald-400';
+                loginBtn.className = 'flex-1 pb-3 text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-200';
+                submitBtn.innerText = 'Create Account';
+                if (signupRules) signupRules.classList.remove('hidden');
+            }
+        }
+
+        function checkPasswordComplexity(pwd) {
+            if (authMode !== 'signup') return;
+            
+            const ruleLen = document.getElementById('rule-length');
+            const ruleUpper = document.getElementById('rule-uppercase');
+            const ruleLower = document.getElementById('rule-lowercase');
+            const ruleNum = document.getElementById('rule-number');
+
+            if (ruleLen) ruleLen.className = pwd.length >= 8 ? 'text-emerald-400 font-semibold' : 'text-slate-500';
+            if (ruleUpper) ruleUpper.className = /[A-Z]/.test(pwd) ? 'text-emerald-400 font-semibold' : 'text-slate-500';
+            if (ruleLower) ruleLower.className = /[a-z]/.test(pwd) ? 'text-emerald-400 font-semibold' : 'text-slate-500';
+            if (ruleNum) ruleNum.className = /[0-9]/.test(pwd) ? 'text-emerald-400 font-semibold' : 'text-slate-500';
+        }
+
+        async function handleAuthSubmit(e) {
+            e.preventDefault();
+            const email = document.getElementById('auth-email').value.trim();
+            const password = document.getElementById('auth-password').value;
+
+            if (!supabaseClient) {
+                currentUser = { id: 'user_' + Date.now(), email: email };
+                userProfile = { id: currentUser.id, username: '@' + email.split('@')[0] };
+                updateUserUI();
+                closeModal('auth-modal');
+                showToast(`Signed in as ${userProfile.username}`, "success");
+                renderHomeboard();
+                renderProfileSounds();
+                return;
+            }
+
+            try {
+                if (authMode === 'login') {
+                    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+                    if (error) throw error;
+                    currentUser = data.user;
+                    await fetchSupabaseProfile(currentUser.id);
+                    showToast("Successfully signed in!", "success");
+                } else {
+                    const { data, error } = await supabaseClient.auth.signUp({ email, password });
+                    if (error) throw error;
+                    currentUser = data.user;
+                    openModal('username-modal');
+                    showToast("Account created! Please choose a handle.", "success");
+                }
+                closeModal('auth-modal');
+                updateUserUI();
+                renderHomeboard();
+                renderProfileSounds();
+            } catch (err) {
+                showToast(err.message || "Authentication error", "error");
+            }
+        }
+
+        async function handleGitHubAuth() {
+            if (!supabaseClient) {
+                currentUser = { id: 'github_user_' + Date.now(), email: 'github_creator@audiogrove.io' };
+                userProfile = { id: currentUser.id, username: '@github_creator' };
+                updateUserUI();
+                closeModal('auth-modal');
+                showToast("Signed in via GitHub (Simulated)", "success");
+                renderHomeboard();
+                renderProfileSounds();
+                return;
+            }
+
+            try {
+                const { error } = await supabaseClient.auth.signInWithOAuth({
+                    provider: 'github',
+                    options: { redirectTo: window.location.href }
+                });
+                if (error) throw error;
+            } catch (err) {
+                showToast(err.message || "GitHub authentication failed", "error");
+            }
+        }
+
+        async function handleUsernameSetup(e) {
+            e.preventDefault();
+            const usernameInput = document.getElementById('setup-username').value.trim();
+            const handle = '@' + usernameInput.replace(/^@+/, '');
+
+            userProfile = { id: currentUser ? currentUser.id : 'guest_user', username: handle };
+
+            if (supabaseClient && currentUser) {
+                try {
+                    await supabaseClient.from('profiles').upsert([{ id: currentUser.id, username: handle }]);
+                } catch (err) {
+                    console.error(err);
+                }
+            }
+
+            closeModal('username-modal');
+            updateUserUI();
+            showToast(`Creator handle set to ${handle}!`, "success");
+            renderHomeboard();
+            renderProfileSounds();
+        }
+
+        async function handlePasswordUpdate(e) {
+            e.preventDefault();
+            const newPwd = document.getElementById('new-password').value;
+            if (supabaseClient && currentUser) {
+                try {
+                    const { error } = await supabaseClient.auth.updateUser({ password: newPwd });
+                    if (error) throw error;
+                    showToast("Password updated successfully!", "success");
+                    e.target.reset();
+                } catch (err) {
+                    showToast(err.message || "Failed to update password", "error");
+                }
+            } else {
+                showToast("Password updated (Simulated)", "success");
+                e.target.reset();
+            }
+        }
+
+        async function handleSignOut() {
+            if (supabaseClient) {
+                await supabaseClient.auth.signOut();
+            }
+            currentUser = null;
+            userProfile = null;
+            updateUserUI();
+            switchTab('homeboard');
+            showToast("Signed out successfully", "info");
+            renderHomeboard();
+            renderProfileSounds();
+        }
+
+        function saveSupabaseConfig(e) {
+            e.preventDefault();
+            const url = document.getElementById('sb-url-input').value.trim();
+            const key = document.getElementById('sb-key-input').value.trim();
+
+            localStorage.setItem('ag_sb_url', url);
+            localStorage.setItem('ag_sb_key', key);
+
+            closeModal('supabase-modal');
+            initSupabaseFromStorage();
+            showToast("Supabase configuration updated!", "success");
+        }
+
+        async function fetchUserStorageFiles() {
+            const listEl = document.getElementById('user-files-list');
+            if (!listEl) return;
+
+            if (!currentUser) {
+                listEl.innerHTML = '<p class="text-xs text-slate-500 italic">Sign in to view your files in storage.</p>';
+                return;
+            }
+
+            listEl.innerHTML = '<p class="text-xs text-emerald-400 font-mono animate-pulse">Loading uploaded storage files...</p>';
+
+            if (supabaseClient) {
+                try {
+                    const { data, error } = await supabaseClient.storage.from('sfx-files').list(currentUser.id);
+                    if (!error && data && data.length > 0) {
+                        listEl.innerHTML = data.map(f => `
+                            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between text-xs">
+                                <div class="flex items-center gap-2 truncate">
+                                    <i class="fa-solid fa-file-audio text-emerald-400"></i>
+                                    <span class="text-slate-200 truncate font-mono">${f.name}</span>
+                                </div>
+                                <span class="text-slate-500 text-[10px]">${(f.metadata?.size / 1024).toFixed(1)} KB</span>
+                            </div>
+                        `).join('');
+                        return;
+                    }
+                } catch (e) {}
+            }
+
+            listEl.innerHTML = '<p class="text-xs text-slate-500 italic">No files found in storage bucket.</p>';
         }
     </script>
 </body>
