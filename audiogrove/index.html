@@ -86,7 +86,7 @@
         <div class="max-w-7xl mx-auto flex items-center justify-between">
             
             <!-- Logo & Brand -->
-            <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('soundboard')">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('homeboard')">
                 <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
                     <i class="fa-solid font-bold fa-compact-disc text-slate-950 text-xl animate-spin-slow"></i>
                 </div>
@@ -100,17 +100,17 @@
 
             <!-- Navigation Links -->
             <nav class="hidden md:flex items-center gap-1 bg-slate-950/60 p-1 rounded-xl border border-slate-800">
-                <button onclick="switchTab('soundboard')" id="nav-soundboard" class="px-4 py-2 rounded-lg text-sm font-medium transition-all bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                <button onclick="switchTab('homeboard')" id="nav-homeboard" class="px-4 py-2 rounded-lg text-sm font-medium transition-all bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                     <i class="fa-solid fa-house mr-2"></i>Homeboard
-                </button>
-                <button onclick="switchTab('profile')" id="nav-profile" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 transition-all">
-                    <i class="fa-solid fa-user-circle mr-2"></i>Profile
                 </button>
                 <button onclick="switchTab('synth')" id="nav-synth" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 transition-all">
                     <i class="fa-solid fa-wand-magic-sparkles mr-2"></i>8-Bit Synth
                 </button>
                 <button onclick="switchTab('upload')" id="nav-upload" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 transition-all">
                     <i class="fa-solid fa-cloud-arrow-up mr-2"></i>Publish SFX
+                </button>
+                <button onclick="switchTab('profile')" id="nav-profile" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 transition-all">
+                    <i class="fa-solid fa-user mr-2"></i>Profile
                 </button>
             </nav>
 
@@ -137,8 +137,8 @@
     <!-- Main Workspace Container -->
     <main class="max-w-7xl w-full mx-auto px-4 lg:px-8 py-6 flex-1 pb-36">
 
-        <!-- TAB 1: MAIN HOMEBOARD FEED -->
-        <section id="tab-soundboard" class="space-y-6">
+        <!-- TAB 1: HOMEBOARD FEED -->
+        <section id="tab-homeboard" class="space-y-6">
             
             <!-- Hero / Filter Controls Bar -->
             <div class="bg-slate-900/60 backdrop-blur-md rounded-2xl border border-slate-800/80 p-5 shadow-xl space-y-4">
@@ -167,7 +167,7 @@
                     </div>
                 </div>
 
-                <!-- Category Filters Pills (Private SFX Pill Removed) -->
+                <!-- Category Filters Pills -->
                 <div class="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1 pt-1">
                     <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider mr-2">Categories:</span>
                     <button onclick="selectCategory('All')" data-cat="All" class="category-btn active bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-xs font-semibold px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all">All SFX</button>
@@ -191,52 +191,6 @@
                 <button onclick="switchTab('synth')" class="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold px-4 py-2 rounded-xl text-sm transition-all">
                     Create Sound in Synth
                 </button>
-            </div>
-        </section>
-
-        <!-- TAB: PROFILE SECTION -->
-        <section id="tab-profile" class="hidden space-y-6">
-            <div class="bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-800 p-6 shadow-xl space-y-6">
-                
-                <!-- Profile Header & Visibility Switch -->
-                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
-                    <div>
-                        <div class="flex items-center gap-3">
-                            <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-500 to-indigo-600 flex items-center justify-center text-slate-950 text-xl font-bold shadow-lg">
-                                <i class="fa-solid fa-user font-bold"></i>
-                            </div>
-                            <div>
-                                <h2 id="profile-user-handle" class="text-xl font-extrabold text-slate-100">@creator</h2>
-                                <p class="text-xs text-slate-400">Manage your uploaded sounds, alternate post visibility, and edit details.</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Visibility Toggle Switch (Public vs Private) -->
-                    <div class="flex items-center gap-2 bg-slate-950 p-1.5 rounded-xl border border-slate-800 w-full sm:w-auto justify-center">
-                        <button onclick="setProfileFilter('public')" id="profile-filter-public" class="px-4 py-2 rounded-lg text-xs font-semibold transition-all bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                            <i class="fa-solid fa-globe mr-1.5"></i>My Public Posts
-                        </button>
-                        <button onclick="setProfileFilter('private')" id="profile-filter-private" class="px-4 py-2 rounded-lg text-xs font-semibold transition-all text-slate-400 hover:text-slate-200">
-                            <i class="fa-solid fa-lock mr-1.5"></i>My Private Posts
-                        </button>
-                    </div>
-                </div>
-
-                <!-- User Posts Grid -->
-                <div id="profile-sounds-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    <!-- User posts dynamically rendered here -->
-                </div>
-
-                <!-- Empty State for Profile -->
-                <div id="profile-empty-state" class="hidden text-center py-16 bg-slate-950/40 rounded-2xl border border-dashed border-slate-800">
-                    <i class="fa-solid fa-folder-open text-4xl text-slate-600 mb-3"></i>
-                    <h3 class="text-lg font-bold text-slate-300">No Posts Available</h3>
-                    <p class="text-sm text-slate-500 max-w-sm mx-auto mt-1 mb-4">You have not published any sounds in this section yet.</p>
-                    <button onclick="switchTab('upload')" class="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold px-4 py-2 rounded-xl text-sm transition-all">
-                        Publish New SFX
-                    </button>
-                </div>
             </div>
         </section>
 
@@ -473,7 +427,71 @@
             </div>
         </section>
 
-        <!-- TAB 4: SETTINGS / ACCOUNT SCREEN -->
+        <!-- TAB 4: PROFILE SCREEN -->
+        <section id="tab-profile" class="hidden space-y-6">
+            <!-- Profile Auth Banner (If Logged Out) -->
+            <div id="profile-auth-banner" class="hidden text-center py-16 bg-slate-900/40 rounded-2xl border border-dashed border-slate-800 p-8 space-y-4 max-w-xl mx-auto">
+                <div class="w-14 h-14 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center mx-auto text-2xl border border-indigo-500/30">
+                    <i class="fa-solid fa-user-lock"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-100">Creator Profile Access Required</h3>
+                <p class="text-sm text-slate-400 max-w-md mx-auto">Sign in to your creator account to view, manage, edit, and toggle visibility on your published sound effects.</p>
+                <button onclick="openModal('auth-modal')" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-indigo-600/30">
+                    Sign In to Profile
+                </button>
+            </div>
+
+            <!-- Profile Dashboard Content (When Signed In) -->
+            <div id="profile-dashboard" class="space-y-6">
+                <!-- User Profile Header Card -->
+                <div class="bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-800 p-6 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                    <div class="flex items-center gap-4">
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-500 to-indigo-600 flex items-center justify-center text-slate-950 font-black text-2xl shadow-lg shadow-emerald-500/20 shrink-0">
+                            <i class="fa-solid fa-user-astronaut"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h2 class="text-2xl font-bold text-slate-100" id="profile-handle-text">@creator</h2>
+                                <span class="bg-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-emerald-500/30">CREATOR</span>
+                            </div>
+                            <p class="text-xs text-slate-400 mt-1" id="profile-email-text">user@audiogrove.io</p>
+                        </div>
+                    </div>
+
+                    <!-- Visibility Toggle Switch (Public vs Private Posts) -->
+                    <div class="bg-slate-950 p-1.5 rounded-xl border border-slate-800 flex items-center gap-1 w-full md:w-auto">
+                        <button onclick="setProfileVisibilityFilter('public')" id="profile-toggle-public" class="flex-1 md:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                            <i class="fa-solid fa-globe mr-1.5"></i> My Public Posts
+                        </button>
+                        <button onclick="setProfileVisibilityFilter('private')" id="profile-toggle-private" class="flex-1 md:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-slate-200">
+                            <i class="fa-solid fa-lock mr-1.5"></i> My Private Posts
+                        </button>
+                    </div>
+                </div>
+
+                <!-- User Posts Grid -->
+                <div>
+                    <h3 class="text-sm font-bold text-slate-300 mb-4 uppercase tracking-wider flex items-center gap-2" id="profile-grid-title">
+                        <i class="fa-solid fa-folder-open text-emerald-400"></i> Public Posts
+                    </h3>
+                    <div id="profile-sounds-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <!-- User posts cards dynamically rendered here -->
+                    </div>
+
+                    <!-- Profile Empty State -->
+                    <div id="profile-empty-state" class="hidden text-center py-16 bg-slate-900/30 rounded-2xl border border-dashed border-slate-800">
+                        <i class="fa-solid fa-layer-group text-4xl text-slate-600 mb-3"></i>
+                        <h3 class="text-lg font-bold text-slate-300">No Personal Posts Found</h3>
+                        <p class="text-sm text-slate-500 max-w-sm mx-auto mt-1 mb-4" id="profile-empty-msg">You have not published any sound effects in this section yet.</p>
+                        <button onclick="switchTab('upload')" class="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold px-4 py-2 rounded-xl text-sm transition-all">
+                            Publish New Sound
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 5: SETTINGS / ACCOUNT SCREEN -->
         <section id="tab-settings" class="hidden max-w-xl mx-auto space-y-6">
             <div class="bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-800 p-6 shadow-2xl space-y-6">
                 <div>
@@ -562,75 +580,6 @@
                     <i class="fa-solid fa-download mr-1"></i> Download
                 </button>
             </div>
-        </div>
-    </div>
-
-    <!-- MODAL: EDIT POST (NO AUDIO FILE MODIFICATION ALLOWED) -->
-    <div id="edit-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl relative space-y-5">
-            <button onclick="closeModal('edit-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-200">
-                <i class="fa-solid fa-xmark text-lg"></i>
-            </button>
-
-            <div>
-                <h3 class="text-xl font-bold text-slate-100 flex items-center gap-2">
-                    <i class="fa-solid fa-pen-to-square text-emerald-400"></i> Edit Sound Post
-                </h3>
-                <p class="text-xs text-slate-400 mt-1">Update description, title, category, pad color, or visibility. (Audio asset is immutable).</p>
-            </div>
-
-            <form onsubmit="saveSoundEdit(event)" class="space-y-4">
-                <div>
-                    <label class="text-xs font-semibold text-slate-300 block mb-1">Title *</label>
-                    <input type="text" id="edit-title" required class="w-full bg-slate-950 text-sm text-slate-100 px-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500">
-                </div>
-
-                <div>
-                    <label class="text-xs font-semibold text-slate-300 block mb-1">Category *</label>
-                    <select id="edit-category" class="w-full bg-slate-950 text-sm text-slate-100 px-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500">
-                        <option value="8-Bit & Gaming">🎮 8-Bit & Gaming</option>
-                        <option value="Sci-Fi & Cyber">🛸 Sci-Fi & Cyber</option>
-                        <option value="Foley & Impact">💥 Foley & Impact</option>
-                        <option value="Interface & Clicks">🖱️ Interface & Clicks</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label class="text-xs font-semibold text-slate-300 block mb-1">Description & Hashtags</label>
-                    <textarea id="edit-description" rows="3" class="w-full bg-slate-950 text-sm text-slate-100 px-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500"></textarea>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="text-xs font-semibold text-slate-300 block mb-1">Preview Pad Color</label>
-                        <div class="flex items-center gap-3">
-                            <input type="color" id="edit-color" class="w-10 h-10 rounded cursor-pointer border-0 bg-transparent">
-                            <span class="text-xs text-slate-400">Pad glow color</span>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="text-xs font-semibold text-slate-300 block mb-1">Visibility</label>
-                        <div class="flex items-center gap-4 pt-2">
-                            <label class="inline-flex items-center cursor-pointer text-xs text-slate-300">
-                                <input type="radio" id="edit-vis-public" name="edit-visibility" value="public" class="accent-emerald-500">
-                                <span class="ml-2">🌐 Public SFX</span>
-                            </label>
-                            <label class="inline-flex items-center cursor-pointer text-xs text-slate-300">
-                                <input type="radio" id="edit-vis-private" name="edit-visibility" value="private" class="accent-purple-500">
-                                <span class="ml-2">🔒 Private SFX</span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="flex items-center justify-end gap-3 pt-2">
-                    <button type="button" onclick="closeModal('edit-modal')" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition-all">Cancel</button>
-                    <button type="submit" class="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl transition-all shadow-lg shadow-emerald-500/20">
-                        Save Changes
-                    </button>
-                </div>
-            </form>
         </div>
     </div>
 
@@ -767,9 +716,9 @@
             <div class="w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto text-xl">
                 <i class="fa-solid fa-shield-halved"></i>
             </div>
-            <h3 class="text-lg font-bold text-slate-100">Download Audio SFX</h3>
+            <h3 class="text-lg font-bold text-slate-100">Download at Your Own Risk</h3>
             <p class="text-xs text-slate-400 leading-relaxed">
-                Confirm downloading this sound effect file directly to your device.
+                User-created and community-submitted audio files may carry unverified content or metadata. Please proceed with caution before downloading and opening external files.
             </p>
             <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-left flex items-center gap-3">
                 <i class="fa-solid fa-file-audio text-emerald-400 text-lg"></i>
@@ -784,6 +733,75 @@
                     <i class="fa-solid fa-download"></i> Confirm & Download
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- MODAL 6: EDIT POST MODAL (Description, Category, Title, Glow Color, Visibility) -->
+    <div id="edit-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-5 relative">
+            <button onclick="closeModal('edit-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-200">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <div>
+                <h3 class="text-xl font-bold text-slate-100 flex items-center gap-2">
+                    <i class="fa-solid fa-pen-to-square text-emerald-400"></i> Edit Sound Effect
+                </h3>
+                <p class="text-xs text-slate-400 mt-1">Update details for your post. Note: Audio file cannot be changed.</p>
+            </div>
+
+            <form onsubmit="handleEditSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="text-xs font-semibold text-slate-300 block mb-1">Sound Title *</label>
+                    <input type="text" id="edit-title" required class="w-full bg-slate-950 text-sm text-slate-100 px-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500">
+                </div>
+
+                <div>
+                    <label class="text-xs font-semibold text-slate-300 block mb-1">Category *</label>
+                    <select id="edit-category" class="w-full bg-slate-950 text-sm text-slate-100 px-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500">
+                        <option value="8-Bit & Gaming">🎮 8-Bit & Gaming</option>
+                        <option value="Sci-Fi & Cyber">🛸 Sci-Fi & Cyber</option>
+                        <option value="Foley & Impact">💥 Foley & Impact</option>
+                        <option value="Interface & Clicks">🖱️ Interface & Clicks</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="text-xs font-semibold text-slate-300 block mb-1">Description & Hashtags</label>
+                    <textarea id="edit-description" rows="2" class="w-full bg-slate-950 text-sm text-slate-100 px-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500"></textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs font-semibold text-slate-300 block mb-1">Pad Glow Color</label>
+                        <div class="flex items-center gap-3">
+                            <input type="color" id="edit-color" class="w-10 h-10 rounded cursor-pointer border-0 bg-transparent">
+                            <span class="text-xs text-slate-400">Pad theme</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-semibold text-slate-300 block mb-1">Visibility Option</label>
+                        <div class="flex flex-col gap-1.5 pt-1">
+                            <label class="inline-flex items-center cursor-pointer text-xs text-slate-300">
+                                <input type="radio" name="edit-visibility" id="edit-visibility-public" value="public" class="accent-emerald-500">
+                                <span class="ml-2">🌐 Public</span>
+                            </label>
+                            <label class="inline-flex items-center cursor-pointer text-xs text-slate-300">
+                                <input type="radio" name="edit-visibility" id="edit-visibility-private" value="private" class="accent-purple-500">
+                                <span class="ml-2">🔒 Private</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+                    <button type="button" onclick="closeModal('edit-modal')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold px-4 py-2 rounded-xl text-xs transition-all">Cancel</button>
+                    <button type="submit" id="submit-edit-btn" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-5 py-2 rounded-xl text-xs transition-all shadow-lg shadow-emerald-500/20">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -802,10 +820,9 @@
         let currentUser = null;
         let userProfile = null;
         let currentCategory = 'All';
-        let profileVisibilityFilter = 'public'; // 'public' or 'private'
-        let editingSoundId = null;
-        let pendingDeleteId = null;
+        let profileVisibilityFilter = 'public'; // 'public' | 'private'
         let currentVisualizerMode = 'hybrid'; // 'hybrid', 'spectrum', 'waveform'
+        let editingSoundId = null;
 
         // Audio Context & Web Audio API Engine
         let audioCtx = null;
@@ -873,14 +890,51 @@
             }
         }
 
-        // Format Bytes for display
-        function formatBytes(bytes, decimals = 2) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const dm = decimals < 0 ? 0 : decimals;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        // Helper: Get Liked Post IDs for Current User/Device
+        function getLikedPostIds() {
+            const userKey = currentUser ? currentUser.id : 'guest_device';
+            try {
+                return JSON.parse(localStorage.getItem(`ag_likes_${userKey}`) || '[]');
+            } catch (e) {
+                return [];
+            }
+        }
+
+        // Helper: Toggle Single Like per User
+        async function toggleLike(soundId) {
+            const sound = activeSoundsList.find(s => s.id === soundId);
+            if (!sound) return;
+
+            const userKey = currentUser ? currentUser.id : 'guest_device';
+            let likedIds = getLikedPostIds();
+            const hasLiked = likedIds.includes(soundId);
+
+            if (hasLiked) {
+                // Remove like
+                likedIds = likedIds.filter(id => id !== soundId);
+                sound.likes = Math.max(0, (sound.likes || 1) - 1);
+                showToast("Unliked post", "info");
+            } else {
+                // Add single like
+                likedIds.push(soundId);
+                sound.likes = (sound.likes || 0) + 1;
+                showToast("Liked post!", "success");
+            }
+
+            try {
+                localStorage.setItem(`ag_likes_${userKey}`, JSON.stringify(likedIds));
+            } catch (e) {}
+
+            if (supabaseClient && sound.id) {
+                try {
+                    await supabaseClient.from('sounds').update({ likes: sound.likes }).eq('id', sound.id);
+                } catch (e) {
+                    console.error("Failed to update likes in DB:", e);
+                }
+            }
+
+            renderSoundboard();
+            renderProfile();
         }
 
         // ==========================================
@@ -906,13 +960,13 @@
                             await fetchSupabaseProfile(currentUser.id);
                             updateUserUI();
                             await renderSoundboard();
-                            renderProfileBoard();
+                            renderProfile();
                         } else if (event === 'SIGNED_OUT') {
                             currentUser = null;
                             userProfile = null;
                             updateUserUI();
                             await renderSoundboard();
-                            renderProfileBoard();
+                            renderProfile();
                         }
                     });
 
@@ -958,6 +1012,7 @@
             }
             updateUserUI();
             await renderSoundboard();
+            renderProfile();
         }
 
         async function fetchSupabaseProfile(userId) {
@@ -1056,9 +1111,10 @@
                         await fetchSupabaseProfile(currentUser.id);
                         updateUserUI();
                         await renderSoundboard();
-                        renderProfileBoard();
+                        renderProfile();
                     }
                 } else {
+                    // ACCOUNT CREATION (SIGN UP)
                     const { data, error } = await supabaseClient.auth.signUp({
                         email,
                         password,
@@ -1076,13 +1132,13 @@
                         openModal('username-modal');
                         updateUserUI();
                         await renderSoundboard();
-                        renderProfileBoard();
+                        renderProfile();
                     } else if (data?.user) {
                         if (data.user.identities && data.user.identities.length === 0) {
                             showToast("User already exists with this email. Please sign in.", "error");
                             switchAuthTab('login');
                         } else {
-                            showToast("Account created! Check email if confirmation is required.", "success");
+                            showToast("Account created! Check email if confirmation is required, or sign in.", "success");
                             closeModal('auth-modal');
                         }
                     } else {
@@ -1141,7 +1197,7 @@
                 closeModal('username-modal');
                 updateUserUI();
                 await renderSoundboard();
-                renderProfileBoard();
+                renderProfile();
             } catch (err) {
                 console.error("Username setup error:", err);
                 showToast(err.message || "Failed to save username", "error");
@@ -1180,8 +1236,9 @@
             userProfile = null;
             updateUserUI();
             showToast("Signed out successfully", "info");
-            switchTab('soundboard');
+            switchTab('homeboard');
             await renderSoundboard();
+            renderProfile();
         }
 
         async function fetchUserStorageFiles() {
@@ -1255,76 +1312,64 @@
             renderSoundboard();
         }
 
-        // ==========================================
-        // LIKE SYSTEM: EXACTLY ONE LIKE PER USER
-        // ==========================================
-        function getLikedKey(soundId) {
-            return currentUser ? `ag_liked_${currentUser.id}_${soundId}` : null;
+        // Helper to generate Card HTML for both Homeboard and Profile
+        function renderSoundCardHTML(sound, isOwner) {
+            const isPlaying = activeSoundId === sound.id;
+            const likedIds = getLikedPostIds();
+            const isLiked = likedIds.includes(sound.id);
+
+            return `
+                <div class="sound-pad-glow bg-slate-900/90 rounded-2xl border border-slate-800 p-4 flex flex-col justify-between relative group" style="--pad-color-glow: ${sound.button_color || '#10b981'}40;">
+                    <div>
+                        <div class="flex items-start justify-between gap-2 mb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full shrink-0" style="background-color: ${sound.button_color || '#10b981'};"></span>
+                                <span class="text-[11px] font-semibold text-slate-400 truncate">${sound.category}</span>
+                            </div>
+                            ${sound.is_private ? '<span class="text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-full font-bold shrink-0">🔒 Private</span>' : '<span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold shrink-0">🌐 Public</span>'}
+                        </div>
+
+                        <h3 class="font-bold text-slate-100 text-base line-clamp-1 group-hover:text-emerald-400 transition-colors">${sound.title}</h3>
+                        <p class="text-xs text-slate-400 mt-1 line-clamp-2">${sound.description || 'No description provided.'}</p>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
+                        <!-- Creator Username Badge -->
+                        <div class="flex items-center gap-1.5 min-w-0 flex-1">
+                            <i class="fa-solid fa-circle-user text-emerald-400 text-xs shrink-0"></i>
+                            <span class="text-xs font-semibold text-emerald-400 truncate" title="Creator: ${sound.username || '@creator'}">${sound.username || '@creator'}</span>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <!-- Single Like Button -->
+                            <button onclick="toggleLike('${sound.id}')" class="h-8 px-2.5 rounded-lg bg-slate-800 hover:bg-rose-500/20 ${isLiked ? 'text-rose-500 bg-rose-500/10' : 'text-slate-400 hover:text-rose-400'} flex items-center gap-1.5 text-xs font-semibold transition-all" title="${isLiked ? 'Unlike post' : 'Like post (1 allowed per user)'}">
+                                <i class="fa-solid fa-heart ${isLiked ? 'text-rose-500' : ''}"></i>
+                                <span>${sound.likes || 0}</span>
+                            </button>
+
+                            ${isOwner ? `
+                                <button onclick="openEditModal('${sound.id}')" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-emerald-500/20 hover:text-emerald-400 text-slate-300 flex items-center justify-center text-xs transition-all" title="Edit Post (Description, Category, etc.)">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </button>
+                                <button onclick="deleteSound('${sound.id}')" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-red-500/20 hover:text-red-400 text-slate-400 flex items-center justify-center text-xs transition-all" title="Delete Sound">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            ` : ''}
+                            
+                            <button onclick="requestDownload('${sound.id}')" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-emerald-500/20 hover:text-emerald-400 text-slate-300 flex items-center justify-center text-xs transition-all" title="Download Audio SFX">
+                                <i class="fa-solid fa-download"></i>
+                            </button>
+
+                            <button onclick="playSound('${sound.id}')" class="w-9 h-9 rounded-xl ${isPlaying ? 'bg-amber-500 text-slate-950' : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950'} font-bold flex items-center justify-center text-sm shadow-md transition-all active:scale-95">
+                                <i class="fa-solid ${isPlaying ? 'fa-pause' : 'fa-play'}"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
         }
 
-        function hasUserLiked(sound) {
-            if (!currentUser) return false;
-            if (Array.isArray(sound.liked_by)) {
-                return sound.liked_by.includes(currentUser.id);
-            }
-            const key = getLikedKey(sound.id);
-            return localStorage.getItem(key) === 'true';
-        }
-
-        async function toggleLikeSound(soundId) {
-            if (!currentUser) {
-                showToast("Please sign in to like sound effects!", "info");
-                openModal('auth-modal');
-                return;
-            }
-
-            const sound = activeSoundsList.find(s => s.id === soundId);
-            if (!sound) return;
-
-            let likedBy = Array.isArray(sound.liked_by) ? [...sound.liked_by] : [];
-            const isLiked = hasUserLiked(sound);
-            const key = getLikedKey(soundId);
-
-            if (isLiked) {
-                // Remove like
-                likedBy = likedBy.filter(id => id !== currentUser.id);
-                sound.likes_count = Math.max(0, (sound.likes_count || 1) - 1);
-                if (key) localStorage.removeItem(key);
-                showToast("Removed like from post", "info");
-            } else {
-                // Add exactly one like
-                if (!likedBy.includes(currentUser.id)) {
-                    likedBy.push(currentUser.id);
-                }
-                sound.likes_count = (sound.likes_count || 0) + 1;
-                if (key) localStorage.setItem(key, 'true');
-                showToast("Liked post!", "success");
-            }
-
-            sound.liked_by = likedBy;
-
-            // Update in Supabase if available
-            if (supabaseClient) {
-                try {
-                    await supabaseClient
-                        .from('sounds')
-                        .update({ 
-                            likes_count: sound.likes_count,
-                            liked_by: sound.liked_by 
-                        })
-                        .eq('id', soundId);
-                } catch (err) {
-                    console.log("Supabase like sync notice:", err);
-                }
-            }
-
-            renderSoundboard();
-            renderProfileBoard();
-        }
-
-        // ==========================================
-        // HOMEBOARD FEED RENDERER
-        // ==========================================
         async function renderSoundboard() {
             const grid = document.getElementById('sounds-grid');
             const emptyState = document.getElementById('empty-state');
@@ -1343,10 +1388,12 @@
             const queryStr = (document.getElementById('search-input')?.value || '').toLowerCase().trim();
             const sortVal = document.getElementById('sort-select')?.value || 'newest';
 
-            let query = supabaseClient.from('sounds').select('*').eq('is_private', false);
+            let query = supabaseClient.from('sounds').select('*');
 
             if (currentCategory !== 'All') {
-                query = query.eq('category', currentCategory);
+                query = query.eq('category', currentCategory).eq('is_private', false);
+            } else {
+                query = query.eq('is_private', false);
             }
 
             const { data: sounds, error } = await query;
@@ -1377,9 +1424,9 @@
             } else if (sortVal === 'oldest') {
                 filteredSounds.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
             } else if (sortVal === 'popular') {
-                filteredSounds.sort((a, b) => (b.likes_count || b.plays || 0) - (a.likes_count || a.plays || 0));
+                filteredSounds.sort((a, b) => (b.likes || b.plays || 0) - (a.likes || a.plays || 0));
             } else if (sortVal === 'least-popular') {
-                filteredSounds.sort((a, b) => (a.likes_count || a.plays || 0) - (b.likes_count || b.plays || 0));
+                filteredSounds.sort((a, b) => (a.likes || a.plays || 0) - (b.likes || b.plays || 0));
             }
 
             if (filteredSounds.length === 0) {
@@ -1391,171 +1438,98 @@
             if (emptyState) emptyState.classList.add('hidden');
 
             grid.innerHTML = filteredSounds.map(sound => {
-                const isPlaying = activeSoundId === sound.id;
-                const liked = hasUserLiked(sound);
-                const likesCount = sound.likes_count || (Array.isArray(sound.liked_by) ? sound.liked_by.length : 0);
-
-                return `
-                    <div class="sound-pad-glow bg-slate-900/90 rounded-2xl border border-slate-800 p-4 flex flex-col justify-between relative group" style="--pad-color-glow: ${sound.button_color || '#10b981'}40;">
-                        <div>
-                            <div class="flex items-start justify-between gap-2 mb-3">
-                                <div class="flex items-center gap-2">
-                                    <span class="w-3 h-3 rounded-full" style="background-color: ${sound.button_color || '#10b981'};"></span>
-                                    <span class="text-[11px] font-semibold text-slate-400">${sound.category}</span>
-                                </div>
-                            </div>
-
-                            <h3 class="font-bold text-slate-100 text-base line-clamp-1 group-hover:text-emerald-400 transition-colors">${sound.title}</h3>
-                            <p class="text-xs text-slate-400 mt-1 line-clamp-2">${sound.description || 'No description provided.'}</p>
-                        </div>
-
-                        <div class="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between">
-                            <div class="flex items-center gap-1.5">
-                                <span class="text-xs font-semibold text-emerald-400">${sound.username || '@creator'}</span>
-                            </div>
-
-                            <div class="flex items-center gap-1.5">
-                                <!-- Single Like Button -->
-                                <button onclick="toggleLikeSound('${sound.id}')" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-rose-500/20 text-slate-300 flex items-center gap-1 text-xs transition-all border border-slate-700/60" title="Like SFX">
-                                    <i class="${liked ? 'fa-solid fa-heart text-rose-500' : 'fa-regular fa-heart text-slate-400'} text-xs"></i>
-                                    <span class="text-[11px] font-mono text-slate-300">${likesCount}</span>
-                                </button>
-                                
-                                <button onclick="requestDownload('${sound.id}')" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-emerald-500/20 hover:text-emerald-400 text-slate-300 flex items-center justify-center text-xs transition-all" title="Download Audio SFX">
-                                    <i class="fa-solid fa-download"></i>
-                                </button>
-
-                                <button onclick="playSound('${sound.id}')" class="w-10 h-10 rounded-xl ${isPlaying ? 'bg-amber-500 text-slate-950' : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950'} font-bold flex items-center justify-center text-sm shadow-md transition-all active:scale-95">
-                                    <i class="fa-solid ${isPlaying ? 'fa-pause' : 'fa-play'}"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
+                const isOwner = currentUser && sound.user_id === currentUser.id;
+                return renderSoundCardHTML(sound, isOwner);
             }).join('');
         }
 
-        // ==========================================
-        // PROFILE SECTION & EDIT POST FUNCTIONS
-        // ==========================================
-        function setProfileFilter(visibility) {
-            profileVisibilityFilter = visibility;
-            const btnPublic = document.getElementById('profile-filter-public');
-            const btnPrivate = document.getElementById('profile-filter-private');
-
-            if (visibility === 'public') {
-                btnPublic.className = 'px-4 py-2 rounded-lg text-xs font-semibold transition-all bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
-                btnPrivate.className = 'px-4 py-2 rounded-lg text-xs font-semibold transition-all text-slate-400 hover:text-slate-200';
-            } else {
-                btnPrivate.className = 'px-4 py-2 rounded-lg text-xs font-semibold transition-all bg-purple-500/20 text-purple-300 border border-purple-500/30';
-                btnPublic.className = 'px-4 py-2 rounded-lg text-xs font-semibold transition-all text-slate-400 hover:text-slate-200';
-            }
-            renderProfileBoard();
-        }
-
-        async function renderProfileBoard() {
+        // PROFILE TAB RENDERER
+        async function renderProfile() {
+            const banner = document.getElementById('profile-auth-banner');
+            const dashboard = document.getElementById('profile-dashboard');
+            const handleText = document.getElementById('profile-handle-text');
+            const emailText = document.getElementById('profile-email-text');
             const grid = document.getElementById('profile-sounds-grid');
             const emptyState = document.getElementById('profile-empty-state');
-            if (!grid) return;
+            const gridTitle = document.getElementById('profile-grid-title');
+            const emptyMsg = document.getElementById('profile-empty-msg');
 
             if (!currentUser) {
-                grid.innerHTML = '';
-                if (emptyState) {
-                    emptyState.classList.remove('hidden');
-                    emptyState.querySelector('h3').innerText = 'Sign In Required';
-                    emptyState.querySelector('p').innerText = 'Please sign in to view, edit, and manage your personal posts.';
-                }
+                if (banner) banner.classList.remove('hidden');
+                if (dashboard) dashboard.classList.add('hidden');
                 return;
             }
 
+            if (banner) banner.classList.add('hidden');
+            if (dashboard) dashboard.classList.remove('hidden');
+
+            const handle = userProfile ? userProfile.username : '@creator';
+            const email = currentUser.email || 'creator@audiogrove.io';
+
+            if (handleText) handleText.innerText = handle;
+            if (emailText) emailText.innerText = email;
+
+            if (!supabaseClient || !grid) return;
+
             const isPrivateTarget = profileVisibilityFilter === 'private';
-            let userSounds = [];
-
-            if (supabaseClient) {
-                try {
-                    const { data, error } = await supabaseClient
-                        .from('sounds')
-                        .select('*')
-                        .eq('user_id', currentUser.id)
-                        .eq('is_private', isPrivateTarget)
-                        .order('created_at', { ascending: false });
-
-                    if (!error && data) {
-                        userSounds = data;
-                    } else {
-                        userSounds = activeSoundsList.filter(s => s.user_id === currentUser.id && s.is_private === isPrivateTarget);
-                    }
-                } catch (e) {
-                    userSounds = activeSoundsList.filter(s => s.user_id === currentUser.id && s.is_private === isPrivateTarget);
-                }
-            } else {
-                userSounds = activeSoundsList.filter(s => s.user_id === currentUser.id && s.is_private === isPrivateTarget);
+            
+            if (gridTitle) {
+                gridTitle.innerHTML = isPrivateTarget 
+                    ? '<i class="fa-solid fa-lock text-purple-400"></i> My Private Posts'
+                    : '<i class="fa-solid fa-globe text-emerald-400"></i> My Public Posts';
             }
 
-            if (!userSounds || userSounds.length === 0) {
+            const { data: userSounds, error } = await supabaseClient
+                .from('sounds')
+                .select('*')
+                .eq('user_id', currentUser.id)
+                .eq('is_private', isPrivateTarget)
+                .order('created_at', { ascending: false });
+
+            if (error || !userSounds || userSounds.length === 0) {
                 grid.innerHTML = '';
                 if (emptyState) {
                     emptyState.classList.remove('hidden');
-                    emptyState.querySelector('h3').innerText = `No ${isPrivateTarget ? 'Private' : 'Public'} Posts`;
-                    emptyState.querySelector('p').innerText = `You have not created any ${isPrivateTarget ? 'private' : 'public'} sound posts yet.`;
+                    if (emptyMsg) {
+                        emptyMsg.innerText = isPrivateTarget 
+                            ? 'You have not published any private sound effects yet.'
+                            : 'You have not published any public sound effects yet.';
+                    }
                 }
                 return;
             }
 
             if (emptyState) emptyState.classList.add('hidden');
 
+            // Merge sounds into active sounds list for playback lookup
+            userSounds.forEach(s => {
+                if (!activeSoundsList.some(existing => existing.id === s.id)) {
+                    activeSoundsList.push(s);
+                }
+            });
+
             grid.innerHTML = userSounds.map(sound => {
-                const isPlaying = activeSoundId === sound.id;
-                const liked = hasUserLiked(sound);
-                const likesCount = sound.likes_count || (Array.isArray(sound.liked_by) ? sound.liked_by.length : 0);
-
-                return `
-                    <div class="sound-pad-glow bg-slate-900/90 rounded-2xl border border-slate-800 p-4 flex flex-col justify-between relative group" style="--pad-color-glow: ${sound.button_color || '#10b981'}40;">
-                        <div>
-                            <div class="flex items-start justify-between gap-2 mb-3">
-                                <div class="flex items-center gap-2">
-                                    <span class="w-3 h-3 rounded-full" style="background-color: ${sound.button_color || '#10b981'};"></span>
-                                    <span class="text-[11px] font-semibold text-slate-400">${sound.category}</span>
-                                </div>
-                                ${sound.is_private ? '<span class="text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-full font-bold">🔒 Private</span>' : '<span class="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">🌐 Public</span>'}
-                            </div>
-
-                            <h3 class="font-bold text-slate-100 text-base line-clamp-1 group-hover:text-emerald-400 transition-colors">${sound.title}</h3>
-                            <p class="text-xs text-slate-400 mt-1 line-clamp-2">${sound.description || 'No description provided.'}</p>
-                        </div>
-
-                        <div class="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between">
-                            <div class="flex items-center gap-1.5">
-                                <span class="text-xs font-semibold text-emerald-400">${sound.username || (userProfile ? userProfile.username : '@creator')}</span>
-                            </div>
-
-                            <div class="flex items-center gap-1.5">
-                                <!-- Like Button -->
-                                <button onclick="toggleLikeSound('${sound.id}')" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-rose-500/20 text-slate-300 flex items-center gap-1 text-xs transition-all border border-slate-700/60" title="Like SFX">
-                                    <i class="${liked ? 'fa-solid fa-heart text-rose-500' : 'fa-regular fa-heart text-slate-400'} text-xs"></i>
-                                    <span class="text-[11px] font-mono text-slate-300">${likesCount}</span>
-                                </button>
-
-                                <!-- Edit Button -->
-                                <button onclick="openEditModal('${sound.id}')" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-indigo-500/20 hover:text-indigo-400 text-slate-300 flex items-center justify-center text-xs transition-all" title="Edit Post (Description, Category, Visibility)">
-                                    <i class="fa-solid fa-pen-to-square"></i>
-                                </button>
-
-                                <!-- Delete Button -->
-                                <button onclick="deleteSound('${sound.id}')" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-red-500/20 hover:text-red-400 text-slate-400 flex items-center justify-center text-xs transition-all" title="Delete Sound">
-                                    <i class="fa-solid fa-trash"></i>
-                                </button>
-
-                                <button onclick="playSound('${sound.id}')" class="w-10 h-10 rounded-xl ${isPlaying ? 'bg-amber-500 text-slate-950' : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950'} font-bold flex items-center justify-center text-sm shadow-md transition-all active:scale-95">
-                                    <i class="fa-solid ${isPlaying ? 'fa-pause' : 'fa-play'}"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
+                return renderSoundCardHTML(sound, true);
             }).join('');
         }
 
+        function setProfileVisibilityFilter(mode) {
+            profileVisibilityFilter = mode;
+            const btnPublic = document.getElementById('profile-toggle-public');
+            const btnPrivate = document.getElementById('profile-toggle-private');
+
+            if (mode === 'public') {
+                if (btnPublic) btnPublic.className = 'flex-1 md:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+                if (btnPrivate) btnPrivate.className = 'flex-1 md:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-slate-200';
+            } else {
+                if (btnPrivate) btnPrivate.className = 'flex-1 md:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all bg-purple-500/20 text-purple-300 border border-purple-500/30';
+                if (btnPublic) btnPublic.className = 'flex-1 md:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-slate-200';
+            }
+
+            renderProfile();
+        }
+
+        // OPEN EDIT POST MODAL
         function openEditModal(soundId) {
             const sound = activeSoundsList.find(s => s.id === soundId);
             if (!sound) return;
@@ -1566,78 +1540,74 @@
             document.getElementById('edit-description').value = sound.description || '';
             document.getElementById('edit-color').value = sound.button_color || '#10b981';
 
-            const visPublic = document.getElementById('edit-vis-public');
-            const visPrivate = document.getElementById('edit-vis-private');
             if (sound.is_private) {
-                if (visPrivate) visPrivate.checked = true;
+                document.getElementById('edit-visibility-private').checked = true;
             } else {
-                if (visPublic) visPublic.checked = true;
+                document.getElementById('edit-visibility-public').checked = true;
             }
 
             openModal('edit-modal');
         }
 
-        async function saveSoundEdit(e) {
+        // SUBMIT EDIT POST FORM (NO AUDIO MODIFICATION)
+        async function handleEditSubmit(e) {
             e.preventDefault();
-            if (!editingSoundId) return;
+            if (!editingSoundId || !supabaseClient) return;
 
             const title = document.getElementById('edit-title').value.trim();
             const category = document.getElementById('edit-category').value;
             const description = document.getElementById('edit-description').value.trim();
-            const button_color = document.getElementById('edit-color').value;
-            const is_private = document.querySelector('input[name="edit-visibility"]:checked')?.value === 'private';
+            const color = document.getElementById('edit-color').value;
+            const isPrivate = document.getElementById('edit-visibility-private').checked;
 
             if (!title) {
-                showToast("Post title is required", "error");
+                showToast("Title is required", "error");
                 return;
             }
 
-            if (supabaseClient) {
-                try {
-                    const { error } = await supabaseClient
-                        .from('sounds')
-                        .update({
-                            title,
-                            category,
-                            description,
-                            button_color,
-                            is_private
-                        })
-                        .eq('id', editingSoundId);
+            const submitBtn = document.getElementById('submit-edit-btn');
+            if (submitBtn) submitBtn.disabled = true;
 
-                    if (error) throw error;
-                    showToast("Post updated successfully!", "success");
-                } catch (err) {
-                    console.error("Error updating sound:", err);
-                    showToast("Failed to update post", "error");
+            try {
+                const { error } = await supabaseClient
+                    .from('sounds')
+                    .update({
+                        title: title,
+                        category: category,
+                        description: description,
+                        button_color: color,
+                        is_private: isPrivate
+                    })
+                    .eq('id', editingSoundId);
+
+                if (error) throw error;
+
+                // Update sound locally in state
+                const sound = activeSoundsList.find(s => s.id === editingSoundId);
+                if (sound) {
+                    sound.title = title;
+                    sound.category = category;
+                    sound.description = description;
+                    sound.button_color = color;
+                    sound.is_private = isPrivate;
                 }
+
+                showToast("Post updated successfully!", "success");
+                closeModal('edit-modal');
+                renderSoundboard();
+                renderProfile();
+            } catch (err) {
+                console.error("Edit sound error:", err);
+                showToast(err.message || "Failed to update post", "error");
+            } finally {
+                if (submitBtn) submitBtn.disabled = false;
             }
-
-            // Update in local array
-            const soundIndex = activeSoundsList.findIndex(s => s.id === editingSoundId);
-            if (soundIndex !== -1) {
-                activeSoundsList[soundIndex] = {
-                    ...activeSoundsList[soundIndex],
-                    title,
-                    category,
-                    description,
-                    button_color,
-                    is_private
-                };
-            }
-
-            closeModal('edit-modal');
-            editingSoundId = null;
-
-            await renderSoundboard();
-            renderProfileBoard();
         }
 
-        // ==========================================
-        // NAVIGATION & TAB SWITCHER
-        // ==========================================
         function switchTab(tabId) {
-            const tabs = ['soundboard', 'profile', 'synth', 'upload', 'settings'];
+            if (tabId === 'soundboard') tabId = 'homeboard'; // Alias support
+
+            const tabs = ['homeboard', 'synth', 'upload', 'profile', 'settings'];
             tabs.forEach(t => {
                 const el = document.getElementById(`tab-${t}`);
                 const nav = document.getElementById(`nav-${t}`);
@@ -1650,11 +1620,11 @@
             if (targetTab) targetTab.classList.remove('hidden');
             if (targetNav) targetNav.className = 'px-4 py-2 rounded-lg text-sm font-medium transition-all bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
             
-            if (tabId === 'profile') {
-                renderProfileBoard();
-            } else if (tabId === 'upload') {
+            if (tabId === 'upload') {
                 fetchUserStorageFiles();
-            } else if (tabId === 'soundboard') {
+            } else if (tabId === 'profile') {
+                renderProfile();
+            } else if (tabId === 'homeboard') {
                 renderSoundboard();
             }
         }
@@ -1682,25 +1652,22 @@
             const uploadAuthBanner = document.getElementById('upload-auth-banner');
             const handleDisplay = document.getElementById('account-handle-display');
             const emailDisplay = document.getElementById('account-email-display');
-            const profileHandle = document.getElementById('profile-user-handle');
 
             if (currentUser) {
                 closeModal('auth-modal');
                 const userEmail = currentUser.email || currentUser?.user_metadata?.email || 'Authenticated User';
-                const currentHandle = userProfile ? userProfile.username : '@creator';
 
                 if (authSection) {
                     authSection.innerHTML = `
                         <button onclick="switchTab('profile')" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium px-3.5 py-1.5 rounded-xl text-xs border border-slate-700 transition-all">
                             <i class="fa-solid fa-circle-user text-emerald-400 text-sm"></i>
-                            <span>${currentHandle}</span>
+                            <span>${userProfile ? userProfile.username : '@creator'}</span>
                         </button>
                     `;
                 }
                 if (uploadAuthBanner) uploadAuthBanner.classList.add('hidden');
-                if (handleDisplay) handleDisplay.innerText = currentHandle;
+                if (handleDisplay) handleDisplay.innerText = userProfile ? userProfile.username : '@creator';
                 if (emailDisplay) emailDisplay.innerText = userEmail;
-                if (profileHandle) profileHandle.innerText = currentHandle;
             } else {
                 if (authSection) {
                     authSection.innerHTML = `
@@ -1713,13 +1680,9 @@
                 if (uploadAuthBanner) uploadAuthBanner.classList.remove('hidden');
                 if (handleDisplay) handleDisplay.innerText = '@guest_creator';
                 if (emailDisplay) emailDisplay.innerText = 'Guest Session';
-                if (profileHandle) profileHandle.innerText = '@guest_creator';
             }
         }
 
-        // ==========================================
-        // WEB AUDIO DSP & PLAYBACK ENGINE
-        // ==========================================
         function initAudioContext() {
             if (!audioCtx) {
                 const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
@@ -1786,6 +1749,7 @@
                         }
                     }
                 } else {
+                    // Ambient idle animation
                     ctx.strokeStyle = 'rgba(16, 185, 129, 0.3)';
                     ctx.lineWidth = 1.5;
                     ctx.beginPath();
@@ -1915,7 +1879,7 @@
         function processAudioFile(file) {
             if (!file) return;
 
-            const MAX_SIZE = 10 * 1024 * 1024;
+            const MAX_SIZE = 10 * 1024 * 1024; // 10MB in bytes
             if (file.size > MAX_SIZE) {
                 showToast(`File is too large (${(file.size / (1024 * 1024)).toFixed(2)} MB). Max limit is 10 MB.`, "error");
                 currentSelectedAudioBlob = null;
@@ -1927,7 +1891,7 @@
             const isAudioExt = /\.(mp3|wav|ogg|m4a|aac|flac|wma|aiff|aif)$/i.test(file.name);
 
             if (!isAudioMime && !isAudioExt) {
-                showToast("Invalid file type! Only Genuine Audio Files (MP3, WAV, etc.) are allowed.", "error");
+                showToast("Invalid file type! Only genuine audio files (MP3, WAV, etc.) are allowed.", "error");
                 currentSelectedAudioBlob = null;
                 document.getElementById('file-status-text').innerText = "Click to browse or drop audio file here";
                 return;
@@ -1967,9 +1931,15 @@
             }
         }
 
-        // ==========================================
-        // PUBLISH SOUND EFFECT HANDLER
-        // ==========================================
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+
         async function handleSoundUpload(e) {
             e.preventDefault();
             if (!currentUser) {
@@ -1981,7 +1951,7 @@
             const title = document.getElementById('upload-title').value.trim();
             const category = document.getElementById('upload-category').value;
             const description = document.getElementById('upload-description').value.trim();
-            const buttonColor = document.getElementById('upload-color').value;
+            const color = document.getElementById('upload-color').value;
             const isPrivate = document.querySelector('input[name="upload-visibility"]:checked')?.value === 'private';
 
             if (!title) {
@@ -1993,94 +1963,125 @@
             if (submitBtn) submitBtn.disabled = true;
 
             try {
-                let fileUrl = null;
+                let filePath = null;
 
-                if (currentSelectedAudioBlob && supabaseClient) {
+                if (currentSelectedAudioBlob) {
                     const progressContainer = document.getElementById('upload-progress-container');
                     const progressBar = document.getElementById('upload-progress-bar');
                     const progressPercent = document.getElementById('upload-progress-percent');
                     if (progressContainer) progressContainer.classList.remove('hidden');
 
-                    const fileExt = currentSelectedAudioBlob.name.split('.').pop();
-                    const fileName = `${currentUser.id}/${Date.now()}.${fileExt}`;
+                    const ext = currentSelectedAudioBlob.name ? currentSelectedAudioBlob.name.split('.').pop() : 'mp3';
+                    const fileName = `${currentUser.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
 
-                    const { data, error } = await supabaseClient.storage
+                    if (progressBar) progressBar.style.width = '50%';
+                    if (progressPercent) progressPercent.innerText = '50%';
+
+                    const { data, error: uploadErr } = await supabaseClient.storage
                         .from('user-files')
-                        .upload(fileName, currentSelectedAudioBlob, { upsert: true });
+                        .upload(fileName, currentSelectedAudioBlob, {
+                            cacheControl: '3600',
+                            upsert: false
+                        });
 
-                    if (error) throw error;
+                    if (uploadErr) throw uploadErr;
 
-                    const { data: publicUrlData } = supabaseClient.storage
-                        .from('user-files')
-                        .getPublicUrl(fileName);
-
-                    fileUrl = publicUrlData?.publicUrl;
-
-                    if (progressContainer) progressContainer.classList.add('hidden');
+                    if (progressBar) progressBar.style.width = '100%';
+                    if (progressPercent) progressPercent.innerText = '100%';
+                    filePath = fileName;
                 }
 
-                const newSound = {
+                const username = userProfile ? userProfile.username : '@creator';
+                const soundData = {
                     user_id: currentUser.id,
-                    username: userProfile ? userProfile.username : '@creator',
+                    username: username,
                     title: title,
                     category: category,
                     description: description,
-                    button_color: buttonColor,
+                    button_color: color,
                     is_private: isPrivate,
-                    audio_url: fileUrl,
-                    synth_config: fileUrl ? null : { ...synthParams },
-                    plays: 0,
-                    likes_count: 0,
-                    liked_by: [],
-                    created_at: new Date()
+                    file_path: filePath,
+                    synth_config: currentSelectedAudioBlob ? null : synthParams,
+                    likes: 0
                 };
 
-                if (supabaseClient) {
-                    const { error } = await supabaseClient.from('sounds').insert([newSound]);
-                    if (error) throw error;
-                }
+                const { error: insertErr } = await supabaseClient.from('sounds').insert([soundData]);
+                if (insertErr) throw insertErr;
 
-                showToast("Sound effect published successfully!", "success");
-
-                // Reset Form
+                showToast("Sound published successfully!", "success");
                 document.getElementById('upload-form').reset();
                 currentSelectedAudioBlob = null;
                 document.getElementById('file-status-text').innerText = "Click to browse or drop audio file here";
+                const progressContainer = document.getElementById('upload-progress-container');
+                if (progressContainer) progressContainer.classList.add('hidden');
 
                 if (isPrivate) {
                     switchTab('profile');
-                    setProfileFilter('private');
+                    setProfileVisibilityFilter('private');
                 } else {
-                    switchTab('soundboard');
+                    switchTab('homeboard');
                     await renderSoundboard();
                 }
-
             } catch (err) {
                 console.error("Upload error:", err);
-                showToast(err.message || "Failed to publish sound effect", "error");
+                showToast("Failed to publish sound: " + (err.message || err), "error");
             } finally {
                 if (submitBtn) submitBtn.disabled = false;
             }
         }
 
-        // ==========================================
-        // AUDIO PLAYER & DOCK CONTROLS
-        // ==========================================
-        function playSound(soundId) {
-            initAudioContext();
+        function deleteSound(soundId) {
+            if (!currentUser) return;
             const sound = activeSoundsList.find(s => s.id === soundId);
             if (!sound) return;
+
+            const modalTitle = document.getElementById('confirm-modal-title');
+            const modalMsg = document.getElementById('confirm-modal-msg');
+            const actionBtn = document.getElementById('confirm-modal-action-btn');
+
+            if (modalTitle) modalTitle.innerText = "Delete Sound Effect?";
+            if (modalMsg) modalMsg.innerText = `Are you sure you want to delete '${sound.title}'? This action cannot be undone.`;
+
+            if (actionBtn) {
+                actionBtn.onclick = async function() {
+                    closeModal('confirm-modal');
+                    try {
+                        const { error } = await supabaseClient.from('sounds').delete().eq('id', soundId);
+                        if (error) throw error;
+                        showToast("Sound deleted successfully", "success");
+                        if (activeSoundId === soundId) {
+                            if (currentAudio) {
+                                currentAudio.pause();
+                                currentAudio = null;
+                            }
+                            activeSoundId = null;
+                        }
+                        await renderSoundboard();
+                        renderProfile();
+                    } catch (err) {
+                        showToast("Failed to delete sound: " + err.message, "error");
+                    }
+                };
+            }
+            openModal('confirm-modal');
+        }
+
+        async function playSound(soundId) {
+            const sound = activeSoundsList.find(s => s.id === soundId);
+            if (!sound) return;
+
+            initAudioContext();
 
             if (activeSoundId === soundId && currentAudio) {
                 if (currentAudio.paused) {
                     currentAudio.play();
-                    updateDockState(sound, true);
+                    updateDockPlayBtn(true);
                 } else {
                     currentAudio.pause();
-                    updateDockState(sound, false);
+                    updateDockPlayBtn(false);
                 }
                 renderSoundboard();
-                renderProfileBoard();
+                renderProfile();
                 return;
             }
 
@@ -2091,111 +2092,148 @@
 
             activeSoundId = soundId;
 
+            const dockTitle = document.getElementById('dock-title');
+            const dockSubtitle = document.getElementById('dock-subtitle');
+            const dockPadThumb = document.getElementById('dock-pad-thumb');
+            const downloadBtn = document.getElementById('dock-download-btn');
+
+            if (dockTitle) dockTitle.innerText = sound.title;
+            if (dockSubtitle) dockSubtitle.innerText = `${sound.category} • ${sound.username || '@creator'}`;
+            if (dockPadThumb) {
+                dockPadThumb.style.backgroundColor = `${sound.button_color || '#10b981'}20`;
+                dockPadThumb.style.borderColor = `${sound.button_color || '#10b981'}60`;
+            }
+
+            if (downloadBtn) {
+                downloadBtn.disabled = false;
+                downloadBtn.onclick = () => requestDownload(soundId);
+            }
+
             if (sound.synth_config) {
+                synthParams = sound.synth_config;
                 playSynthSFX();
-                updateDockState(sound, true);
+                updateDockPlayBtn(true);
                 renderSoundboard();
-                renderProfileBoard();
+                renderProfile();
+                
+                if (supabaseClient && sound.id) {
+                    supabaseClient.from('sounds').update({ plays: (sound.plays || 0) + 1 }).eq('id', sound.id);
+                }
                 return;
             }
 
-            if (sound.audio_url || sound.file_url) {
-                currentAudio = new Audio(sound.audio_url || sound.file_url);
-                
-                try {
-                    if (!audioSourceNode && audioCtx) {
-                        audioSourceNode = audioCtx.createMediaElementSource(currentAudio);
-                        audioSourceNode.connect(analyserNode);
-                        analyserNode.connect(masterGainNode);
+            if (sound.file_path) {
+                let audioUrl = sound.file_path;
+                if (!audioUrl.startsWith('http://') && !audioUrl.startsWith('https://')) {
+                    if (supabaseClient) {
+                        const { data } = supabaseClient.storage.from('user-files').getPublicUrl(sound.file_path);
+                        if (data && data.publicUrl) audioUrl = data.publicUrl;
                     }
-                } catch(e) {
-                    console.log("Audio source routing note:", e);
                 }
 
-                currentAudio.play().then(() => {
-                    updateDockState(sound, true);
-                    renderSoundboard();
-                    renderProfileBoard();
-                }).catch(err => {
-                    console.error("Playback error:", err);
-                    showToast("Error playing audio track", "error");
-                });
-
-                currentAudio.onended = () => {
-                    activeSoundId = null;
-                    updateDockState(sound, false);
-                    renderSoundboard();
-                    renderProfileBoard();
-                };
-
-                currentAudio.ontimeupdate = () => {
-                    const timeEl = document.getElementById('dock-current-time');
-                    const durEl = document.getElementById('dock-duration');
-                    const seekBar = document.getElementById('dock-seek-bar');
-                    if (timeEl && currentAudio) timeEl.innerText = formatTime(currentAudio.currentTime);
-                    if (durEl && currentAudio) durEl.innerText = formatTime(currentAudio.duration);
-                    if (seekBar && currentAudio && currentAudio.duration) {
-                        seekBar.value = (currentAudio.currentTime / currentAudio.duration) * 100;
+                try {
+                    currentAudio = new Audio(audioUrl);
+                    currentAudio.crossOrigin = "anonymous";
+                    
+                    if (audioSourceNode) {
+                        try { audioSourceNode.disconnect(); } catch(e){}
                     }
-                };
+                    audioSourceNode = audioCtx.createMediaElementSource(currentAudio);
+                    audioSourceNode.connect(analyserNode);
+                    analyserNode.connect(masterGainNode);
+
+                    currentAudio.addEventListener('timeupdate', updatePlaybackTimeline);
+                    currentAudio.addEventListener('ended', () => {
+                        updateDockPlayBtn(false);
+                        activeSoundId = null;
+                        renderSoundboard();
+                        renderProfile();
+                    });
+
+                    await currentAudio.play();
+                    updateDockPlayBtn(true);
+                    renderSoundboard();
+                    renderProfile();
+
+                    if (supabaseClient && sound.id) {
+                        supabaseClient.from('sounds').update({ plays: (sound.plays || 0) + 1 }).eq('id', sound.id);
+                    }
+                } catch (err) {
+                    console.error("Playback error:", err);
+                    showToast("Failed to play audio file", "error");
+                }
             }
         }
 
-        function updateDockState(sound, isPlaying) {
-            const titleEl = document.getElementById('dock-title');
-            const subTitleEl = document.getElementById('dock-subtitle');
+        function updateDockPlayBtn(isPlaying) {
             const playBtn = document.getElementById('dock-play-btn');
-            const dlBtn = document.getElementById('dock-download-btn');
-            const padThumb = document.getElementById('dock-pad-thumb');
-
-            if (titleEl) titleEl.innerText = sound.title;
-            if (subTitleEl) subTitleEl.innerText = `${sound.username || '@creator'} • ${sound.category}`;
-            if (playBtn) playBtn.innerHTML = `<i class="fa-solid ${isPlaying ? 'fa-pause' : 'fa-play'} ${isPlaying ? '' : 'ml-0.5'}"></i>`;
-            if (dlBtn) {
-                dlBtn.disabled = false;
-                pendingDownloadSound = sound;
-            }
-            if (padThumb) {
-                padThumb.style.borderColor = sound.button_color || '#10b981';
+            if (!playBtn) return;
+            if (isPlaying) {
+                playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+                playBtn.className = 'w-7 h-7 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center text-xs font-bold hover:scale-105 transition-all';
+            } else {
+                playBtn.innerHTML = '<i class="fa-solid fa-play ml-0.5"></i>';
+                playBtn.className = 'w-7 h-7 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center text-xs font-bold hover:scale-105 transition-all';
             }
         }
 
         function toggleDockPlayPause() {
-            if (activeSoundId) {
-                playSound(activeSoundId);
+            if (!activeSoundId) return;
+            playSound(activeSoundId);
+        }
+
+        function updatePlaybackTimeline() {
+            if (!currentAudio) return;
+            const curTime = document.getElementById('dock-current-time');
+            const durTime = document.getElementById('dock-duration');
+            const seekBar = document.getElementById('dock-seek-bar');
+
+            if (curTime) curTime.innerText = formatTime(currentAudio.currentTime);
+            if (durTime) durTime.innerText = formatTime(currentAudio.duration);
+            if (seekBar && currentAudio.duration) {
+                seekBar.value = (currentAudio.currentTime / currentAudio.duration) * 100;
             }
         }
 
         function seekAudio(val) {
-            if (currentAudio && currentAudio.duration) {
-                currentAudio.currentTime = (val / 100) * currentAudio.duration;
-            }
+            if (!currentAudio || !currentAudio.duration) return;
+            currentAudio.currentTime = (val / 100) * currentAudio.duration;
         }
 
         function setAudioVolume(val) {
             if (masterGainNode) {
                 masterGainNode.gain.value = parseFloat(val);
             }
-            if (currentAudio) {
-                currentAudio.volume = parseFloat(val);
-            }
         }
 
+        // ==========================================
+        // DOWNLOAD ENGINE & WARNING MODAL HANDLERS
+        // ==========================================
         function requestDownload(soundId) {
-            const sound = activeSoundsList.find(s => s.id === soundId);
-            if (!sound) return;
+            let sound = null;
+            if (soundId) {
+                sound = activeSoundsList.find(s => s.id === soundId);
+            } else if (activeSoundId) {
+                sound = activeSoundsList.find(s => s.id === activeSoundId);
+            }
+
+            if (!sound) {
+                showToast("No sound selected to download", "error");
+                return;
+            }
+
             pendingDownloadSound = sound;
-            
-            const targetTitle = document.getElementById('download-target-title');
-            const targetInfo = document.getElementById('download-target-info');
-            if (targetTitle) targetTitle.innerText = sound.title;
-            if (targetInfo) targetInfo.innerText = `${sound.category} • by ${sound.username || '@creator'}`;
+
+            const titleEl = document.getElementById('download-target-title');
+            const infoEl = document.getElementById('download-target-info');
+            if (titleEl) titleEl.innerText = sound.title || 'Audio Sound Effect';
+            if (infoEl) infoEl.innerText = `Category: ${sound.category || 'SFX'} • Creator: ${sound.username || '@creator'}`;
 
             const confirmBtn = document.getElementById('confirm-download-btn');
             if (confirmBtn) {
-                confirmBtn.onclick = () => {
-                    executeDownloadSound(sound);
+                confirmBtn.onclick = function() {
                     closeModal('download-warning-modal');
+                    executeDownload(pendingDownloadSound);
                 };
             }
 
@@ -2203,65 +2241,176 @@
         }
 
         function downloadCurrentSound() {
-            if (pendingDownloadSound) {
-                requestDownload(pendingDownloadSound.id);
-            }
-        }
-
-        function executeDownloadSound(sound) {
-            if (!sound) return;
-            if (sound.audio_url || sound.file_url) {
-                const a = document.createElement('a');
-                a.href = sound.audio_url || sound.file_url;
-                a.download = `${sound.title.replace(/\s+/g, '_')}.mp3`;
-                a.target = '_blank';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                showToast("Download started!", "success");
+            if (activeSoundId) {
+                requestDownload(activeSoundId);
             } else {
-                showToast("Synthesized sound effect preview download generated", "info");
+                showToast("Please select a sound effect first", "info");
             }
         }
 
-        // ==========================================
-        // DELETE SOUND HANDLER
-        // ==========================================
-        function deleteSound(soundId) {
-            pendingDeleteId = soundId;
-            const confirmBtn = document.getElementById('confirm-modal-action-btn');
-            if (confirmBtn) {
-                confirmBtn.onclick = async () => {
-                    await executeDeleteSound();
-                };
-            }
-            openModal('confirm-modal');
-        }
+        async function executeDownload(sound) {
+            if (!sound) return;
 
-        async function executeDeleteSound() {
-            if (!pendingDeleteId) return;
+            showToast("Preparing download...", "info");
 
-            if (supabaseClient) {
+            if (sound.file_path) {
+                let fileUrl = sound.file_path;
+                if (!fileUrl.startsWith('http://') && !fileUrl.startsWith('https://')) {
+                    if (supabaseClient) {
+                        const { data } = supabaseClient.storage.from('user-files').getPublicUrl(sound.file_path);
+                        if (data && data.publicUrl) fileUrl = data.publicUrl;
+                    }
+                }
+
                 try {
-                    const { error } = await supabaseClient
-                        .from('sounds')
-                        .delete()
-                        .eq('id', pendingDeleteId);
-
-                    if (error) throw error;
-                    showToast("Sound deleted successfully", "success");
+                    const response = await fetch(fileUrl);
+                    if (!response.ok) throw new Error("Network request failed");
+                    const blob = await response.blob();
+                    const blobUrl = URL.createObjectURL(blob);
+                    
+                    const ext = sound.file_path.split('.').pop().split('?')[0] || 'mp3';
+                    const cleanTitle = (sound.title || 'audio_sfx').replace(/[^a-zA-Z0-9_-]/g, '_');
+                    
+                    const a = document.createElement('a');
+                    a.href = blobUrl;
+                    a.download = `${cleanTitle}.${ext}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(blobUrl);
+                    
+                    showToast("Download started!", "success");
                 } catch (err) {
-                    console.error("Delete sound error:", err);
-                    showToast("Failed to delete sound", "error");
+                    console.warn("Direct blob fetch failed, triggering fallback download link:", err);
+                    const a = document.createElement('a');
+                    a.href = fileUrl;
+                    a.target = '_blank';
+                    a.download = sound.title || 'audio_sfx';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    showToast("Opening audio file...", "info");
+                }
+            } else if (sound.synth_config) {
+                try {
+                    await downloadSynthAsWav(sound.synth_config, sound.title);
+                    showToast("8-Bit Synth WAV downloaded!", "success");
+                } catch (err) {
+                    console.error("Synth download failed:", err);
+                    showToast("Failed to render synth download", "error");
+                }
+            } else {
+                showToast("Audio source not found", "error");
+            }
+        }
+
+        // Convert Synthesizer Web Audio parameters into offline downloadable WAV Blob
+        async function downloadSynthAsWav(config, title) {
+            const duration = (config.attack || 0.01) + (config.decay || 0.25) + 0.1;
+            const sampleRate = 44100;
+            const OfflineContext = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+            const offlineCtx = new OfflineContext(1, Math.ceil(sampleRate * duration), sampleRate);
+            const now = 0;
+            const gain = offlineCtx.createGain();
+
+            if (config.wave === 'noise') {
+                const bufferSize = Math.floor(sampleRate * duration);
+                const buffer = offlineCtx.createBuffer(1, bufferSize, sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                const noiseSource = offlineCtx.createBufferSource();
+                noiseSource.buffer = buffer;
+                noiseSource.connect(gain);
+
+                gain.gain.setValueAtTime(0.01, now);
+                gain.gain.linearRampToValueAtTime(0.4, now + (config.attack || 0.01));
+                gain.gain.exponentialRampToValueAtTime(0.001, now + (config.attack || 0.01) + (config.decay || 0.25));
+
+                gain.connect(offlineCtx.destination);
+                noiseSource.start(now);
+                noiseSource.stop(now + duration);
+            } else {
+                const osc = offlineCtx.createOscillator();
+                osc.type = config.wave || 'square';
+                osc.frequency.setValueAtTime(config.freq || 440, now);
+                if (config.sweep && config.sweep !== 0) {
+                    osc.frequency.exponentialRampToValueAtTime(
+                        Math.max(20, (config.freq || 440) + config.sweep),
+                        now + (config.attack || 0.01) + (config.decay || 0.25)
+                    );
+                }
+
+                gain.gain.setValueAtTime(0.001, now);
+                gain.gain.linearRampToValueAtTime(0.4, now + (config.attack || 0.01));
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + (config.attack || 0.01) + (config.decay || 0.25));
+
+                osc.connect(gain);
+                gain.connect(offlineCtx.destination);
+
+                osc.start(now);
+                osc.stop(now + duration);
+            }
+
+            const renderedBuffer = await offlineCtx.startRendering();
+            const wavBlob = audioBufferToWavBlob(renderedBuffer);
+            const blobUrl = URL.createObjectURL(wavBlob);
+
+            const cleanTitle = (title || 'synth_sfx').replace(/[^a-zA-Z0-9_-]/g, '_');
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = `${cleanTitle}.wav`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(blobUrl);
+        }
+
+        // Helper: Convert AudioBuffer to WAV Blob
+        function audioBufferToWavBlob(buffer) {
+            const numChannels = buffer.numberOfChannels;
+            const sampleRate = buffer.sampleRate;
+            const format = 1; // PCM
+            const bitDepth = 16;
+            const bytesPerSample = bitDepth / 8;
+            const blockAlign = numChannels * bytesPerSample;
+
+            const data = buffer.getChannelData(0);
+            const dataLength = data.length * bytesPerSample;
+            const bufferLength = 44 + dataLength;
+
+            const arrayBuffer = new ArrayBuffer(bufferLength);
+            const view = new DataView(arrayBuffer);
+
+            function writeString(offset, string) {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
                 }
             }
 
-            activeSoundsList = activeSoundsList.filter(s => s.id !== pendingDeleteId);
-            pendingDeleteId = null;
-            closeModal('confirm-modal');
+            writeString(0, 'RIFF');
+            view.setUint32(4, 36 + dataLength, true);
+            writeString(8, 'WAVE');
+            writeString(12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, format, true);
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * blockAlign, true);
+            view.setUint16(32, blockAlign, true);
+            view.setUint16(34, bitDepth, true);
+            writeString(36, 'data');
+            view.setUint32(40, dataLength, true);
 
-            await renderSoundboard();
-            renderProfileBoard();
+            let offset = 44;
+            for (let i = 0; i < data.length; i++) {
+                const sample = Math.max(-1, Math.min(1, data[i]));
+                view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+                offset += 2;
+            }
+
+            return new Blob([arrayBuffer], { type: 'audio/wav' });
         }
     </script>
 </body>
