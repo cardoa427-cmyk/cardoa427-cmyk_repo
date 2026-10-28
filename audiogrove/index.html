@@ -608,6 +608,10 @@
                     <input type="password" id="auth-password" oninput="checkPasswordComplexity(this.value)" required placeholder="••••••••" class="w-full bg-slate-950 text-sm text-slate-100 px-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500">
                 </div>
 
+                <div id="forgot-password-row" class="text-right -mt-2">
+                    <button type="button" id="forgot-password-btn" onclick="handleForgotPassword()" class="text-xs text-emerald-400 hover:text-emerald-300 font-medium">Forgot password?</button>
+                </div>
+
                 <!-- Password Rule Validation Indicators -->
                 <div id="signup-rules" class="hidden text-[11px] space-y-1 bg-slate-950/50 p-3 rounded-lg border border-slate-800">
                     <div id="rule-length" class="text-slate-500"><i class="fa-solid fa-circle-dot mr-1"></i>At least 8 characters</div>
@@ -651,6 +655,32 @@
                 </div>
                 <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-2.5 rounded-xl text-sm transition-all">
                     Claim Username
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: RESET PASSWORD (opens after clicking the link in the reset email) -->
+    <div id="reset-password-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl relative space-y-4">
+            <button onclick="closeModal('reset-password-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-200">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <h3 class="text-xl font-bold text-slate-100">Choose a new password</h3>
+            <p class="text-xs text-slate-400 leading-relaxed">You're signed in from your reset link. Pick a new password to finish.</p>
+
+            <form onsubmit="handleRecoveryPasswordSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="text-xs font-medium text-slate-300 block mb-1">New Password</label>
+                    <input type="password" id="recovery-password" required minlength="8" placeholder="••••••••" class="w-full bg-slate-950 text-sm text-slate-100 px-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="text-xs font-medium text-slate-300 block mb-1">Confirm New Password</label>
+                    <input type="password" id="recovery-password-confirm" required minlength="8" placeholder="••••••••" class="w-full bg-slate-950 text-sm text-slate-100 px-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500">
+                </div>
+                <p class="text-[10px] text-slate-500">At least 8 characters with 1 uppercase letter, 1 lowercase letter and 1 number.</p>
+                <button type="submit" id="recovery-submit-btn" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-2.5 rounded-xl text-sm transition-all">
+                    Save New Password
                 </button>
             </form>
         </div>
@@ -951,6 +981,10 @@
                     updateBackendBadge(true);
 
                     supabaseClient.auth.onAuthStateChange(async (event, session) => {
+                        if (event === 'PASSWORD_RECOVERY') {
+                            closeModal('auth-modal');
+                            openModal('reset-password-modal');
+                        }
                         if (session?.user) {
                             currentUser = session.user;
                             await fetchSupabaseProfile(currentUser.id);
@@ -1045,6 +1079,8 @@
             const signupBtn = document.getElementById('tab-signup-btn');
             const submitBtn = document.getElementById('auth-submit-btn');
             const signupRules = document.getElementById('signup-rules');
+            const forgotRow = document.getElementById('forgot-password-row');
+            if (forgotRow) forgotRow.classList.toggle('hidden', mode !== 'login');
 
             if (mode === 'login') {
                 loginBtn.className = 'flex-1 pb-3 text-sm font-bold border-b-2 border-emerald-500 text-emerald-400';
@@ -1144,6 +1180,84 @@
                 showToast(err.message || "Authentication failed. Please check your details.", "error");
             } finally {
                 if (submitBtn) submitBtn.disabled = false;
+            }
+        }
+
+        let forgotPasswordCooldown = false;
+
+        async function handleForgotPassword() {
+            if (!supabaseClient) {
+                showToast("Supabase is not connected. Please configure your credentials.", "error");
+                openModal('supabase-modal');
+                return;
+            }
+
+            const emailInput = document.getElementById('auth-email');
+            const email = emailInput.value.trim();
+            if (!email) {
+                showToast("Enter your email address above first, then tap Forgot password.", "error");
+                emailInput.focus();
+                return;
+            }
+            if (forgotPasswordCooldown) {
+                showToast("Please wait a minute before requesting another reset email.", "info");
+                return;
+            }
+
+            const btn = document.getElementById('forgot-password-btn');
+            try {
+                const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+                    redirectTo: window.location.origin + window.location.pathname
+                });
+                if (error) throw error;
+
+                // Same message whether or not an account exists, so nobody can probe for registered emails
+                showToast("If an account exists for that email, a reset link is on its way. Check your inbox and spam folder.", "success");
+                forgotPasswordCooldown = true;
+                if (btn) btn.disabled = true;
+                setTimeout(() => {
+                    forgotPasswordCooldown = false;
+                    if (btn) btn.disabled = false;
+                }, 60000);
+            } catch (err) {
+                console.error("Password reset request error:", err);
+                showToast(err.message || "Could not send the reset email. Please try again.", "error");
+            }
+        }
+
+        async function handleRecoveryPasswordSubmit(e) {
+            e.preventDefault();
+            if (!supabaseClient) return;
+
+            const pw = document.getElementById('recovery-password').value;
+            const confirmPw = document.getElementById('recovery-password-confirm').value;
+
+            if (pw !== confirmPw) {
+                showToast("Passwords don't match", "error");
+                return;
+            }
+            if (pw.length < 8 || !/[A-Z]/.test(pw) || !/[a-z]/.test(pw) || !/[0-9]/.test(pw)) {
+                showToast("Password needs 8+ characters with an uppercase letter, a lowercase letter and a number", "error");
+                return;
+            }
+
+            const btn = document.getElementById('recovery-submit-btn');
+            if (btn) btn.disabled = true;
+            try {
+                const { error } = await supabaseClient.auth.updateUser({ password: pw });
+                if (error) throw error;
+
+                showToast("Password updated! You're signed in.", "success");
+                document.getElementById('recovery-password').value = '';
+                document.getElementById('recovery-password-confirm').value = '';
+                closeModal('reset-password-modal');
+                // Remove the leftover recovery tokens from the address bar
+                history.replaceState(null, '', window.location.pathname + window.location.search);
+            } catch (err) {
+                console.error("Recovery password update error:", err);
+                showToast(err.message || "Failed to update password", "error");
+            } finally {
+                if (btn) btn.disabled = false;
             }
         }
 
