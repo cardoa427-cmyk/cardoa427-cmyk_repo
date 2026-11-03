@@ -112,10 +112,14 @@
                 <button onclick="switchTab('profile')" id="nav-profile" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 transition-all">
                     <i class="fa-solid fa-user mr-2"></i>Profile
                 </button>
+                <button onclick="switchTab('settings')" id="nav-settings" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 transition-all">
+                    <i class="fa-solid fa-gear mr-2"></i>Settings
+                </button>
             </nav>
 
             <!-- User Status & Config Buttons -->
             <div class="flex items-center gap-3">
+                <button onclick="switchTab('settings')" title="Settings" class="md:hidden w-9 h-9 rounded-xl bg-slate-800 text-slate-300 flex items-center justify-center"><i class="fa-solid fa-gear"></i></button>
                 <button onclick="openStaffPanel()" id="staff-panel-btn" class="hidden px-4 py-2 rounded-xl text-sm font-bold border border-emerald-500 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all"><i class="fa-solid fa-shield-halved mr-2"></i>Panel</button>
                 <!-- Supabase Backend Status Badge -->
                 <button onclick="openModal('supabase-modal')" id="backend-status-badge" class="px-3 py-1.5 rounded-full text-xs font-medium border flex items-center gap-2 bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20 transition-all" title="Click to configure live Supabase connection">
@@ -523,12 +527,30 @@
                     <div id="blocked-users-list" class="space-y-2"><p class="text-xs text-slate-500 italic">Sign in to manage blocked users.</p></div>
                 </div>
 
+                <div class="border-t border-slate-800 pt-4 space-y-2">
+                    <h3 class="text-sm font-bold text-slate-200">Your data</h3>
+                    <p class="text-xs text-slate-400">Get a copy of everything Audio Grove stores about you as a file.</p>
+                    <button onclick="downloadMyData()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium text-xs px-4 py-2.5 rounded-xl"><i class="fa-solid fa-file-arrow-down mr-2"></i>Download my data</button>
+                </div>
+
                 <div class="border-t border-slate-800 pt-4">
                     <button onclick="handleSignOut()" class="w-full bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 font-semibold py-2.5 rounded-xl text-sm transition-all">
                         Sign Out
                     </button>
                 </div>
+
+                <div class="border-t border-slate-800 pt-4 space-y-2">
+                    <h3 class="text-sm font-bold text-red-400">Delete account</h3>
+                    <p class="text-xs text-slate-400">Permanently erases your account, username, posts and audio files. This cannot be undone.</p>
+                    <button onclick="startAccountDeletion()" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 font-medium text-xs px-4 py-2.5 rounded-xl">Delete my account</button>
+                </div>
             </div>
+        </section>
+
+        <!-- TAB: OTHER CREATOR'S PROFILE HOMEPAGE -->
+        <section id="tab-userpage" class="hidden space-y-6">
+            <button onclick="switchTab('homeboard')" class="text-sm text-slate-400 hover:text-emerald-400"><i class="fa-solid fa-arrow-left mr-2"></i>Back to Homeboard</button>
+            <div id="userpage-body"></div>
         </section>
 
     </main>
@@ -795,6 +817,11 @@
                 <button onclick="confirmBlock()" class="flex-1 bg-red-500 hover:bg-red-400 text-white font-bold py-2.5 rounded-xl text-sm">Confirm</button>
             </div>
         </div>
+    </div>
+
+    <!-- MODAL: DELETE ACCOUNT -->
+    <div id="delete-account-modal" class="fixed inset-0 z-[60] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div id="delete-account-body" class="bg-slate-900 border border-red-500/30 rounded-2xl w-full max-w-sm p-6 shadow-2xl space-y-4"></div>
     </div>
 
     <!-- MODAL: REPORT POST -->
@@ -1375,6 +1402,12 @@
             }
 
             try {
+                // Usernames are reserved: refuse one that belongs to another account
+                const { data: taken } = await supabaseClient.from('profiles').select('id').ilike('username', username.replace(/[%_\\]/g, m => '\\' + m)).neq('id', currentUser.id).limit(1);
+                if (taken && taken.length) {
+                    showToast("That username is already taken. Please choose another.", "error");
+                    return;
+                }
                 const { error } = await supabaseClient
                     .from('profiles')
                     .upsert({ id: currentUser.id, username: username, created_at: new Date() });
@@ -1389,7 +1422,7 @@
                 renderProfile();
             } catch (err) {
                 console.error("Username setup error:", err);
-                showToast(err.message || "Failed to save username", "error");
+                showToast(err.code === '23505' ? "That username is already taken. Please choose another." : (err.message || "Failed to save username"), "error");
             }
         }
 
@@ -1604,6 +1637,7 @@
             }
 
             activeSoundsList = sounds;
+            if (userPageId && !document.getElementById('tab-userpage').classList.contains('hidden')) loadUserPage(userPageId, true);
             let filteredSounds = sounds.filter(s => !blockedIds.has(s.user_id));
 
             if (queryStr) {
@@ -1797,7 +1831,7 @@
         function switchTab(tabId) {
             if (tabId === 'soundboard') tabId = 'homeboard';
 
-            const tabs = ['homeboard', 'synth', 'upload', 'profile', 'settings'];
+            const tabs = ['homeboard', 'synth', 'upload', 'profile', 'settings', 'userpage'];
             tabs.forEach(t => {
                 const el = document.getElementById(`tab-${t}`);
                 const nav = document.getElementById(`nav-${t}`);
@@ -1816,6 +1850,8 @@
                 renderProfile();
             } else if (tabId === 'homeboard') {
                 renderSoundboard();
+            } else if (tabId === 'settings') {
+                blocksLoadedFor = null; loadBlocks();
             }
         }
 
@@ -2361,6 +2397,111 @@
             }
         }
 
+        // ===== YOUR DATA + ACCOUNT DELETION =====
+        async function downloadMyData() {
+            if (!currentUser || !supabaseClient) { showToast("Sign in to download your data", "info"); return; }
+            try {
+                const [p, snd, bl] = await Promise.all([
+                    supabaseClient.from('profiles').select('*').eq('id', currentUser.id).maybeSingle(),
+                    supabaseClient.from('sounds').select('*').eq('user_id', currentUser.id),
+                    supabaseClient.from('blocks').select('blocked_id,created_at').eq('blocker_id', currentUser.id)
+                ]);
+                const data = {
+                    exported_at: new Date().toISOString(),
+                    account: { id: currentUser.id, email: currentUser.email, created_at: currentUser.created_at, sign_in_method: currentUser.app_metadata?.provider },
+                    profile: p.data, sounds: snd.data || [], blocked_users: bl.data || [], liked_post_ids_on_this_device: getLikedPostIds()
+                };
+                const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+                const a = document.createElement('a');
+                a.href = url; a.download = 'audio_grove_my_data.json';
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 10000);
+                showToast("Your data file is downloading.", "success");
+            } catch (err) { showToast("Could not export your data: " + (err.message || err), "error"); }
+        }
+
+        const usesPassword = () => (currentUser?.app_metadata?.provider || 'email') === 'email';
+
+        function startAccountDeletion() {
+            if (!currentUser) { showToast("Sign in first", "info"); return; }
+            renderDeleteStep('warn'); openModal('delete-account-modal');
+        }
+
+        function renderDeleteStep(step) {
+            const box = document.getElementById('delete-account-body');
+            const cancel = `<button onclick="closeModal('delete-account-modal')" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2.5 rounded-xl text-sm">Cancel</button>`;
+            const inputCls = 'w-full bg-slate-950 text-sm text-slate-100 px-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-red-500';
+            if (step === 'warn') {
+                box.innerHTML = `<h3 class="text-lg font-bold text-red-400">Delete your account?</h3>
+                    <p class="text-sm text-slate-400">This permanently erases your account, username, all your posts (public and private) and their audio files. It cannot be undone. You'll need to sign in again to confirm.</p>
+                    <input id="delete-type-input" type="text" autocomplete="off" placeholder='Type DELETE to continue' class="${inputCls}">
+                    <div class="flex gap-2">${cancel}<button onclick="deleteStepContinue()" class="flex-1 bg-red-500 hover:bg-red-400 text-white font-bold py-2.5 rounded-xl text-sm">Continue</button></div>`;
+            } else if (step === 'password') {
+                box.innerHTML = `<h3 class="text-lg font-bold text-red-400">Confirm it's you</h3>
+                    <p class="text-sm text-slate-400">Enter your password to permanently delete <b>${esc(userProfile?.username || 'your account')}</b>.</p>
+                    <input id="delete-password-input" type="password" placeholder="Your password" class="${inputCls}">
+                    <div class="flex gap-2">${cancel}<button onclick="deleteWithPassword()" class="flex-1 bg-red-500 hover:bg-red-400 text-white font-bold py-2.5 rounded-xl text-sm">Delete forever</button></div>`;
+            } else if (step === 'github') {
+                box.innerHTML = `<h3 class="text-lg font-bold text-red-400">Sign in again</h3>
+                    <p class="text-sm text-slate-400">To confirm it's you, you'll be sent to GitHub to sign in again. After you return you'll get one last button to delete your account.</p>
+                    <div class="flex gap-2">${cancel}<button onclick="deleteViaGitHub()" class="flex-1 bg-slate-100 hover:bg-white text-slate-900 font-bold py-2.5 rounded-xl text-sm"><i class="fa-brands fa-github mr-1.5"></i>Sign in with GitHub</button></div>`;
+            } else {
+                box.innerHTML = `<h3 class="text-lg font-bold text-red-400">Last step</h3>
+                    <p class="text-sm text-slate-400">You're confirmed. Pressing the button permanently deletes <b>${esc(userProfile?.username || 'your account')}</b> and everything that belongs to it.</p>
+                    <div class="flex gap-2">${cancel}<button onclick="performAccountDeletion()" class="flex-1 bg-red-500 hover:bg-red-400 text-white font-bold py-2.5 rounded-xl text-sm">Delete forever</button></div>`;
+            }
+        }
+
+        function deleteStepContinue() {
+            if (document.getElementById('delete-type-input').value.trim().toUpperCase() !== 'DELETE') { showToast("Type DELETE to continue", "error"); return; }
+            renderDeleteStep(usesPassword() ? 'password' : 'github');
+        }
+
+        async function deleteWithPassword() {
+            const pw = document.getElementById('delete-password-input').value;
+            if (!pw) return;
+            const { error } = await supabaseClient.auth.signInWithPassword({ email: currentUser.email, password: pw });
+            if (error) { showToast("Wrong password", "error"); return; }
+            await performAccountDeletion();
+        }
+
+        async function deleteViaGitHub() {
+            sessionStorage.setItem('ag_delete_pending', currentUser.id);
+            const { error } = await supabaseClient.auth.signInWithOAuth({ provider: 'github', options: { redirectTo: window.location.origin + window.location.pathname, queryParams: { prompt: 'select_account' } } });
+            if (error) { sessionStorage.removeItem('ag_delete_pending'); showToast(error.message, "error"); }
+        }
+
+        function resumePendingDelete() {
+            const pending = sessionStorage.getItem('ag_delete_pending');
+            if (!pending || !currentUser) return;
+            sessionStorage.removeItem('ag_delete_pending');
+            if (pending !== currentUser.id) { showToast("You signed in with a different account, so deletion was cancelled.", "info"); return; }
+            renderDeleteStep('final'); openModal('delete-account-modal');
+        }
+
+        async function performAccountDeletion() {
+            if (!currentUser || !supabaseClient) return;
+            const uid = currentUser.id;
+            try {
+                const { data: rows } = await supabaseClient.from('sounds').select('file_path').eq('user_id', uid);
+                const paths = (rows || []).map(r => r.file_path).filter(Boolean);
+                try {
+                    const { data: folder } = await supabaseClient.storage.from('user-files').list(uid);
+                    (folder || []).forEach(f => { const fp = uid + '/' + f.name; if (!paths.includes(fp)) paths.push(fp); });
+                } catch (e) { /* no folder */ }
+                if (paths.length) await supabaseClient.storage.from('user-files').remove(paths);
+                const { error } = await supabaseClient.rpc('delete_my_account');
+                if (error) throw error;
+                localStorage.removeItem('ag_likes_' + uid);
+                closeModal('delete-account-modal');
+                await handleSignOut(true);
+                showToast("Your account and all your data were permanently deleted.", "success");
+            } catch (err) {
+                console.error("Account deletion error:", err);
+                showToast("Could not delete the account: " + (err.message || err), "error");
+            }
+        }
+
         // ===== BLOCKING + OTHER CREATORS' PROFILES =====
         let blockedIds = new Set(), blocksLoadedFor = null, pendingBlock = null;
 
@@ -2392,24 +2533,46 @@
             }).join('');
         }
 
+        let userPageId = null;
+
         async function openUserProfile(uid) {
             if (!uid || uid === 'null' || uid === 'undefined') return;
-            const body = document.getElementById('user-profile-body');
             if (blockedIds.has(uid)) { showToast("You've blocked this user. Unblock them in Settings to view their profile.", "info"); return; }
-            body.innerHTML = '<p class="text-xs text-slate-500">Loading...</p>';
-            openModal('user-profile-modal');
+            userPageId = uid;
+            document.getElementById('userpage-body').innerHTML = '<p class="text-sm text-slate-500">Loading profile...</p>';
+            switchTab('userpage');
+            window.scrollTo(0, 0);
+            await loadUserPage(uid, false);
+        }
+
+        async function loadUserPage(uid, silent) {
+            const body = document.getElementById('userpage-body');
             const [p, snd] = await Promise.all([
                 supabaseClient.from('profiles').select('id,username,created_at').eq('id', uid).maybeSingle(),
-                supabaseClient.from('sounds').select('id').eq('user_id', uid).eq('is_private', false)
+                supabaseClient.from('sounds').select('*').eq('user_id', uid).order('created_at', { ascending: false })
             ]);
+            if (userPageId !== uid) return;
             if (!p.data) { body.innerHTML = '<p class="text-sm text-slate-400">This user could not be found.</p>'; return; }
+            const posts = snd.data || [];
+            posts.forEach(x => { if (!activeSoundsList.find(a => a.id === x.id)) activeSoundsList.push(x); });
             const own = currentUser && currentUser.id === uid;
-            body.innerHTML = `<div class="flex items-center gap-3 mb-3"><i class="fa-solid fa-circle-user text-emerald-400 text-3xl"></i>
-                <div><div class="text-lg font-bold text-emerald-400">${esc(p.data.username)}</div>
-                <div class="text-xs text-slate-400">Joined ${new Date(p.data.created_at).toLocaleDateString()} · ${(snd.data || []).length} public posts</div></div></div>
-                ${own ? '<p class="text-xs text-slate-500">This is you.</p>' : `<div class="flex gap-2">
-                    <button onclick="startBlock('${uid}','${esc(p.data.username).replace(/'/g, '')}')" class="flex-1 bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/30 font-medium py-2.5 rounded-xl text-sm"><i class="fa-solid fa-ban mr-1.5"></i>Block</button>
-                    <button onclick="startUserReport('${uid}','${esc(p.data.username).replace(/'/g, '')}')" class="flex-1 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 font-medium py-2.5 rounded-xl text-sm"><i class="fa-solid fa-flag mr-1.5"></i>Report user</button></div>`}`;
+            const staff = isAdminRole || isModRole;
+            const likes = posts.reduce((a, x) => a + (x.likes || 0), 0);
+            const name = esc(p.data.username).replace(/'/g, '');
+            const actions = own ? '<span class="text-xs text-slate-500">This is you.</span>' : `
+                <button onclick="startBlock('${uid}','${name}')" class="bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/30 font-medium px-4 py-2 rounded-xl text-sm"><i class="fa-solid fa-ban mr-1.5"></i>Block</button>
+                <button onclick="startUserReport('${uid}','${name}')" class="bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 font-medium px-4 py-2 rounded-xl text-sm"><i class="fa-solid fa-flag mr-1.5"></i>Report user</button>
+                ${staff ? `<button onclick="openStaffPanel().then(() => viewStaffUser('${uid}'))" class="bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 font-medium px-4 py-2 rounded-xl text-sm"><i class="fa-solid fa-shield-halved mr-1.5"></i>Moderation tools</button>` : ''}`;
+            body.innerHTML = `
+                <div class="bg-slate-900/80 rounded-2xl border border-slate-800 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="flex items-center gap-4"><i class="fa-solid fa-circle-user text-emerald-400 text-5xl"></i>
+                        <div><div class="text-2xl font-bold text-emerald-400">${esc(p.data.username)}</div>
+                        <div class="text-xs text-slate-400">Joined ${new Date(p.data.created_at).toLocaleDateString()} · ${posts.length} ${staff ? 'posts (incl. private)' : 'public posts'} · ${likes} likes</div></div></div>
+                    <div class="flex flex-wrap gap-2">${actions}</div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
+                    ${posts.length ? posts.map(x => renderSoundCardHTML(x, own)).join('') : '<p class="text-sm text-slate-500 col-span-full">No posts yet.</p>'}
+                </div>`;
         }
 
         function startBlock(uid, name) {
@@ -2424,7 +2587,7 @@
             const { error } = await supabaseClient.from('blocks').insert({ blocker_id: currentUser.id, blocked_id: pendingBlock });
             if (error && error.code !== '23505') return showToast(error.message, "error");
             blockedIds.add(pendingBlock); pendingBlock = null;
-            closeModal('block-confirm-modal'); closeModal('user-profile-modal');
+            closeModal('block-confirm-modal'); userPageId = null; switchTab('homeboard');
             blocksLoadedFor = null; await loadBlocks();
             showToast("User blocked.", "success");
         }
@@ -2554,6 +2717,7 @@
                     openModal('inbox-modal');
                     await supabaseClient.from('messages').delete().in('id', msgs.map(m => m.id));
                 }
+                resumePendingDelete();
             } catch (e) { console.warn("Account state check failed:", e); }
         }
 
