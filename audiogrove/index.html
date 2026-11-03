@@ -784,7 +784,12 @@
                 <div id="admin-mod-list" class="space-y-2"></div>
             </div>
             <div>
-                <h4 class="text-sm font-bold text-slate-200 mb-2">Moderation log</h4>
+                <h4 class="text-sm font-bold text-slate-200 mb-2">Overview</h4>
+                <div id="admin-stats" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
+            </div>
+            <div>
+                <h4 class="text-sm font-bold text-slate-200 mb-2">Decisions &amp; moderation log</h4>
+                <div id="admin-log-filters" class="flex flex-wrap gap-1.5 mb-2"></div>
                 <div id="admin-log-list" class="space-y-1.5 text-xs"></div>
             </div>
         </div>
@@ -804,6 +809,18 @@
         <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl relative space-y-3">
             <button onclick="closeModal('user-profile-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-200"><i class="fa-solid fa-xmark text-lg"></i></button>
             <div id="user-profile-body"></div>
+        </div>
+    </div>
+
+    <!-- MODAL: CONFIRM UNBLOCK -->
+    <div id="unblock-confirm-modal" class="fixed inset-0 z-[60] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl space-y-4">
+            <h3 class="text-lg font-bold text-slate-100">Are you sure?</h3>
+            <p id="unblock-confirm-text" class="text-sm text-slate-400"></p>
+            <div class="flex gap-2">
+                <button onclick="closeModal('unblock-confirm-modal')" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2.5 rounded-xl text-sm">Back</button>
+                <button onclick="confirmUnblock()" class="flex-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-2.5 rounded-xl text-sm">Confirm</button>
+            </div>
         </div>
     </div>
 
@@ -2328,11 +2345,11 @@
             if (btn) btn.classList.toggle('hidden', !(isAdminRole || isModRole));
         }
 
-        async function logStaffAction(action, targetUserId, targetSoundId, details) {
+        async function logStaffAction(action, targetUserId, targetSoundId, details, reportId) {
             try {
                 await supabaseClient.from('mod_log').insert({
                     actor_id: currentUser.id, actor_username: userProfile?.username || null,
-                    action, target_user_id: targetUserId || null, target_sound_id: targetSoundId || null, details: details || null
+                    action, target_user_id: targetUserId || null, target_sound_id: targetSoundId || null, details: details || null, report_id: reportId || null
                 });
             } catch (e) { /* logging is silent for staff */ }
         }
@@ -2388,7 +2405,7 @@
                 }
                 const { error: upErr } = await supabaseClient.from('reports').update({ status: newStatus }).eq('id', reportId);
                 if (upErr) throw upErr;
-                await logStaffAction(action + ' (report)', r.reported_user_id, r.sound_id, r.sound_title + ' — ' + r.reason);
+                await logStaffAction(action + ' (report)', r.reported_user_id, r.sound_id, r.sound_title + ' — ' + r.reason, r.id);
                 showToast("Done.", "success");
                 openStaffPanel();
             } catch (err) {
@@ -2529,7 +2546,7 @@
             const { data: profs } = await supabaseClient.from('profiles').select('id,username').in('id', ids);
             el.innerHTML = ids.map(id => {
                 const name = (profs || []).find(p => p.id === id)?.username || 'Unknown user';
-                return `<div class="flex justify-between items-center bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm"><span class="text-slate-200">${esc(name)}</span><button onclick="unblockUser('${id}')" class="text-xs text-emerald-400 hover:text-emerald-300">Unblock</button></div>`;
+                return `<div class="flex justify-between items-center bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm"><span class="text-slate-200">${esc(name)}</span><button onclick="askUnblock('${id}','${esc(name).replace(/'/g, '')}')" class="text-xs text-emerald-400 hover:text-emerald-300">Unblock</button></div>`;
             }).join('');
         }
 
@@ -2590,6 +2607,19 @@
             closeModal('block-confirm-modal'); userPageId = null; switchTab('homeboard');
             blocksLoadedFor = null; await loadBlocks();
             showToast("User blocked.", "success");
+        }
+
+        let pendingUnblock = null;
+        function askUnblock(uid, name) {
+            pendingUnblock = uid;
+            document.getElementById('unblock-confirm-text').textContent = `Unblock ${name}? You'll see their posts and profile again.`;
+            openModal('unblock-confirm-modal');
+        }
+        async function confirmUnblock() {
+            if (!pendingUnblock) return;
+            const uid = pendingUnblock; pendingUnblock = null;
+            closeModal('unblock-confirm-modal');
+            await unblockUser(uid);
         }
 
         async function unblockUser(uid) {
@@ -2733,8 +2763,83 @@
                 const name = (profs || []).find(p => p.id === m.user_id)?.username || m.user_id.slice(0, 8);
                 return `<div class="flex justify-between items-center bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm"><span class="text-emerald-400">${esc(name)}</span><button onclick="removeModerator('${m.user_id}')" class="text-xs text-red-400 hover:text-red-300">Remove</button></div>`;
             }).join('') : '<p class="text-xs text-slate-500">No moderators yet.</p>';
-            const { data: logs } = await supabaseClient.from('mod_log').select('*').order('created_at', { ascending: false }).limit(50);
-            logList.innerHTML = (logs || []).length ? logs.map(l => `<div class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2"><span class="text-emerald-400">${esc(l.actor_username || 'staff')}</span> <span class="text-slate-200">${esc(l.action)}</span> <span class="text-slate-500">${esc(l.details || '')}</span> <span class="text-slate-600 float-right">${new Date(l.created_at).toLocaleString()}</span></div>`).join('') : '<p class="text-slate-500">Nothing logged yet.</p>';
+            const { data: logs } = await supabaseClient.from('mod_log').select('*').order('created_at', { ascending: false }).limit(200);
+            adminLogCache = logs || [];
+            renderDecisions(adminLogFilter);
+            loadAdminStats();
+        }
+
+        // ----- decisions organised by outcome, with revert (admins only) -----
+        let adminLogCache = [], adminLogFilter = 'all';
+        const DECISION_CATS = [['all', 'All'], ['banned', 'Banned'], ['shadow', 'Shadow-banned'], ['suspended', 'Suspended'], ['hidden', 'Post hidden'], ['removed', 'Post removed'], ['dismissed', 'Dismissed'], ['warn', 'Warnings & messages'], ['other', 'Other']];
+        function catOf(a) {
+            if (a === 'banned') return 'banned';
+            if (a === 'shadow-banned') return 'shadow';
+            if (a === 'suspended') return 'suspended';
+            if (a.startsWith('hide')) return 'hidden';
+            if (a.startsWith('remove (report)')) return 'removed';
+            if (a.startsWith('dismiss')) return 'dismissed';
+            if (a === 'warned user' || a === 'messaged user') return 'warn';
+            return 'other';
+        }
+        function canRevert(l) {
+            if (l.reverted_at) return false;
+            const c = catOf(l.action);
+            return (['banned', 'shadow', 'suspended'].includes(c) && l.target_user_id) || (c === 'hidden' && l.target_sound_id) || (c === 'dismissed' && l.report_id);
+        }
+
+        function renderDecisions(filter) {
+            adminLogFilter = filter;
+            const count = k => k === 'all' ? adminLogCache.length : adminLogCache.filter(l => catOf(l.action) === k).length;
+            document.getElementById('admin-log-filters').innerHTML = DECISION_CATS.map(([k, label]) =>
+                `<button onclick="renderDecisions('${k}')" class="px-2.5 py-1 rounded-lg text-[11px] border ${k === filter ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-200'}">${label} (${count(k)})</button>`).join('');
+            const rows = adminLogCache.filter(l => filter === 'all' || catOf(l.action) === filter);
+            document.getElementById('admin-log-list').innerHTML = rows.length ? rows.map(l => `
+                <div class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 ${l.reverted_at ? 'opacity-60' : ''}">
+                    <div class="flex justify-between gap-2"><span><span class="text-emerald-400">${esc(l.actor_username || 'staff')}</span> <b class="text-slate-200">${esc(l.action)}</b></span><span class="text-slate-600 shrink-0">${new Date(l.created_at).toLocaleString()}</span></div>
+                    ${l.details ? `<div class="text-slate-500 mt-0.5">${esc(l.details)}</div>` : ''}
+                    ${l.reverted_at ? '<div class="text-amber-400 mt-1">Reverted</div>' : (canRevert(l) ? `<button onclick="revertDecision('${l.id}')" class="mt-1.5 px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300">Revert decision</button>` : (catOf(l.action) === 'removed' ? '<div class="text-slate-600 mt-1">Permanent. Can\'t be reverted.</div>' : ''))}
+                </div>`).join('') : '<p class="text-slate-500">Nothing here yet.</p>';
+        }
+
+        async function revertDecision(logId) {
+            const l = adminLogCache.find(x => x.id === logId);
+            if (!isAdminRole || !l || !canRevert(l)) return;
+            if (!confirm('Revert this decision? The effect is undone and the report (if any) goes back to open.')) return;
+            const c = catOf(l.action);
+            try {
+                if (['banned', 'shadow', 'suspended'].includes(c)) {
+                    const { error } = await supabaseClient.from('user_status').delete().eq('user_id', l.target_user_id);
+                    if (error) throw error;
+                } else if (c === 'hidden') {
+                    const { error } = await supabaseClient.from('hidden_sounds').delete().eq('sound_id', l.target_sound_id);
+                    if (error) throw error;
+                }
+                if (l.report_id) {
+                    const { error } = await supabaseClient.from('reports').update({ status: 'open' }).eq('id', l.report_id);
+                    if (error) throw error;
+                }
+                const { error: logErr } = await supabaseClient.from('mod_log').update({ reverted_at: new Date().toISOString(), reverted_by: currentUser.id }).eq('id', logId);
+                if (logErr) throw logErr;
+                await logStaffAction('reverted: ' + l.action, l.target_user_id, l.target_sound_id, l.details, l.report_id);
+                showToast("Decision reverted.", "success");
+                openAdminPanel();
+            } catch (err) {
+                console.error("Revert error:", err);
+                showToast(err.message || "Could not revert", "error");
+            }
+        }
+
+        async function loadAdminStats() {
+            const box = document.getElementById('admin-stats');
+            const n = (t, f) => { let q = supabaseClient.from(t).select('*', { count: 'exact', head: true }); if (f) q = f(q); return q.then(r => r.count ?? 0); };
+            const [users, posts, priv, mods, banned, shadow, susp, hidden, open] = await Promise.all([
+                n('profiles'), n('sounds'), n('sounds', q => q.eq('is_private', true)), n('moderators'),
+                n('user_status', q => q.eq('status', 'banned')), n('user_status', q => q.eq('status', 'shadow_banned')), n('user_status', q => q.eq('status', 'suspended')),
+                n('hidden_sounds'), n('reports', q => q.eq('status', 'open'))
+            ]);
+            const tile = (label, v) => `<div class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2"><div class="text-lg font-bold text-emerald-400">${v}</div><div class="text-[11px] text-slate-400">${label}</div></div>`;
+            box.innerHTML = tile('Users', users) + tile('Posts', posts) + tile('Private posts', priv) + tile('Moderators', mods) + tile('Banned', banned) + tile('Shadow-banned', shadow) + tile('Suspended', susp) + tile('Hidden posts', hidden) + tile('Open reports', open);
         }
 
         async function addModerator() {
