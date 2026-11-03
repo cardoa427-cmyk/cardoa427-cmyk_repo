@@ -726,6 +726,16 @@
     </div>
 
     <!-- MODAL 4: CUSTOM CONFIRMATION MODAL -->
+    <!-- MODAL: REPORT POST -->
+    <div id="report-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl relative space-y-3">
+            <button onclick="closeModal('report-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-200"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <h3 class="text-lg font-bold text-slate-100">Report this post</h3>
+            <p class="text-xs text-slate-400">Why is this post inappropriate? Pick a reason and moderators will review it.</p>
+            <div id="report-reasons" class="space-y-2"></div>
+        </div>
+    </div>
+
     <div id="confirm-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl space-y-4 text-center">
             <div class="w-12 h-12 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center mx-auto text-xl">
@@ -1458,7 +1468,11 @@
                                 <button onclick="deleteSound('${sound.id}')" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-red-500/20 hover:text-red-400 text-slate-400 flex items-center justify-center text-xs transition-all" title="Delete Sound">
                                     <i class="fa-solid fa-trash"></i>
                                 </button>
-                            ` : ''}
+                            ` : `
+                                <button onclick="openReportModal('${sound.id}')" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-amber-500/20 hover:text-amber-400 text-slate-400 flex items-center justify-center text-xs transition-all" title="Report Post">
+                                    <i class="fa-solid fa-flag"></i>
+                                </button>
+                            `}
                             
                             <button onclick="requestDownload('${sound.id}')" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-emerald-500/20 hover:text-emerald-400 text-slate-300 flex items-center justify-center text-xs transition-all" title="Download Audio SFX">
                                 <i class="fa-solid fa-download"></i>
@@ -2176,6 +2190,44 @@
         }
 
         // DELETE SOUND HANDLER
+        const REPORT_REASONS = ['Offensive or hateful content', 'Spam or misleading', 'Copyrighted audio', 'Harassment or targeting someone', 'Inappropriate or explicit', 'Other'];
+        let reportingSoundId = null;
+
+        function openReportModal(soundId) {
+            if (!currentUser) {
+                showToast("Please sign in to report a post", "info");
+                openModal('auth-modal');
+                return;
+            }
+            reportingSoundId = soundId;
+            document.getElementById('report-reasons').innerHTML = REPORT_REASONS.map(r =>
+                `<button onclick="submitReport('${r.replace(/'/g, "\\'")}')" class="w-full text-left text-sm text-slate-200 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-xl px-3.5 py-2.5 transition-all">${r}</button>`
+            ).join('');
+            openModal('report-modal');
+        }
+
+        async function submitReport(reason) {
+            const sound = activeSoundsList.find(s => s.id === reportingSoundId);
+            if (!sound || !currentUser || !supabaseClient) return;
+            try {
+                const { error } = await supabaseClient.from('reports').insert({
+                    sound_id: sound.id,
+                    sound_title: sound.title,
+                    reported_user_id: sound.user_id,
+                    reported_username: sound.username || null,
+                    reporter_id: currentUser.id,
+                    reporter_username: userProfile?.username || null,
+                    reason: reason
+                });
+                if (error) throw error;
+                closeModal('report-modal');
+                showToast("Report sent. Thank you for helping keep Audio Grove safe.", "success");
+            } catch (err) {
+                console.error("Report error:", err);
+                showToast("Could not send report. Please try again.", "error");
+            }
+        }
+
         function deleteSound(soundId) {
             if (!currentUser) return;
             const sound = activeSoundsList.find(s => s.id === soundId);
@@ -2194,6 +2246,10 @@
                         if (supabaseClient) {
                             const { error } = await supabaseClient.from('sounds').delete().eq('id', soundId);
                             if (error) throw error;
+                            if (sound.file_path) {
+                                // also remove the audio file from storage (ignore storage errors)
+                                await supabaseClient.storage.from('user-files').remove([sound.file_path]).catch(() => {});
+                            }
                         }
                         activeSoundsList = activeSoundsList.filter(s => s.id !== soundId);
                         showToast("Sound deleted successfully", "info");
