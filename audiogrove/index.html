@@ -94,7 +94,7 @@
                     <h1 class="font-extrabold text-xl tracking-tight bg-gradient-to-r from-emerald-400 via-teal-300 to-indigo-400 bg-clip-text text-transparent">
                         AUDIO GROVE
                     </h1>
-                    <p class="text-[10px] text-slate-400 tracking-wider uppercase font-semibold">Royalty-Free SFX Community</p>
+                    <p class="text-[10px] text-slate-400 tracking-wider uppercase font-semibold">Royalty-Free SFX <span onclick="openAdminPanel()">Community</span></p>
                 </div>
             </div>
 
@@ -116,6 +116,7 @@
 
             <!-- User Status & Config Buttons -->
             <div class="flex items-center gap-3">
+                <button onclick="openStaffPanel()" id="staff-panel-btn" class="hidden px-4 py-2 rounded-xl text-sm font-bold border border-emerald-500 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all"><i class="fa-solid fa-shield-halved mr-2"></i>Panel</button>
                 <!-- Supabase Backend Status Badge -->
                 <button onclick="openModal('supabase-modal')" id="backend-status-badge" class="px-3 py-1.5 rounded-full text-xs font-medium border flex items-center gap-2 bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20 transition-all" title="Click to configure live Supabase connection">
                     <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
@@ -726,6 +727,36 @@
     </div>
 
     <!-- MODAL 4: CUSTOM CONFIRMATION MODAL -->
+    <!-- MODAL: STAFF PANEL (moderators + admins) -->
+    <div id="staff-panel-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto p-6 shadow-2xl relative space-y-4">
+            <button onclick="closeModal('staff-panel-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-200"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <h3 class="text-lg font-bold text-slate-100"><i class="fa-solid fa-shield-halved text-emerald-400 mr-2"></i>Moderator Panel</h3>
+            <p class="text-xs text-slate-400">Open reports, newest first.</p>
+            <div id="staff-reports-list" class="space-y-3"></div>
+        </div>
+    </div>
+
+    <!-- MODAL: ADMIN PANEL -->
+    <div id="admin-panel-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto p-6 shadow-2xl relative space-y-4">
+            <button onclick="closeModal('admin-panel-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-200"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <h3 class="text-lg font-bold text-slate-100">Admin Panel</h3>
+            <div>
+                <h4 class="text-sm font-bold text-slate-200 mb-2">Moderators</h4>
+                <div class="flex gap-2 mb-2">
+                    <input id="admin-add-mod-input" type="text" placeholder="@username to make moderator" class="flex-1 bg-slate-950 text-sm text-slate-100 px-3.5 py-2 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500">
+                    <button onclick="addModerator()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-4 rounded-xl text-sm">Add</button>
+                </div>
+                <div id="admin-mod-list" class="space-y-2"></div>
+            </div>
+            <div>
+                <h4 class="text-sm font-bold text-slate-200 mb-2">Moderation log</h4>
+                <div id="admin-log-list" class="space-y-1.5 text-xs"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL: REPORT POST -->
     <div id="report-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl relative space-y-3">
@@ -1760,6 +1791,7 @@
         }
 
         function updateUserUI() {
+            loadStaffRole();
             const authSection = document.getElementById('user-auth-section');
             const uploadAuthBanner = document.getElementById('upload-auth-banner');
             const handleDisplay = document.getElementById('account-handle-display');
@@ -2190,6 +2222,136 @@
         }
 
         // DELETE SOUND HANDLER
+        // ===== STAFF (MODERATOR / ADMIN) =====
+        let isAdminRole = false, isModRole = false, staffCheckedFor = null, staffReports = [];
+        const esc = (t) => String(t ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+        async function loadStaffRole() {
+            if (!supabaseClient || !currentUser) {
+                isAdminRole = isModRole = false; staffCheckedFor = null;
+            } else if (staffCheckedFor !== currentUser.id) {
+                staffCheckedFor = currentUser.id;
+                try {
+                    const [a, m] = await Promise.all([
+                        supabaseClient.from('admins').select('user_id').eq('user_id', currentUser.id).maybeSingle(),
+                        supabaseClient.from('moderators').select('user_id').eq('user_id', currentUser.id).maybeSingle()
+                    ]);
+                    isAdminRole = !!a.data; isModRole = !!m.data;
+                } catch (e) { isAdminRole = isModRole = false; }
+            }
+            const btn = document.getElementById('staff-panel-btn');
+            if (btn) btn.classList.toggle('hidden', !(isAdminRole || isModRole));
+        }
+
+        async function logStaffAction(action, targetUserId, targetSoundId, details) {
+            try {
+                await supabaseClient.from('mod_log').insert({
+                    actor_id: currentUser.id, actor_username: userProfile?.username || null,
+                    action, target_user_id: targetUserId || null, target_sound_id: targetSoundId || null, details: details || null
+                });
+            } catch (e) { /* logging is silent for staff */ }
+        }
+
+        async function openStaffPanel() {
+            if (!(isAdminRole || isModRole)) return;
+            openModal('staff-panel-modal');
+            const list = document.getElementById('staff-reports-list');
+            list.innerHTML = '<p class="text-xs text-slate-500">Loading...</p>';
+            const { data, error } = await supabaseClient.from('reports').select('*').eq('status', 'open').order('created_at', { ascending: false }).limit(50);
+            if (error) { list.innerHTML = '<p class="text-xs text-red-400">Could not load reports.</p>'; return; }
+            staffReports = data || [];
+            if (!staffReports.length) { list.innerHTML = '<p class="text-sm text-slate-400">No open reports. 🎉</p>'; return; }
+            list.innerHTML = staffReports.map(r => `
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-2">
+                    <div class="flex justify-between gap-2 text-xs"><span class="font-bold text-amber-400">${esc(r.reason)}</span><span class="text-slate-500">${new Date(r.created_at).toLocaleString()}</span></div>
+                    <div class="text-sm text-slate-100">Post: <b>${esc(r.sound_title || 'deleted post')}</b></div>
+                    <div class="text-xs text-slate-400">Reported user: <span class="text-emerald-400">${esc(r.reported_username || 'unknown')}</span> &nbsp;·&nbsp; Reported by: <span class="text-emerald-400">${esc(r.reporter_username || 'unknown')}</span></div>
+                    <div class="flex flex-wrap gap-2 pt-1">
+                        <button onclick="reportAction('${r.id}','preview')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200">Preview</button>
+                        <button onclick="reportAction('${r.id}','hide')" class="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-xs text-amber-300">Hide post</button>
+                        <button onclick="reportAction('${r.id}','remove')" class="px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-xs text-red-300">Remove post</button>
+                        <button onclick="reportAction('${r.id}','dismiss')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-400">Dismiss</button>
+                    </div>
+                </div>`).join('');
+        }
+
+        async function reportAction(reportId, action) {
+            const r = staffReports.find(x => x.id === reportId);
+            if (!r || !(isAdminRole || isModRole)) return;
+            try {
+                if (action === 'preview') {
+                    if (r.sound_id && activeSoundsList.find(s => s.id === r.sound_id)) { closeModal('staff-panel-modal'); playSound(r.sound_id); }
+                    else showToast("Post not loaded on the homeboard (it may be removed).", "info");
+                    return;
+                }
+                let newStatus = 'dismissed';
+                if (action === 'hide') {
+                    if (!r.sound_id) return showToast("Post no longer exists.", "info");
+                    const { error } = await supabaseClient.from('hidden_sounds').upsert({ sound_id: r.sound_id, hidden_by: currentUser.id, reason: r.reason });
+                    if (error) throw error;
+                    newStatus = 'actioned';
+                } else if (action === 'remove') {
+                    if (!r.sound_id) return showToast("Post no longer exists.", "info");
+                    if (!confirm('Permanently remove this post and its audio file?')) return;
+                    const { data: row } = await supabaseClient.from('sounds').select('file_path').eq('id', r.sound_id).maybeSingle();
+                    const { error } = await supabaseClient.from('sounds').delete().eq('id', r.sound_id);
+                    if (error) throw error;
+                    if (row?.file_path) await supabaseClient.storage.from('user-files').remove([row.file_path]).catch(() => {});
+                    activeSoundsList = activeSoundsList.filter(x => x.id !== r.sound_id);
+                    renderSoundboard();
+                    newStatus = 'actioned';
+                }
+                const { error: upErr } = await supabaseClient.from('reports').update({ status: newStatus }).eq('id', reportId);
+                if (upErr) throw upErr;
+                await logStaffAction(action + ' (report)', r.reported_user_id, r.sound_id, r.sound_title + ' — ' + r.reason);
+                showToast("Done.", "success");
+                openStaffPanel();
+            } catch (err) {
+                console.error("Report action error:", err);
+                showToast(err.message || "Action failed", "error");
+            }
+        }
+
+        async function openAdminPanel() {
+            if (!isAdminRole) return;
+            openModal('admin-panel-modal');
+            const modList = document.getElementById('admin-mod-list');
+            const logList = document.getElementById('admin-log-list');
+            const { data: mods } = await supabaseClient.from('moderators').select('user_id,created_at');
+            const ids = (mods || []).map(m => m.user_id);
+            const { data: profs } = ids.length ? await supabaseClient.from('profiles').select('id,username').in('id', ids) : { data: [] };
+            modList.innerHTML = (mods || []).length ? mods.map(m => {
+                const name = (profs || []).find(p => p.id === m.user_id)?.username || m.user_id.slice(0, 8);
+                return `<div class="flex justify-between items-center bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm"><span class="text-emerald-400">${esc(name)}</span><button onclick="removeModerator('${m.user_id}')" class="text-xs text-red-400 hover:text-red-300">Remove</button></div>`;
+            }).join('') : '<p class="text-xs text-slate-500">No moderators yet.</p>';
+            const { data: logs } = await supabaseClient.from('mod_log').select('*').order('created_at', { ascending: false }).limit(50);
+            logList.innerHTML = (logs || []).length ? logs.map(l => `<div class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2"><span class="text-emerald-400">${esc(l.actor_username || 'staff')}</span> <span class="text-slate-200">${esc(l.action)}</span> <span class="text-slate-500">${esc(l.details || '')}</span> <span class="text-slate-600 float-right">${new Date(l.created_at).toLocaleString()}</span></div>`).join('') : '<p class="text-slate-500">Nothing logged yet.</p>';
+        }
+
+        async function addModerator() {
+            if (!isAdminRole) return;
+            const input = document.getElementById('admin-add-mod-input');
+            const n = input.value.trim().replace(/^@/, '');
+            if (!n) return;
+            const { data: prof } = await supabaseClient.from('profiles').select('id,username').in('username', [n, '@' + n]).maybeSingle();
+            if (!prof) return showToast("No user with that username.", "error");
+            const { error } = await supabaseClient.from('moderators').insert({ user_id: prof.id, added_by: currentUser.id });
+            if (error) return showToast(error.code === '23505' ? "Already a moderator." : error.message, "error");
+            await logStaffAction('added moderator', prof.id, null, prof.username);
+            input.value = '';
+            showToast("Moderator added.", "success");
+            openAdminPanel();
+        }
+
+        async function removeModerator(uid) {
+            if (!isAdminRole || !confirm('Remove this moderator?')) return;
+            const { error } = await supabaseClient.from('moderators').delete().eq('user_id', uid);
+            if (error) return showToast(error.message, "error");
+            await logStaffAction('removed moderator', uid, null, null);
+            showToast("Moderator removed.", "info");
+            openAdminPanel();
+        }
+
         const REPORT_REASONS = ['Offensive or hateful content', 'Spam or misleading', 'Copyrighted audio', 'Harassment or targeting someone', 'Inappropriate or explicit', 'Other'];
         let reportingSoundId = null;
 
