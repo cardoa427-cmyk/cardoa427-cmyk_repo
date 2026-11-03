@@ -732,6 +732,11 @@
         <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto p-6 shadow-2xl relative space-y-4">
             <button onclick="closeModal('staff-panel-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-200"><i class="fa-solid fa-xmark text-lg"></i></button>
             <h3 class="text-lg font-bold text-slate-100"><i class="fa-solid fa-shield-halved text-emerald-400 mr-2"></i>Moderator Panel</h3>
+            <div class="flex gap-2">
+                <input id="staff-user-search" type="text" placeholder="Look up a user: @username" class="flex-1 bg-slate-950 text-sm text-slate-100 px-3.5 py-2 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500">
+                <button onclick="staffFindUser()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 rounded-xl text-sm">Find</button>
+            </div>
+            <div id="staff-user-view"></div>
             <p class="text-xs text-slate-400">Open reports, newest first.</p>
             <div id="staff-reports-list" class="space-y-3"></div>
         </div>
@@ -754,6 +759,15 @@
                 <h4 class="text-sm font-bold text-slate-200 mb-2">Moderation log</h4>
                 <div id="admin-log-list" class="space-y-1.5 text-xs"></div>
             </div>
+        </div>
+    </div>
+
+    <!-- MODAL: MESSAGES FROM MODERATORS -->
+    <div id="inbox-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl space-y-3">
+            <h3 class="text-lg font-bold text-slate-100"><i class="fa-solid fa-envelope text-amber-400 mr-2"></i>Message from Audio Grove</h3>
+            <div id="inbox-list" class="space-y-2 text-sm"></div>
+            <button onclick="closeModal('inbox-modal')" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-2.5 rounded-xl text-sm">OK</button>
         </div>
     </div>
 
@@ -1312,7 +1326,8 @@
                 const { error } = await supabaseClient.auth.signInWithOAuth({
                     provider: 'github',
                     options: {
-                        redirectTo: window.location.origin + window.location.pathname
+                        redirectTo: window.location.origin + window.location.pathname,
+                        queryParams: { prompt: 'select_account' }
                     }
                 });
                 if (error) throw error;
@@ -1376,14 +1391,20 @@
             }
         }
 
-        async function handleSignOut() {
-            if (supabaseClient) {
-                await supabaseClient.auth.signOut();
-            }
+        async function handleSignOut(silentMessage) {
+            try {
+                if (supabaseClient) {
+                    // "local" signs out this device only (the default would sign the account out everywhere)
+                    await supabaseClient.auth.signOut({ scope: 'local' });
+                }
+            } catch (e) { console.warn("Sign out error:", e); }
             currentUser = null;
             userProfile = null;
+            staffCheckedFor = null; myStateCheckedFor = null;
+            ['staff-panel-modal', 'admin-panel-modal', 'report-modal', 'reset-password-modal', 'inbox-modal'].forEach(id => closeModal(id));
+            ['auth-email', 'auth-password'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
             updateUserUI();
-            showToast("Signed out successfully", "info");
+            if (!silentMessage) showToast("Signed out. You're browsing as a guest. Sign in to use this or another account.", "info");
             switchTab('homeboard');
             await renderSoundboard();
             renderProfile();
@@ -1792,6 +1813,7 @@
 
         function updateUserUI() {
             loadStaffRole();
+            checkMyAccountState();
             const authSection = document.getElementById('user-auth-section');
             const uploadAuthBanner = document.getElementById('upload-auth-banner');
             const handleDisplay = document.getElementById('account-handle-display');
@@ -2265,7 +2287,7 @@
                 <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-2">
                     <div class="flex justify-between gap-2 text-xs"><span class="font-bold text-amber-400">${esc(r.reason)}</span><span class="text-slate-500">${new Date(r.created_at).toLocaleString()}</span></div>
                     <div class="text-sm text-slate-100">Post: <b>${esc(r.sound_title || 'deleted post')}</b></div>
-                    <div class="text-xs text-slate-400">Reported user: <span class="text-emerald-400">${esc(r.reported_username || 'unknown')}</span> &nbsp;·&nbsp; Reported by: <span class="text-emerald-400">${esc(r.reporter_username || 'unknown')}</span></div>
+                    <div class="text-xs text-slate-400">Reported user: <button onclick="viewStaffUser('${r.reported_user_id}')" class="text-emerald-400 underline">${esc(r.reported_username || 'unknown')}</button> &nbsp;·&nbsp; Reported by: <button onclick="viewStaffUser('${r.reporter_id}')" class="text-emerald-400 underline">${esc(r.reporter_username || 'unknown')}</button></div>
                     <div class="flex flex-wrap gap-2 pt-1">
                         <button onclick="reportAction('${r.id}','preview')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200">Preview</button>
                         <button onclick="reportAction('${r.id}','hide')" class="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-xs text-amber-300">Hide post</button>
@@ -2310,6 +2332,96 @@
                 console.error("Report action error:", err);
                 showToast(err.message || "Action failed", "error");
             }
+        }
+
+        // ----- user lookup + moderation actions (moderators and admins) -----
+        async function staffFindUser() {
+            const n = document.getElementById('staff-user-search').value.trim().replace(/^@/, '');
+            if (!n) return;
+            const { data } = await supabaseClient.from('profiles').select('id').in('username', [n, '@' + n]).maybeSingle();
+            if (!data) return showToast("No user with that username.", "error");
+            viewStaffUser(data.id);
+        }
+
+        async function viewStaffUser(uid) {
+            if (!(isAdminRole || isModRole) || !uid || uid === 'null') return;
+            const box = document.getElementById('staff-user-view');
+            const [p, snd, st] = await Promise.all([
+                supabaseClient.from('profiles').select('id,username,created_at').eq('id', uid).maybeSingle(),
+                supabaseClient.from('sounds').select('id,likes,is_private').eq('user_id', uid),
+                supabaseClient.from('user_status').select('*').eq('user_id', uid).maybeSingle()
+            ]);
+            if (!p.data) { box.innerHTML = '<p class="text-xs text-red-400">User not found (account may be deleted).</p>'; return; }
+            const posts = snd.data || [];
+            const status = st.data ? `${st.data.status.replace('_', '-')}${st.data.until ? ' until ' + new Date(st.data.until).toLocaleDateString() : ''}` : 'none';
+            box.innerHTML = `<div class="bg-slate-950 border border-emerald-500/30 rounded-xl p-3.5 space-y-2">
+                <div class="flex justify-between"><b class="text-emerald-400">${esc(p.data.username)}</b><button onclick="document.getElementById('staff-user-view').innerHTML=''" class="text-slate-500 text-xs">close</button></div>
+                <div class="text-xs text-slate-400">Joined ${new Date(p.data.created_at).toLocaleDateString()} · ${posts.length} posts (${posts.filter(x => x.is_private).length} private) · ${posts.reduce((a, x) => a + (x.likes || 0), 0)} likes · Status: <b class="text-slate-200">${status}</b></div>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="staffSendMessage('${uid}','warning')" class="px-3 py-1.5 rounded-lg bg-amber-500/20 text-xs text-amber-300">Warn</button>
+                    <button onclick="staffSendMessage('${uid}','message')" class="px-3 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-200">Message</button>
+                    <button onclick="staffSetStatus('${uid}','shadow_banned')" class="px-3 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-200">Shadow-ban</button>
+                    <button onclick="staffSetStatus('${uid}','suspended')" class="px-3 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-200">Suspend</button>
+                    <button onclick="staffSetStatus('${uid}','banned')" class="px-3 py-1.5 rounded-lg bg-red-500/20 text-xs text-red-300">Ban</button>
+                    <button onclick="staffClearStatus('${uid}')" class="px-3 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-400">Clear status</button>
+                </div></div>`;
+            box.dataset.name = p.data.username;
+        }
+
+        const staffUserName = () => document.getElementById('staff-user-view')?.dataset.name || '';
+
+        async function staffSetStatus(uid, status) {
+            const reason = prompt('Reason (optional):') ;
+            if (reason === null) return;
+            let until = null;
+            if (status === 'suspended') {
+                const days = parseInt(prompt('Suspend for how many days?', '7'), 10);
+                if (!days || days < 1) return;
+                until = new Date(Date.now() + days * 86400000).toISOString();
+            }
+            const { error } = await supabaseClient.from('user_status').upsert({ user_id: uid, status, reason: reason || null, until, set_by: currentUser.id });
+            if (error) return showToast(error.message, "error");
+            await logStaffAction(status.replace('_', '-'), uid, null, staffUserName() + (reason ? ' — ' + reason : ''));
+            showToast("Status updated.", "success");
+            viewStaffUser(uid);
+        }
+
+        async function staffClearStatus(uid) {
+            const { error } = await supabaseClient.from('user_status').delete().eq('user_id', uid);
+            if (error) return showToast(error.message, "error");
+            await logStaffAction('cleared status', uid, null, staffUserName());
+            showToast("Status cleared.", "info");
+            viewStaffUser(uid);
+        }
+
+        async function staffSendMessage(uid, kind) {
+            const body = prompt(kind === 'warning' ? 'Warning to send to this user:' : 'Message to send to this user:');
+            if (!body || !body.trim()) return;
+            const { error } = await supabaseClient.from('messages').insert({ to_user_id: uid, from_user_id: currentUser.id, kind, body: body.trim() });
+            if (error) return showToast(error.message, "error");
+            await logStaffAction(kind === 'warning' ? 'warned user' : 'messaged user', uid, null, staffUserName() + ' — ' + body.trim().slice(0, 80));
+            showToast("Sent.", "success");
+        }
+
+        // ----- signed-in user: ban/suspension check + messages from moderators -----
+        let myStateCheckedFor = null;
+        async function checkMyAccountState() {
+            if (!supabaseClient || !currentUser || myStateCheckedFor === currentUser.id) return;
+            myStateCheckedFor = currentUser.id;
+            try {
+                const { data: st } = await supabaseClient.from('user_status').select('status,until,reason').eq('user_id', currentUser.id).maybeSingle();
+                if (st && (st.status === 'banned' || st.status === 'suspended') && (!st.until || new Date(st.until) > new Date())) {
+                    showToast(st.status === 'banned' ? "This account has been banned." : "This account is suspended until " + new Date(st.until).toLocaleDateString() + ".", "error");
+                    await handleSignOut(true);
+                    return;
+                }
+                const { data: msgs } = await supabaseClient.from('messages').select('id,kind,body,created_at').eq('to_user_id', currentUser.id).order('created_at');
+                if (msgs && msgs.length) {
+                    document.getElementById('inbox-list').innerHTML = msgs.map(m => `<div class="bg-slate-950 border ${m.kind === 'warning' ? 'border-amber-500/40' : 'border-slate-800'} rounded-xl p-3"><b class="${m.kind === 'warning' ? 'text-amber-400' : 'text-emerald-400'} text-xs uppercase">${m.kind}</b><p class="text-slate-200 mt-1">${esc(m.body)}</p></div>`).join('');
+                    openModal('inbox-modal');
+                    await supabaseClient.from('messages').delete().in('id', msgs.map(m => m.id));
+                }
+            } catch (e) { console.warn("Account state check failed:", e); }
         }
 
         async function openAdminPanel() {
