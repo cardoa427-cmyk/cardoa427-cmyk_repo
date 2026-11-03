@@ -518,6 +518,11 @@
                     </button>
                 </form>
 
+                <div class="border-t border-slate-800 pt-4 space-y-2">
+                    <h3 class="text-sm font-bold text-slate-200">Blocked users</h3>
+                    <div id="blocked-users-list" class="space-y-2"><p class="text-xs text-slate-500 italic">Sign in to manage blocked users.</p></div>
+                </div>
+
                 <div class="border-t border-slate-800 pt-4">
                     <button onclick="handleSignOut()" class="w-full bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 font-semibold py-2.5 rounded-xl text-sm transition-all">
                         Sign Out
@@ -733,9 +738,10 @@
             <button onclick="closeModal('staff-panel-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-200"><i class="fa-solid fa-xmark text-lg"></i></button>
             <h3 class="text-lg font-bold text-slate-100"><i class="fa-solid fa-shield-halved text-emerald-400 mr-2"></i>Moderator Panel</h3>
             <div class="flex gap-2">
-                <input id="staff-user-search" type="text" placeholder="Look up a user: @username" class="flex-1 bg-slate-950 text-sm text-slate-100 px-3.5 py-2 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500">
+                <input id="staff-user-search" type="text" autocomplete="off" oninput="staffSearchSuggest()" placeholder="Look up a user: @username" class="flex-1 bg-slate-950 text-sm text-slate-100 px-3.5 py-2 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500">
                 <button onclick="staffFindUser()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 rounded-xl text-sm">Find</button>
             </div>
+            <div id="staff-user-suggest" class="hidden bg-slate-950 border border-slate-800 rounded-xl overflow-hidden"></div>
             <div id="staff-user-view"></div>
             <p class="text-xs text-slate-400">Open reports, newest first.</p>
             <div id="staff-reports-list" class="space-y-3"></div>
@@ -768,6 +774,26 @@
             <h3 class="text-lg font-bold text-slate-100"><i class="fa-solid fa-envelope text-amber-400 mr-2"></i>Message from Audio Grove</h3>
             <div id="inbox-list" class="space-y-2 text-sm"></div>
             <button onclick="closeModal('inbox-modal')" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-2.5 rounded-xl text-sm">OK</button>
+        </div>
+    </div>
+
+    <!-- MODAL: USER PROFILE (other creators) -->
+    <div id="user-profile-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl relative space-y-3">
+            <button onclick="closeModal('user-profile-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-200"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <div id="user-profile-body"></div>
+        </div>
+    </div>
+
+    <!-- MODAL: CONFIRM BLOCK -->
+    <div id="block-confirm-modal" class="fixed inset-0 z-[60] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl space-y-4">
+            <h3 class="text-lg font-bold text-slate-100">Are you sure?</h3>
+            <p id="block-confirm-text" class="text-sm text-slate-400"></p>
+            <div class="flex gap-2">
+                <button onclick="closeModal('block-confirm-modal')" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2.5 rounded-xl text-sm">Back</button>
+                <button onclick="confirmBlock()" class="flex-1 bg-red-500 hover:bg-red-400 text-white font-bold py-2.5 rounded-xl text-sm">Confirm</button>
+            </div>
         </div>
     </div>
 
@@ -1504,7 +1530,7 @@
                     <div class="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
                         <div class="flex items-center gap-1.5 min-w-0 flex-1">
                             <i class="fa-solid fa-circle-user text-emerald-400 text-xs shrink-0"></i>
-                            <span class="text-xs font-semibold text-emerald-400 truncate" title="Creator: ${sound.username || '@creator'}">${sound.username || '@creator'}</span>
+                            <span onclick="openUserProfile('${sound.user_id}')" class="text-xs font-semibold text-emerald-400 truncate cursor-pointer hover:underline" title="View creator">${sound.username || '@creator'}</span>
                         </div>
 
                         <div class="flex items-center gap-1.5 shrink-0">
@@ -1578,7 +1604,7 @@
             }
 
             activeSoundsList = sounds;
-            let filteredSounds = [...sounds];
+            let filteredSounds = sounds.filter(s => !blockedIds.has(s.user_id));
 
             if (queryStr) {
                 filteredSounds = filteredSounds.filter(s => 
@@ -1814,6 +1840,7 @@
         function updateUserUI() {
             loadStaffRole();
             checkMyAccountState();
+            loadBlocks();
             const authSection = document.getElementById('user-auth-section');
             const uploadAuthBanner = document.getElementById('upload-auth-banner');
             const handleDisplay = document.getElementById('account-handle-display');
@@ -2308,12 +2335,12 @@
                 }
                 let newStatus = 'dismissed';
                 if (action === 'hide') {
-                    if (!r.sound_id) return showToast("Post no longer exists.", "info");
+                    if (!r.sound_id) return showToast("No post attached to this report.", "info");
                     const { error } = await supabaseClient.from('hidden_sounds').upsert({ sound_id: r.sound_id, hidden_by: currentUser.id, reason: r.reason });
                     if (error) throw error;
                     newStatus = 'actioned';
                 } else if (action === 'remove') {
-                    if (!r.sound_id) return showToast("Post no longer exists.", "info");
+                    if (!r.sound_id) return showToast("No post attached to this report.", "info");
                     if (!confirm('Permanently remove this post and its audio file?')) return;
                     const { data: row } = await supabaseClient.from('sounds').select('file_path').eq('id', r.sound_id).maybeSingle();
                     const { error } = await supabaseClient.from('sounds').delete().eq('id', r.sound_id);
@@ -2334,7 +2361,113 @@
             }
         }
 
+        // ===== BLOCKING + OTHER CREATORS' PROFILES =====
+        let blockedIds = new Set(), blocksLoadedFor = null, pendingBlock = null;
+
+        async function loadBlocks() {
+            if (!supabaseClient || !currentUser) {
+                blockedIds = new Set(); blocksLoadedFor = null; renderBlockedList([]);
+                return;
+            }
+            if (blocksLoadedFor === currentUser.id) return;
+            blocksLoadedFor = currentUser.id;
+            try {
+                const { data } = await supabaseClient.from('blocks').select('blocked_id').eq('blocker_id', currentUser.id);
+                blockedIds = new Set((data || []).map(b => b.blocked_id));
+                renderBlockedList(data || []);
+                renderSoundboard();
+            } catch (e) { console.warn("Could not load blocks:", e); }
+        }
+
+        async function renderBlockedList(rows) {
+            const el = document.getElementById('blocked-users-list');
+            if (!el) return;
+            if (!currentUser) { el.innerHTML = '<p class="text-xs text-slate-500 italic">Sign in to manage blocked users.</p>'; return; }
+            if (!rows.length) { el.innerHTML = '<p class="text-xs text-slate-500 italic">You haven\'t blocked anyone.</p>'; return; }
+            const ids = rows.map(r => r.blocked_id);
+            const { data: profs } = await supabaseClient.from('profiles').select('id,username').in('id', ids);
+            el.innerHTML = ids.map(id => {
+                const name = (profs || []).find(p => p.id === id)?.username || 'Unknown user';
+                return `<div class="flex justify-between items-center bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm"><span class="text-slate-200">${esc(name)}</span><button onclick="unblockUser('${id}')" class="text-xs text-emerald-400 hover:text-emerald-300">Unblock</button></div>`;
+            }).join('');
+        }
+
+        async function openUserProfile(uid) {
+            if (!uid || uid === 'null' || uid === 'undefined') return;
+            const body = document.getElementById('user-profile-body');
+            if (blockedIds.has(uid)) { showToast("You've blocked this user. Unblock them in Settings to view their profile.", "info"); return; }
+            body.innerHTML = '<p class="text-xs text-slate-500">Loading...</p>';
+            openModal('user-profile-modal');
+            const [p, snd] = await Promise.all([
+                supabaseClient.from('profiles').select('id,username,created_at').eq('id', uid).maybeSingle(),
+                supabaseClient.from('sounds').select('id').eq('user_id', uid).eq('is_private', false)
+            ]);
+            if (!p.data) { body.innerHTML = '<p class="text-sm text-slate-400">This user could not be found.</p>'; return; }
+            const own = currentUser && currentUser.id === uid;
+            body.innerHTML = `<div class="flex items-center gap-3 mb-3"><i class="fa-solid fa-circle-user text-emerald-400 text-3xl"></i>
+                <div><div class="text-lg font-bold text-emerald-400">${esc(p.data.username)}</div>
+                <div class="text-xs text-slate-400">Joined ${new Date(p.data.created_at).toLocaleDateString()} · ${(snd.data || []).length} public posts</div></div></div>
+                ${own ? '<p class="text-xs text-slate-500">This is you.</p>' : `<div class="flex gap-2">
+                    <button onclick="startBlock('${uid}','${esc(p.data.username).replace(/'/g, '')}')" class="flex-1 bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/30 font-medium py-2.5 rounded-xl text-sm"><i class="fa-solid fa-ban mr-1.5"></i>Block</button>
+                    <button onclick="startUserReport('${uid}','${esc(p.data.username).replace(/'/g, '')}')" class="flex-1 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 font-medium py-2.5 rounded-xl text-sm"><i class="fa-solid fa-flag mr-1.5"></i>Report user</button></div>`}`;
+        }
+
+        function startBlock(uid, name) {
+            if (!currentUser) { showToast("Please sign in to block users", "info"); closeModal('user-profile-modal'); openModal('auth-modal'); return; }
+            pendingBlock = uid;
+            document.getElementById('block-confirm-text').textContent = `Block ${name}? You won't see their posts or profile. You can unblock them any time in Settings → Blocked users.`;
+            openModal('block-confirm-modal');
+        }
+
+        async function confirmBlock() {
+            if (!pendingBlock || !currentUser) return;
+            const { error } = await supabaseClient.from('blocks').insert({ blocker_id: currentUser.id, blocked_id: pendingBlock });
+            if (error && error.code !== '23505') return showToast(error.message, "error");
+            blockedIds.add(pendingBlock); pendingBlock = null;
+            closeModal('block-confirm-modal'); closeModal('user-profile-modal');
+            blocksLoadedFor = null; await loadBlocks();
+            showToast("User blocked.", "success");
+        }
+
+        async function unblockUser(uid) {
+            const { error } = await supabaseClient.from('blocks').delete().eq('blocker_id', currentUser.id).eq('blocked_id', uid);
+            if (error) return showToast(error.message, "error");
+            blockedIds.delete(uid); blocksLoadedFor = null; await loadBlocks();
+            await renderSoundboard();
+            showToast("User unblocked.", "info");
+        }
+
+        function startUserReport(uid, name) {
+            if (!currentUser) { showToast("Please sign in to report a user", "info"); closeModal('user-profile-modal'); openModal('auth-modal'); return; }
+            reportingUserId = uid; reportingUserName = name; reportingSoundId = null;
+            document.getElementById('report-reasons').innerHTML = REPORT_REASONS.map(r =>
+                `<button onclick="submitReport('${r.replace(/'/g, "\\'")}')" class="w-full text-left text-sm text-slate-200 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-xl px-3.5 py-2.5 transition-all">${r}</button>`
+            ).join('');
+            closeModal('user-profile-modal');
+            openModal('report-modal');
+        }
+
         // ----- user lookup + moderation actions (moderators and admins) -----
+        let suggestTimer = null;
+        function staffSearchSuggest() {
+            clearTimeout(suggestTimer);
+            const box = document.getElementById('staff-user-suggest');
+            const n = document.getElementById('staff-user-search').value.trim().replace(/^@/, '');
+            if (!n) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+            suggestTimer = setTimeout(async () => {
+                const term = n.replace(/[%_\\]/g, m => '\\' + m);
+                const { data } = await supabaseClient.from('profiles').select('id,username').ilike('username', '%' + term + '%').order('username').limit(8);
+                if (!data || !data.length) { box.innerHTML = '<p class="px-3.5 py-2 text-xs text-slate-500">No matching usernames</p>'; box.classList.remove('hidden'); return; }
+                box.innerHTML = data.map(u => `<button onclick="pickSuggestedUser('${u.id}')" class="w-full text-left px-3.5 py-2 text-sm text-emerald-400 hover:bg-slate-800">${esc(u.username)}</button>`).join('');
+                box.classList.remove('hidden');
+            }, 200);
+        }
+        function pickSuggestedUser(id) {
+            const box = document.getElementById('staff-user-suggest');
+            box.classList.add('hidden'); box.innerHTML = '';
+            viewStaffUser(id);
+        }
+
         async function staffFindUser() {
             const n = document.getElementById('staff-user-search').value.trim().replace(/^@/, '');
             if (!n) return;
@@ -2466,6 +2599,7 @@
 
         const REPORT_REASONS = ['Offensive or hateful content', 'Spam or misleading', 'Copyrighted audio', 'Harassment or targeting someone', 'Inappropriate or explicit', 'Other'];
         let reportingSoundId = null;
+        let reportingUserId = null, reportingUserName = '';
 
         function openReportModal(soundId) {
             if (!currentUser) {
@@ -2474,6 +2608,7 @@
                 return;
             }
             reportingSoundId = soundId;
+            reportingUserId = null;
             document.getElementById('report-reasons').innerHTML = REPORT_REASONS.map(r =>
                 `<button onclick="submitReport('${r.replace(/'/g, "\\'")}')" class="w-full text-left text-sm text-slate-200 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-xl px-3.5 py-2.5 transition-all">${r}</button>`
             ).join('');
@@ -2481,14 +2616,14 @@
         }
 
         async function submitReport(reason) {
-            const sound = activeSoundsList.find(s => s.id === reportingSoundId);
-            if (!sound || !currentUser || !supabaseClient) return;
+            const sound = reportingUserId ? null : activeSoundsList.find(s => s.id === reportingSoundId);
+            if ((!sound && !reportingUserId) || !currentUser || !supabaseClient) return;
             try {
                 const { error } = await supabaseClient.from('reports').insert({
-                    sound_id: sound.id,
-                    sound_title: sound.title,
-                    reported_user_id: sound.user_id,
-                    reported_username: sound.username || null,
+                    sound_id: sound ? sound.id : null,
+                    sound_title: sound ? sound.title : '(user report, no post)',
+                    reported_user_id: sound ? sound.user_id : reportingUserId,
+                    reported_username: sound ? (sound.username || null) : (reportingUserName || null),
                     reporter_id: currentUser.id,
                     reporter_username: userProfile?.username || null,
                     reason: reason
