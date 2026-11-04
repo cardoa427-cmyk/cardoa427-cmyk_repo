@@ -96,6 +96,9 @@
         html.theme-light .text-indigo-400 { color: #4338ca !important; }
         html.theme-light .text-purple-400 { color: #7e22ce !important; }
         html.theme-light .custom-scrollbar::-webkit-scrollbar-track { background: #e2e8f0; }
+
+        /* ---- Site shutdown: everything except the overlay, popups and toasts disappears ---- */
+        body.maintenance > *:not(#maintenance-overlay):not([id$="-modal"]):not(#toast-container):not(script):not(style) { display: none !important; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between custom-scrollbar bg-[#080c14] text-slate-100">
@@ -163,6 +166,7 @@
 
     <!-- Main Workspace Container -->
     <main class="max-w-7xl w-full mx-auto px-4 lg:px-8 py-6 flex-1 pb-36">
+        <div id="announcement-bar" class="space-y-2 mb-4"></div>
 
         <!-- TAB 1: HOMEBOARD FEED -->
         <section id="tab-homeboard" class="space-y-6">
@@ -819,11 +823,33 @@
                 <div id="admin-stats" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
             </div>
             <div>
+                <h4 class="text-sm font-bold text-slate-200 mb-2">Site controls</h4>
+                <p id="admin-maint-state" class="text-xs text-slate-400 mb-2"></p>
+                <div class="flex gap-2">
+                    <input id="admin-maint-msg" type="text" placeholder="Message for the under-construction screen (optional)" class="flex-1 bg-slate-950 text-sm text-slate-100 px-3.5 py-2 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500">
+                    <button id="admin-maint-btn" onclick="toggleMaintenance()" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 font-bold px-4 rounded-xl text-sm whitespace-nowrap">Shut down</button>
+                </div>
+            </div>
+            <div>
+                <h4 class="text-sm font-bold text-slate-200 mb-2">Announcements</h4>
+                <textarea id="admin-ann-input" rows="2" placeholder="Write an announcement everyone will see at the top of the site" class="w-full bg-slate-950 text-sm text-slate-100 px-3.5 py-2 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500"></textarea>
+                <button onclick="postAnnouncement()" class="mt-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-4 py-2 rounded-xl text-sm">Post announcement</button>
+                <div id="admin-ann-list" class="space-y-2 mt-3"></div>
+            </div>
+            <div>
                 <h4 class="text-sm font-bold text-slate-200 mb-2">Decisions &amp; moderation log</h4>
                 <div id="admin-log-filters" class="flex flex-wrap gap-1.5 mb-2"></div>
                 <div id="admin-log-list" class="space-y-1.5 text-xs"></div>
             </div>
         </div>
+    </div>
+
+    <!-- SITE SHUTDOWN SCREEN -->
+    <div id="maintenance-overlay" class="hidden fixed inset-0 z-40 bg-[#080c14] flex flex-col items-center justify-center text-center p-6">
+        <i class="fa-solid fa-person-digging text-5xl text-slate-500 mb-5"></i>
+        <h1 class="text-2xl font-bold text-slate-100 mb-2">Under construction</h1>
+        <p id="maintenance-msg" class="text-sm text-slate-400 max-w-sm"></p>
+        <button onclick="openModal('auth-modal')" class="mt-16 text-[10px] text-slate-700 hover:text-slate-500">staff</button>
     </div>
 
     <!-- MODAL: MESSAGES FROM MODERATORS -->
@@ -1142,6 +1168,7 @@
                 try {
                     supabaseClient = window.supabase.createClient(savedUrl, savedKey);
                     updateBackendBadge(true);
+                    loadSiteState();
 
                     supabaseClient.auth.onAuthStateChange(async (event, session) => {
                         if (event === 'PASSWORD_RECOVERY') {
@@ -2372,6 +2399,7 @@
                 isAdminRole = isModRole = false; staffCheckedFor = null;
             } else if (staffCheckedFor !== currentUser.id) {
                 staffCheckedFor = currentUser.id;
+                staffRoleReady = false;
                 try {
                     const [a, m] = await Promise.all([
                         supabaseClient.from('admins').select('user_id').eq('user_id', currentUser.id).maybeSingle(),
@@ -2382,6 +2410,8 @@
             }
             const btn = document.getElementById('staff-panel-btn');
             if (btn) btn.classList.toggle('hidden', !(isAdminRole || isModRole));
+            staffRoleReady = true;
+            applyMaintenance();
         }
 
         async function logStaffAction(action, targetUserId, targetSoundId, details, reportId) {
@@ -2790,12 +2820,14 @@
             viewStaffUser(uid);
         }
 
-        async function staffSendMessage(uid, kind) {
+        function adminMessageMod(uid, name, kind) { staffSendMessage(uid, kind, name); }
+
+        async function staffSendMessage(uid, kind, nameOverride) {
             const body = prompt(kind === 'warning' ? 'Warning to send to this user:' : 'Message to send to this user:');
             if (!body || !body.trim()) return;
             const { error } = await supabaseClient.from('messages').insert({ to_user_id: uid, from_user_id: currentUser.id, kind, body: body.trim() });
             if (error) return showToast(error.message, "error");
-            await logStaffAction(kind === 'warning' ? 'warned user' : 'messaged user', uid, null, staffUserName() + ' — ' + body.trim().slice(0, 80));
+            await logStaffAction(kind === 'warning' ? 'warned user' : 'messaged user', uid, null, (nameOverride || staffUserName()) + ' — ' + body.trim().slice(0, 80));
             showToast("Sent.", "success");
         }
 
@@ -2831,12 +2863,121 @@
             const { data: profs } = ids.length ? await supabaseClient.from('profiles').select('id,username').in('id', ids) : { data: [] };
             modList.innerHTML = (mods || []).length ? mods.map(m => {
                 const name = (profs || []).find(p => p.id === m.user_id)?.username || m.user_id.slice(0, 8);
-                return `<div class="flex justify-between items-center bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm"><span class="text-emerald-400">${esc(name)}</span><button onclick="removeModerator('${m.user_id}')" class="text-xs text-red-400 hover:text-red-300">Remove</button></div>`;
+                return `<div class="flex justify-between items-center bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm"><span class="text-emerald-400">${esc(name)}</span><span class="flex gap-3"><button onclick="adminMessageMod('${m.user_id}','${esc(name).replace(/'/g, '')}','message')" class="text-xs text-slate-300 hover:text-white">Message</button><button onclick="adminMessageMod('${m.user_id}','${esc(name).replace(/'/g, '')}','warning')" class="text-xs text-amber-400 hover:text-amber-300">Warn</button><button onclick="removeModerator('${m.user_id}')" class="text-xs text-red-400 hover:text-red-300">Remove</button></span></div>`;
             }).join('') : '<p class="text-xs text-slate-500">No moderators yet.</p>';
             const { data: logs } = await supabaseClient.from('mod_log').select('*').order('created_at', { ascending: false }).limit(200);
             adminLogCache = logs || [];
             renderDecisions(adminLogFilter);
             loadAdminStats();
+            refreshAdminSite();
+        }
+
+        // ===== SITE STATE: announcements, shutdown, live users =====
+        let maintenanceOn = false, maintenanceMsg = '', staffRoleReady = false, presenceChannel = null, liveUsers = 0, siteAnnouncements = [];
+
+        async function loadSiteState() {
+            startPresence();
+            try {
+                const [a, m] = await Promise.all([
+                    supabaseClient.from('announcements').select('id,body,created_at').eq('active', true).order('created_at', { ascending: false }).limit(3),
+                    supabaseClient.from('site_settings').select('value').eq('key', 'maintenance').maybeSingle()
+                ]);
+                siteAnnouncements = a.data || [];
+                maintenanceOn = !!(m.data && m.data.value && m.data.value.on);
+                maintenanceMsg = (m.data && m.data.value && m.data.value.message) || '';
+            } catch (e) { console.warn("Site state load failed:", e); }
+            renderAnnouncements();
+            applyMaintenance();
+        }
+
+        function renderAnnouncements() {
+            let dismissed = [];
+            try { dismissed = JSON.parse(localStorage.getItem('ag_ann_dismissed') || '[]'); } catch (e) {}
+            const bar = document.getElementById('announcement-bar');
+            if (!bar) return;
+            bar.innerHTML = siteAnnouncements.filter(a => !dismissed.includes(a.id)).map(a => `
+                <div class="flex items-start gap-3 bg-indigo-500/10 border border-indigo-500/30 rounded-xl px-4 py-3">
+                    <i class="fa-solid fa-bullhorn text-indigo-400 mt-0.5"></i>
+                    <p class="flex-1 text-sm text-slate-200">${esc(a.body)}</p>
+                    <button onclick="dismissAnnouncement('${a.id}')" class="text-slate-500 hover:text-slate-300" title="Dismiss"><i class="fa-solid fa-xmark"></i></button>
+                </div>`).join('');
+        }
+
+        function dismissAnnouncement(id) {
+            try {
+                const d = JSON.parse(localStorage.getItem('ag_ann_dismissed') || '[]');
+                d.push(id); localStorage.setItem('ag_ann_dismissed', JSON.stringify(d));
+            } catch (e) {}
+            renderAnnouncements();
+        }
+
+        function applyMaintenance() {
+            const staff = isAdminRole || isModRole;
+            const waiting = currentUser && !staffRoleReady;
+            const show = maintenanceOn && !staff && !waiting;
+            document.body.classList.toggle('maintenance', !!show);
+            const ov = document.getElementById('maintenance-overlay');
+            if (ov) ov.classList.toggle('hidden', !show);
+            const msg = document.getElementById('maintenance-msg');
+            if (msg) msg.textContent = maintenanceMsg || 'We are making improvements. Please check back soon.';
+        }
+
+        function startPresence() {
+            if (presenceChannel || !supabaseClient) return;
+            try {
+                const key = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Math.random());
+                presenceChannel = supabaseClient.channel('audiogrove-online', { config: { presence: { key } } });
+                presenceChannel.on('presence', { event: 'sync' }, () => {
+                    liveUsers = Object.keys(presenceChannel.presenceState()).length;
+                    const el = document.getElementById('admin-live-count');
+                    if (el) el.textContent = liveUsers;
+                }).subscribe(async (status) => {
+                    if (status === 'SUBSCRIBED') await presenceChannel.track({ at: Date.now() });
+                });
+            } catch (e) { console.warn("Presence unavailable:", e); }
+        }
+
+        async function refreshAdminSite() {
+            const st = document.getElementById('admin-maint-state'), btn = document.getElementById('admin-maint-btn');
+            if (st) st.textContent = maintenanceOn ? 'The site is SHUT DOWN. Visitors see "Under construction"; moderators and admins still have access.' : 'The site is open.';
+            if (btn) { btn.textContent = maintenanceOn ? 'Reopen site' : 'Shut down'; }
+            const list = document.getElementById('admin-ann-list');
+            const { data } = await supabaseClient.from('announcements').select('id,body,active,created_at').order('created_at', { ascending: false }).limit(20);
+            list.innerHTML = (data || []).length ? data.map(a => `<div class="flex justify-between items-start gap-3 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs"><span class="text-slate-200">${esc(a.body)} <span class="text-slate-600">· ${new Date(a.created_at).toLocaleDateString()}</span></span><button onclick="removeAnnouncement('${a.id}')" class="text-red-400 hover:text-red-300 shrink-0">Remove</button></div>`).join('') : '<p class="text-xs text-slate-500">No announcements.</p>';
+        }
+
+        async function postAnnouncement() {
+            if (!isAdminRole) return;
+            const input = document.getElementById('admin-ann-input');
+            const body = input.value.trim();
+            if (!body) return;
+            const { error } = await supabaseClient.from('announcements').insert({ body, created_by: currentUser.id });
+            if (error) return showToast(error.message, "error");
+            await logStaffAction('announcement posted', null, null, body.slice(0, 100));
+            input.value = '';
+            showToast("Announcement posted.", "success");
+            await loadSiteState(); refreshAdminSite();
+        }
+
+        async function removeAnnouncement(id) {
+            if (!isAdminRole || !confirm('Remove this announcement?')) return;
+            const { error } = await supabaseClient.from('announcements').delete().eq('id', id);
+            if (error) return showToast(error.message, "error");
+            await logStaffAction('announcement removed', null, null, null);
+            await loadSiteState(); refreshAdminSite();
+        }
+
+        async function toggleMaintenance() {
+            if (!isAdminRole) return;
+            const turnOn = !maintenanceOn;
+            if (!confirm(turnOn ? 'Shut the site down? Everyone except moderators and admins will see "Under construction".' : 'Reopen the site for everyone?')) return;
+            const message = document.getElementById('admin-maint-msg').value.trim();
+            const { error } = await supabaseClient.from('site_settings').upsert({ key: 'maintenance', value: { on: turnOn, message: turnOn ? message : '' }, updated_by: currentUser.id, updated_at: new Date().toISOString() });
+            if (error) return showToast(error.message, "error");
+            maintenanceOn = turnOn; maintenanceMsg = turnOn ? message : '';
+            await logStaffAction(turnOn ? 'site shut down' : 'site reopened', null, null, turnOn ? message : null);
+            applyMaintenance(); refreshAdminSite();
+            showToast(turnOn ? "Site is shut down for visitors." : "Site reopened.", "success");
         }
 
         // ----- decisions organised by outcome, with revert (admins only) -----
@@ -2909,7 +3050,7 @@
                 n('hidden_sounds'), n('reports', q => q.eq('status', 'open')), n('post_likes'), n('post_downloads')
             ]);
             const tile = (label, v) => `<div class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2"><div class="text-lg font-bold text-emerald-400">${v}</div><div class="text-[11px] text-slate-400">${label}</div></div>`;
-            box.innerHTML = tile('Users', users) + tile('Posts', posts) + tile('Private posts', priv) + tile('Moderators', mods) + tile('Banned', banned) + tile('Shadow-banned', shadow) + tile('Suspended', susp) + tile('Hidden posts', hidden) + tile('Open reports', open) + tile('Likes recorded', likesN) + tile('Downloads recorded', dlN);
+            box.innerHTML = tile('Users', users) + tile('Posts', posts) + tile('Private posts', priv) + tile('Moderators', mods) + tile('Banned', banned) + tile('Shadow-banned', shadow) + tile('Suspended', susp) + tile('Hidden posts', hidden) + tile('Open reports', open) + tile('Likes recorded', likesN) + tile('Downloads recorded', dlN) + tile('Live now (open pages)', `<span id="admin-live-count">${liveUsers}</span>`);
         }
 
         async function addModerator() {
