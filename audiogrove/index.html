@@ -548,6 +548,12 @@
                     </button>
                 </form>
 
+                <div id="staff-settings-tools" class="hidden border-t border-slate-800 pt-4 space-y-2">
+                    <h3 class="text-sm font-bold text-emerald-400">Moderator tools</h3>
+                    <p class="text-xs text-slate-400">Change your public username to a random one from the username generator.</p>
+                    <button onclick="randomizeMyUsername()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium text-xs px-4 py-2.5 rounded-xl"><i class="fa-solid fa-dice mr-2"></i>Randomize my username</button>
+                </div>
+
                 <div class="border-t border-slate-800 pt-4 space-y-2">
                     <h3 class="text-sm font-bold text-slate-200">Appearance</h3>
                     <div class="flex gap-2">
@@ -1665,6 +1671,7 @@
                                 <button onclick="openReportModal('${sound.id}')" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-amber-500/20 hover:text-amber-400 text-slate-400 flex items-center justify-center text-xs transition-all" title="Report Post">
                                     <i class="fa-solid fa-flag"></i>
                                 </button>
+                                ${(isAdminRole || isModRole) ? `<button onclick="staffRemoveCaption('${sound.id}')" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-emerald-500/20 hover:text-emerald-400 text-slate-400 flex items-center justify-center text-xs transition-all" title="Remove caption (staff)"><i class="fa-solid fa-eraser"></i></button>` : ''}
                             `}
                             
                             <button onclick="requestDownload('${sound.id}')" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-emerald-500/20 hover:text-emerald-400 text-slate-300 flex items-center justify-center text-xs transition-all" title="Download Audio SFX">
@@ -2391,7 +2398,7 @@
 
         // DELETE SOUND HANDLER
         // ===== STAFF (MODERATOR / ADMIN) =====
-        let isAdminRole = false, isModRole = false, staffCheckedFor = null, staffReports = [];
+        let isAdminRole = false, isModRole = false, staffCheckedFor = null, staffReports = [], staffCardsShown = false;
         const esc = (t) => String(t ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
         async function loadStaffRole() {
@@ -2412,6 +2419,10 @@
             if (btn) btn.classList.toggle('hidden', !(isAdminRole || isModRole));
             staffRoleReady = true;
             applyMaintenance();
+            const tools = document.getElementById('staff-settings-tools');
+            if (tools) tools.classList.toggle('hidden', !(isAdminRole || isModRole));
+            if ((isAdminRole || isModRole) && !staffCardsShown) { staffCardsShown = true; renderSoundboard(); }
+            if (!(isAdminRole || isModRole)) staffCardsShown = false;
         }
 
         async function logStaffAction(action, targetUserId, targetSoundId, details, reportId) {
@@ -2441,6 +2452,7 @@
                         <button onclick="reportAction('${r.id}','preview')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200">Preview</button>
                         <button onclick="reportAction('${r.id}','hide')" class="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-xs text-amber-300">Hide post</button>
                         <button onclick="reportAction('${r.id}','remove')" class="px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-xs text-red-300">Remove post</button>
+                        <button onclick="staffRemoveCaption('${r.sound_id}')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200">Remove caption</button>
                         <button onclick="reportAction('${r.id}','dismiss')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-400">Dismiss</button>
                     </div>
                 </div>`).join('');
@@ -2730,6 +2742,45 @@
             ).join('');
             closeModal('user-profile-modal');
             openModal('report-modal');
+        }
+
+        // ----- caption removal (moderators and admins) -----
+        async function staffRemoveCaption(soundId) {
+            if (!(isAdminRole || isModRole) || !soundId || soundId === 'null') { showToast("No post attached.", "info"); return; }
+            const { data: row, error: readErr } = await supabaseClient.from('sounds').select('id,title,description,user_id').eq('id', soundId).maybeSingle();
+            if (readErr || !row) { showToast("Post not found.", "error"); return; }
+            if (!row.description || !row.description.trim()) { showToast("This post has no caption.", "info"); return; }
+            if (!confirm('Remove the caption from "' + row.title + '"?')) return;
+            const { error } = await supabaseClient.from('sounds').update({ description: '' }).eq('id', soundId);
+            if (error) { showToast(error.message, "error"); return; }
+            await logStaffAction('caption removed', row.user_id, soundId, row.title + ' — was: ' + row.description.slice(0, 80));
+            const local = activeSoundsList.find(x => x.id === soundId);
+            if (local) local.description = '';
+            showToast("Caption removed.", "success");
+            renderSoundboard();
+        }
+
+        // ----- random username for moderators/admins -----
+        const NAME_WORDS_A = ['Swift', 'Quiet', 'Lucky', 'Bright', 'Misty', 'Brave', 'Calm', 'Clever', 'Golden', 'Silver', 'Cosmic', 'Mellow', 'Rapid', 'Sunny', 'Velvet'];
+        const NAME_WORDS_B = ['Otter', 'Falcon', 'Panda', 'Fox', 'Heron', 'Lynx', 'Maple', 'Comet', 'River', 'Pebble', 'Willow', 'Echo', 'Tiger', 'Robin', 'Ember'];
+
+        async function randomizeMyUsername() {
+            if (!(isAdminRole || isModRole) || !currentUser) return;
+            if (!confirm('Change your public username to a random one?')) return;
+            const pick = a => a[Math.floor(Math.random() * a.length)];
+            for (let tries = 0; tries < 8; tries++) {
+                const name = '@' + pick(NAME_WORDS_A) + pick(NAME_WORDS_B) + Math.floor(100 + Math.random() * 900);
+                const { data: taken } = await supabaseClient.from('profiles').select('id').ilike('username', name).neq('id', currentUser.id).limit(1);
+                if (taken && taken.length) continue;
+                const { error } = await supabaseClient.from('profiles').update({ username: name }).eq('id', currentUser.id);
+                if (error) { if (error.code === '23505') continue; showToast(error.message, "error"); return; }
+                await supabaseClient.from('sounds').update({ username: name }).eq('user_id', currentUser.id);
+                userProfile = { ...(userProfile || {}), id: currentUser.id, username: name };
+                updateUserUI(); renderProfile(); renderSoundboard();
+                showToast("Your username is now " + name, "success");
+                return;
+            }
+            showToast("Could not find a free random name. Try again.", "error");
         }
 
         // ----- user lookup + moderation actions (moderators and admins) -----
