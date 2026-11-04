@@ -134,6 +134,9 @@
                 <button onclick="switchTab('upload')" id="nav-upload" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 transition-all">
                     <i class="fa-solid fa-cloud-arrow-up mr-2"></i>Publish SFX
                 </button>
+                <button onclick="switchTab('record')" id="nav-record" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 transition-all">
+                    <i class="fa-solid fa-microphone mr-2"></i>Record
+                </button>
                 <button onclick="switchTab('profile')" id="nav-profile" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 transition-all">
                     <i class="fa-solid fa-user mr-2"></i>Profile
                 </button>
@@ -584,6 +587,46 @@
                     <h3 class="text-sm font-bold text-red-400">Delete account</h3>
                     <p class="text-xs text-slate-400">Permanently erases your account, username, posts and audio files. This cannot be undone.</p>
                     <button onclick="startAccountDeletion()" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 font-medium text-xs px-4 py-2.5 rounded-xl">Delete my account</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB: RECORD FROM MICROPHONE -->
+        <section id="tab-record" class="hidden max-w-2xl mx-auto">
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 space-y-4">
+                <h2 class="text-xl font-bold text-slate-100">Record a sound</h2>
+                <p class="text-xs text-slate-400">Record from your microphone (up to 60 seconds), edit it, listen back, then send it to Publish.</p>
+                <div class="flex items-center gap-3">
+                    <button id="rec-btn" onclick="toggleRecording()" class="bg-red-500 hover:bg-red-400 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all"><i class="fa-solid fa-microphone mr-2"></i><span id="rec-label">Start recording</span></button>
+                    <span id="rec-timer" class="text-sm font-mono text-slate-400">0:00</span>
+                </div>
+                <div id="rec-editor" class="hidden space-y-4">
+                    <canvas id="rec-canvas" width="640" height="110" class="w-full h-28 rounded-xl bg-slate-950 border border-slate-800"></canvas>
+                    <div id="rec-info" class="text-xs text-slate-400"></div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div><div class="flex justify-between text-xs text-slate-400 mb-1"><span>Selection start (s)</span><span id="rec-start-val" class="text-emerald-400 font-mono"></span></div><input id="rec-start" type="range" min="0" max="1" step="0.01" value="0" oninput="updateRecRange()" class="w-full accent-emerald-500"></div>
+                        <div><div class="flex justify-between text-xs text-slate-400 mb-1"><span>Selection end (s)</span><span id="rec-end-val" class="text-emerald-400 font-mono"></span></div><input id="rec-end" type="range" min="0" max="1" step="0.01" value="1" oninput="updateRecRange()" class="w-full accent-emerald-500"></div>
+                        <div><div class="flex justify-between text-xs text-slate-400 mb-1"><span>Split marker (s)</span><span id="rec-marker-val" class="text-emerald-400 font-mono"></span></div><input id="rec-marker" type="range" min="0" max="1" step="0.01" value="0.5" oninput="updateRecRange()" class="w-full accent-emerald-500"></div>
+                    </div>
+                    <div class="flex flex-wrap gap-2 text-xs">
+                        <button onclick="recOp('keep')" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200">Cut: keep selection</button>
+                        <button onclick="recOp('remove')" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200">Cut out selection</button>
+                        <button onclick="recOp('before')" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200">Split: keep before marker</button>
+                        <button onclick="recOp('after')" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200">Split: keep after marker</button>
+                        <button onclick="recUndoOp()" class="px-3 py-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300">Undo</button>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div><div class="flex justify-between text-xs text-slate-400 mb-1"><span>Fade in (s)</span><span id="rec-fadein-val" class="text-emerald-400 font-mono"></span></div><input id="rec-fadein" type="range" min="0" max="3" step="0.1" value="0" oninput="updateRecFx()" class="w-full accent-emerald-500"></div>
+                        <div><div class="flex justify-between text-xs text-slate-400 mb-1"><span>Fade out (s)</span><span id="rec-fadeout-val" class="text-emerald-400 font-mono"></span></div><input id="rec-fadeout" type="range" min="0" max="3" step="0.1" value="0" oninput="updateRecFx()" class="w-full accent-emerald-500"></div>
+                        <div><div class="flex justify-between text-xs text-slate-400 mb-1"><span>Speed (also changes pitch)</span><span id="rec-speed-val" class="text-emerald-400 font-mono"></span></div><input id="rec-speed" type="range" min="0.5" max="2" step="0.05" value="1" oninput="updateRecFx()" class="w-full accent-emerald-500"></div>
+                        <div><div class="flex justify-between text-xs text-slate-400 mb-1"><span>Pitch (semitones, keeps length)</span><span id="rec-pitch-val" class="text-emerald-400 font-mono"></span></div><input id="rec-pitch" type="range" min="-12" max="12" step="1" value="0" oninput="updateRecFx()" class="w-full accent-emerald-500"></div>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="playRec()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-sm"><i class="fa-solid fa-play mr-2"></i>Play edited sound</button>
+                        <button onclick="stopRecPlayback()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2.5 rounded-xl text-sm">Stop</button>
+                        <button onclick="useRecInPublish()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2.5 rounded-xl text-sm ml-auto"><i class="fa-solid fa-cloud-arrow-up mr-2"></i>Continue to Publish</button>
+                    </div>
+                    <p class="text-[10px] text-slate-500">Speed changes pitch like a tape player. Pitch changes the note but keeps the length, and sounds best with small changes.</p>
                 </div>
             </div>
         </section>
@@ -1920,7 +1963,7 @@
         function switchTab(tabId) {
             if (tabId === 'soundboard') tabId = 'homeboard';
 
-            const tabs = ['homeboard', 'synth', 'upload', 'profile', 'settings', 'userpage'];
+            const tabs = ['homeboard', 'synth', 'upload', 'profile', 'settings', 'userpage', 'record'];
             tabs.forEach(t => {
                 const el = document.getElementById(`tab-${t}`);
                 const nav = document.getElementById(`nav-${t}`);
@@ -2495,6 +2538,183 @@
             }
         }
 
+        // ===== RECORD FROM MICROPHONE + EDIT =====
+        const REC_MAX = 60;
+        let recCtx = null, recData = null, recSR = 44100, recUndoStack = [], mediaRec = null, recChunks = [], recStream = null, recTick = null, recStartTs = 0, recSource = null;
+        const getRecCtx = () => recCtx || (recCtx = new (window.AudioContext || window.webkitAudioContext)());
+
+        function recResample(x, factor) {
+            const n = Math.max(1, Math.floor(x.length / factor)), out = new Float32Array(n);
+            for (let i = 0; i < n; i++) {
+                const pos = i * factor, i0 = Math.floor(pos), f = pos - i0;
+                out[i] = (x[i0] || 0) * (1 - f) + (x[i0 + 1] || 0) * f;
+            }
+            return out;
+        }
+        function recTimeStretch(x, ratio) {
+            const N = 2048, Hs = 512, Ha = Hs / ratio, outLen = Math.max(1, Math.floor(x.length * ratio));
+            const out = new Float32Array(outLen + N), norm = new Float32Array(outLen + N), win = new Float32Array(N);
+            for (let i = 0; i < N; i++) win[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (N - 1));
+            for (let k = 0; ; k++) {
+                const inPos = Math.round(k * Ha), outPos = k * Hs;
+                if (inPos >= x.length || outPos >= outLen) break;
+                for (let i = 0; i < N; i++) {
+                    const v = inPos + i < x.length ? x[inPos + i] : 0;
+                    out[outPos + i] += v * win[i]; norm[outPos + i] += win[i];
+                }
+            }
+            const res = new Float32Array(outLen);
+            for (let i = 0; i < outLen; i++) res[i] = norm[i] > 1e-3 ? out[i] / norm[i] : 0;
+            return res;
+        }
+        function recRender(data, sr, o) {
+            let d = data;
+            if (o.pitch !== 0) { const f = Math.pow(2, o.pitch / 12); d = recTimeStretch(recResample(d, f), f); }
+            if (o.speed !== 1) d = recResample(d, o.speed);
+            d = Float32Array.from(d);
+            const fi = Math.min(d.length, Math.floor(o.fadeIn * sr)), fo = Math.min(d.length, Math.floor(o.fadeOut * sr));
+            for (let i = 0; i < fi; i++) d[i] *= i / fi;
+            for (let i = 0; i < fo; i++) d[d.length - 1 - i] *= i / fo;
+            for (let i = 0; i < d.length; i++) d[i] = Math.max(-1, Math.min(1, d[i]));
+            return d;
+        }
+        function recEncodeWav(samples, sr) {
+            const buf = new ArrayBuffer(44 + samples.length * 2), v = new DataView(buf);
+            const w = (o, str) => { for (let i = 0; i < str.length; i++) v.setUint8(o + i, str.charCodeAt(i)); };
+            w(0, 'RIFF'); v.setUint32(4, 36 + samples.length * 2, true); w(8, 'WAVE'); w(12, 'fmt ');
+            v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+            v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+            w(36, 'data'); v.setUint32(40, samples.length * 2, true);
+            for (let i = 0; i < samples.length; i++) { const x = samples[i]; v.setInt16(44 + i * 2, x < 0 ? x * 0x8000 : x * 0x7FFF, true); }
+            return new Blob([v], { type: 'audio/wav' });
+        }
+
+        const recOpts = () => ({
+            pitch: +document.getElementById('rec-pitch').value, speed: +document.getElementById('rec-speed').value,
+            fadeIn: +document.getElementById('rec-fadein').value, fadeOut: +document.getElementById('rec-fadeout').value
+        });
+
+        async function toggleRecording() {
+            if (mediaRec && mediaRec.state === 'recording') { mediaRec.stop(); return; }
+            if (!navigator.mediaDevices || !window.MediaRecorder) { showToast("Recording isn't supported in this browser.", "error"); return; }
+            try { getRecCtx().resume(); recStream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+            catch (e) { showToast("Microphone access was blocked. Allow it in your browser settings and try again.", "error"); return; }
+            stopRecPlayback();
+            recChunks = [];
+            mediaRec = new MediaRecorder(recStream);
+            mediaRec.ondataavailable = e => { if (e.data && e.data.size) recChunks.push(e.data); };
+            mediaRec.onstop = async () => {
+                clearInterval(recTick);
+                recStream.getTracks().forEach(t => t.stop());
+                document.getElementById('rec-label').textContent = 'Record again';
+                document.getElementById('rec-btn').classList.replace('bg-slate-600', 'bg-red-500');
+                try {
+                    const blob = new Blob(recChunks, { type: mediaRec.mimeType || 'audio/webm' });
+                    const audio = await getRecCtx().decodeAudioData(await blob.arrayBuffer());
+                    const mono = new Float32Array(audio.length);
+                    for (let c = 0; c < audio.numberOfChannels; c++) { const ch = audio.getChannelData(c); for (let i = 0; i < mono.length; i++) mono[i] += ch[i] / audio.numberOfChannels; }
+                    recData = mono; recSR = audio.sampleRate; recUndoStack = [];
+                    document.getElementById('rec-editor').classList.remove('hidden');
+                    ['rec-fadein', 'rec-fadeout', 'rec-pitch'].forEach(id => document.getElementById(id).value = 0);
+                    document.getElementById('rec-speed').value = 1;
+                    resetRecRanges(); updateRecFx();
+                } catch (err) { console.error(err); showToast("Could not read the recording. Please try again.", "error"); }
+            };
+            mediaRec.start();
+            recStartTs = Date.now();
+            document.getElementById('rec-label').textContent = 'Stop recording';
+            document.getElementById('rec-btn').classList.replace('bg-red-500', 'bg-slate-600');
+            recTick = setInterval(() => {
+                const sec = (Date.now() - recStartTs) / 1000;
+                document.getElementById('rec-timer').textContent = Math.floor(sec / 60) + ':' + String(Math.floor(sec % 60)).padStart(2, '0');
+                if (sec >= REC_MAX) mediaRec.stop();
+            }, 200);
+        }
+
+        function resetRecRanges() {
+            const dur = recData.length / recSR;
+            ['rec-start', 'rec-end', 'rec-marker'].forEach(id => { const el = document.getElementById(id); el.max = dur.toFixed(2); });
+            document.getElementById('rec-start').value = 0;
+            document.getElementById('rec-end').value = dur.toFixed(2);
+            document.getElementById('rec-marker').value = (dur / 2).toFixed(2);
+            updateRecRange();
+        }
+        function updateRecRange() {
+            let a = +document.getElementById('rec-start').value, b = +document.getElementById('rec-end').value;
+            if (a > b) { [a, b] = [b, a]; }
+            document.getElementById('rec-start-val').textContent = a.toFixed(2) + 's';
+            document.getElementById('rec-end-val').textContent = b.toFixed(2) + 's';
+            document.getElementById('rec-marker-val').textContent = (+document.getElementById('rec-marker').value).toFixed(2) + 's';
+            drawRecWave();
+        }
+        function updateRecFx() {
+            const o = recOpts();
+            document.getElementById('rec-fadein-val').textContent = o.fadeIn.toFixed(1) + 's';
+            document.getElementById('rec-fadeout-val').textContent = o.fadeOut.toFixed(1) + 's';
+            document.getElementById('rec-speed-val').textContent = o.speed.toFixed(2) + 'x';
+            document.getElementById('rec-pitch-val').textContent = (o.pitch > 0 ? '+' : '') + o.pitch;
+            drawRecWave();
+        }
+        function drawRecWave() {
+            const cv = document.getElementById('rec-canvas');
+            if (!cv || !recData) return;
+            const ctx = cv.getContext('2d'), W = cv.width, H = cv.height, dur = recData.length / recSR;
+            ctx.clearRect(0, 0, W, H);
+            let a = +document.getElementById('rec-start').value, b = +document.getElementById('rec-end').value;
+            if (a > b) [a, b] = [b, a];
+            ctx.fillStyle = 'rgba(16,185,129,0.15)'; ctx.fillRect(a / dur * W, 0, (b - a) / dur * W, H);
+            ctx.strokeStyle = '#10b981'; ctx.lineWidth = 1; ctx.beginPath();
+            const step = Math.max(1, Math.floor(recData.length / W));
+            for (let x = 0; x < W; x++) {
+                let mn = 1, mx = -1;
+                for (let i = x * step; i < Math.min(recData.length, (x + 1) * step); i++) { const v = recData[i]; if (v < mn) mn = v; if (v > mx) mx = v; }
+                ctx.moveTo(x, (1 - mx) * H / 2); ctx.lineTo(x, (1 - mn) * H / 2 + 1);
+            }
+            ctx.stroke();
+            const m = +document.getElementById('rec-marker').value;
+            ctx.strokeStyle = '#f59e0b'; ctx.beginPath(); ctx.moveTo(m / dur * W, 0); ctx.lineTo(m / dur * W, H); ctx.stroke();
+            const o = recOpts();
+            const outDur = dur * (o.speed ? 1 / o.speed : 1);
+            document.getElementById('rec-info').textContent = `Length now ${dur.toFixed(2)}s · after effects about ${outDur.toFixed(2)}s`;
+        }
+
+        function recOp(kind) {
+            if (!recData) return;
+            let a = Math.floor(+document.getElementById('rec-start').value * recSR), b = Math.floor(+document.getElementById('rec-end').value * recSR);
+            if (a > b) [a, b] = [b, a];
+            const m = Math.floor(+document.getElementById('rec-marker').value * recSR);
+            let next;
+            if (kind === 'keep') next = recData.slice(a, b);
+            else if (kind === 'remove') { next = new Float32Array(recData.length - (b - a)); next.set(recData.slice(0, a)); next.set(recData.slice(b), a); }
+            else if (kind === 'before') next = recData.slice(0, m);
+            else next = recData.slice(m);
+            if (next.length < recSR * 0.05) { showToast("That would leave almost nothing. Adjust the sliders first.", "error"); return; }
+            recUndoStack.push(recData); recData = next; resetRecRanges();
+        }
+        function recUndoOp() {
+            if (!recUndoStack.length) { showToast("Nothing to undo.", "info"); return; }
+            recData = recUndoStack.pop(); resetRecRanges();
+        }
+
+        function stopRecPlayback() { try { if (recSource) recSource.stop(); } catch (e) {} recSource = null; }
+        function playRec() {
+            if (!recData) return;
+            stopRecPlayback();
+            const out = recRender(recData, recSR, recOpts());
+            const ctx = getRecCtx(); ctx.resume();
+            const buf = ctx.createBuffer(1, out.length, recSR);
+            buf.copyToChannel(out, 0);
+            recSource = ctx.createBufferSource(); recSource.buffer = buf; recSource.connect(ctx.destination); recSource.start();
+        }
+        function useRecInPublish() {
+            if (!recData) return;
+            const out = recRender(recData, recSR, recOpts());
+            const file = new File([recEncodeWav(out, recSR)], 'recording_' + Date.now() + '.wav', { type: 'audio/wav' });
+            processAudioFile(file);
+            if (!currentUser) showToast("Sign in to publish. Your recording will be ready on the Publish page.", "info");
+            switchTab('upload');
+        }
+
         // ===== LIGHT / DARK MODE =====
         function applyTheme(t) {
             document.documentElement.classList.toggle('theme-light', t === 'light');
@@ -2783,6 +3003,17 @@
             showToast("Could not find a free random name. Try again.", "error");
         }
 
+        // ----- randomize another user's username (moderators and admins) -----
+        async function staffRandomizeUser(uid) {
+            if (!(isAdminRole || isModRole) || !uid) return;
+            if (!confirm("Replace this user's username with a random one?\n\nThey will NOT be able to change it afterwards, and they'll be sent a notice.")) return;
+            const { data, error } = await supabaseClient.rpc('staff_randomize_username', { target: uid });
+            if (error) { showToast(error.message || "Could not change the username", "error"); return; }
+            showToast("Username changed to " + data + ". The user can no longer change it.", "success");
+            viewStaffUser(uid);
+            renderSoundboard();
+        }
+
         // ----- user lookup + moderation actions (moderators and admins) -----
         let suggestTimer = null;
         function staffSearchSuggest() {
@@ -2840,6 +3071,7 @@
                     <button onclick="staffSetStatus('${uid}','shadow_banned')" class="px-3 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-200">Shadow-ban</button>
                     <button onclick="staffSetStatus('${uid}','suspended')" class="px-3 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-200">Suspend</button>
                     <button onclick="staffSetStatus('${uid}','banned')" class="px-3 py-1.5 rounded-lg bg-red-500/20 text-xs text-red-300">Ban</button>
+                    <button onclick="staffRandomizeUser('${uid}')" class="px-3 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-200"><i class="fa-solid fa-dice mr-1"></i>Randomize username</button>
                     <button onclick="staffClearStatus('${uid}')" class="px-3 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-400">Clear status</button>
                 </div></div>`;
             box.dataset.name = p.data.username;
@@ -3033,7 +3265,7 @@
 
         // ----- decisions organised by outcome, with revert (admins only) -----
         let adminLogCache = [], adminLogFilter = 'all';
-        const DECISION_CATS = [['all', 'All'], ['banned', 'Banned'], ['shadow', 'Shadow-banned'], ['suspended', 'Suspended'], ['hidden', 'Post hidden'], ['removed', 'Post removed'], ['dismissed', 'Dismissed'], ['warn', 'Warnings & messages'], ['other', 'Other']];
+        const DECISION_CATS = [['all', 'All'], ['banned', 'Banned'], ['shadow', 'Shadow-banned'], ['suspended', 'Suspended'], ['hidden', 'Post hidden'], ['removed', 'Post removed'], ['dismissed', 'Dismissed'], ['warn', 'Warnings & messages'], ['renamed', 'Usernames randomized'], ['caption', 'Captions removed'], ['other', 'Other']];
         function catOf(a) {
             if (a === 'banned') return 'banned';
             if (a === 'shadow-banned') return 'shadow';
@@ -3042,6 +3274,8 @@
             if (a.startsWith('remove (report)')) return 'removed';
             if (a.startsWith('dismiss')) return 'dismissed';
             if (a === 'warned user' || a === 'messaged user') return 'warn';
+            if (a === 'randomized username') return 'renamed';
+            if (a === 'caption removed') return 'caption';
             return 'other';
         }
         function canRevert(l) {
