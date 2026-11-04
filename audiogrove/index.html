@@ -137,6 +137,9 @@
                 <button onclick="switchTab('record')" id="nav-record" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 transition-all">
                     <i class="fa-solid fa-microphone mr-2"></i>Record
                 </button>
+                <button onclick="switchTab('create')" id="nav-create" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 transition-all">
+                    <i class="fa-solid fa-layer-group mr-2"></i>Create
+                </button>
                 <button onclick="switchTab('profile')" id="nav-profile" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 transition-all">
                     <i class="fa-solid fa-user mr-2"></i>Profile
                 </button>
@@ -628,6 +631,27 @@
                     </div>
                     <p class="text-[10px] text-slate-500">Speed changes pitch like a tape player. Pitch changes the note but keeps the length, and sounds best with small changes.</p>
                 </div>
+            </div>
+        </section>
+
+        <!-- TAB: CREATE AUDIO (multi-clip editor) -->
+        <section id="tab-create" class="hidden max-w-3xl mx-auto">
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 space-y-4">
+                <h2 class="text-xl font-bold text-slate-100">Create audio</h2>
+                <p class="text-xs text-slate-400">Add up to 6 clips from your device, edit each one, and layer them. Clips can play at the same time. The finished sound can be up to 10 seconds.</p>
+                <div class="flex flex-wrap items-center gap-3">
+                    <button onclick="document.getElementById('mix-file-input').click()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-sm"><i class="fa-solid fa-plus mr-2"></i>Add clips</button>
+                    <input id="mix-file-input" type="file" accept="audio/*" multiple class="hidden" onchange="mixAddFiles(event)">
+                    <span id="mix-total" class="text-xs text-slate-400"></span>
+                </div>
+                <div id="mix-list" class="space-y-3"></div>
+                <div id="mix-actions" class="hidden flex flex-wrap gap-2">
+                    <button onclick="mixPlay()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-sm"><i class="fa-solid fa-play mr-2"></i>Play mix</button>
+                    <button onclick="mixStop()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2.5 rounded-xl text-sm">Stop</button>
+                    <button onclick="mixDownload()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2.5 rounded-xl text-sm"><i class="fa-solid fa-download mr-2"></i>Download</button>
+                    <button onclick="mixToPublish()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2.5 rounded-xl text-sm ml-auto"><i class="fa-solid fa-cloud-arrow-up mr-2"></i>Continue to Publish</button>
+                </div>
+                <p class="text-[10px] text-slate-500">On the Publish page you choose Public or Private. Download saves the sound to your device without publishing it. Anything past 10 seconds is cut off.</p>
             </div>
         </section>
 
@@ -1963,7 +1987,7 @@
         function switchTab(tabId) {
             if (tabId === 'soundboard') tabId = 'homeboard';
 
-            const tabs = ['homeboard', 'synth', 'upload', 'profile', 'settings', 'userpage', 'record'];
+            const tabs = ['homeboard', 'synth', 'upload', 'profile', 'settings', 'userpage', 'record', 'create'];
             tabs.forEach(t => {
                 const el = document.getElementById(`tab-${t}`);
                 const nav = document.getElementById(`nav-${t}`);
@@ -2536,6 +2560,156 @@
                 console.error("Report action error:", err);
                 showToast(err.message || "Action failed", "error");
             }
+        }
+
+        // ===== CREATE AUDIO: MULTI-CLIP EDITOR =====
+        const MIX_MAX_SEC = 10, MIX_MAX_CLIPS = 6, MIX_MAX_SOURCE_SEC = 60;
+        let mixClips = [], mixNextId = 1, mixSource = null;
+
+        const mixFmt = (k, v) => k === 'speed' ? v.toFixed(2) + 'x' : k === 'pitch' ? ((v > 0 ? '+' : '') + v) : k === 'vol' ? Math.round(v * 100) + '%' : v.toFixed(2) + 's';
+        const mixDur = c => (c.tOut - c.tIn) / c.speed;
+
+        async function mixAddFiles(e) {
+            const files = Array.from(e.target.files || []);
+            e.target.value = '';
+            for (const file of files) {
+                if (mixClips.length >= MIX_MAX_CLIPS) { showToast("You can use up to " + MIX_MAX_CLIPS + " clips.", "info"); break; }
+                if (file.size > 10 * 1024 * 1024) { showToast(file.name + " is larger than 10 MB.", "error"); continue; }
+                try {
+                    const ctx = getRecCtx(); ctx.resume();
+                    const audio = await ctx.decodeAudioData(await file.arrayBuffer());
+                    const len = Math.min(audio.length, Math.floor(MIX_MAX_SOURCE_SEC * audio.sampleRate));
+                    const mono = new Float32Array(len);
+                    for (let ch = 0; ch < audio.numberOfChannels; ch++) { const d = audio.getChannelData(ch); for (let i = 0; i < len; i++) mono[i] += d[i] / audio.numberOfChannels; }
+                    const dur = len / audio.sampleRate;
+                    if (audio.length > len) showToast(file.name + " is long. Only the first " + MIX_MAX_SOURCE_SEC + " seconds were loaded.", "info");
+                    mixClips.push({ id: mixNextId++, name: file.name, data: mono, sr: audio.sampleRate, dur, off: 0, tIn: 0, tOut: dur, split: dur / 2, fadeIn: 0, fadeOut: 0, speed: 1, pitch: 0, vol: 1 });
+                } catch (err) { console.error(err); showToast("Could not read " + file.name + " as audio.", "error"); }
+            }
+            renderMixList();
+        }
+
+        function mixSlider(c, key, label, min, max, step) {
+            const v = c[key];
+            return `<div><div class="flex justify-between text-[11px] text-slate-400 mb-0.5"><span>${label}</span><span id="mx-${c.id}-${key}-val" class="text-emerald-400 font-mono">${mixFmt(key, v)}</span></div>
+                <input id="mx-${c.id}-${key}" type="range" min="${min}" max="${max}" step="${step}" value="${v}" oninput="mixSet(${c.id},'${key}',this.value)" class="w-full accent-emerald-500"></div>`;
+        }
+
+        function renderMixList() {
+            const list = document.getElementById('mix-list');
+            list.innerHTML = mixClips.map(c => `
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
+                    <div class="flex justify-between items-center gap-2"><b class="text-sm text-slate-100 truncate">${esc(c.name)}</b><button onclick="mixRemove(${c.id})" class="text-xs text-red-400 hover:text-red-300 shrink-0">Remove</button></div>
+                    <canvas id="mx-wave-${c.id}" width="600" height="50" class="w-full h-12 rounded-lg bg-slate-900"></canvas>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        ${mixSlider(c, 'off', 'Starts at (timeline)', 0, MIX_MAX_SEC, 0.01)}
+                        ${mixSlider(c, 'tIn', 'Cut: start', 0, c.dur.toFixed(2), 0.01)}
+                        ${mixSlider(c, 'tOut', 'Cut: end', 0, c.dur.toFixed(2), 0.01)}
+                        ${mixSlider(c, 'fadeIn', 'Fade in', 0, 3, 0.1)}
+                        ${mixSlider(c, 'fadeOut', 'Fade out', 0, 3, 0.1)}
+                        ${mixSlider(c, 'vol', 'Volume', 0, 1.5, 0.05)}
+                        ${mixSlider(c, 'speed', 'Speed (changes pitch)', 0.5, 2, 0.05)}
+                        ${mixSlider(c, 'pitch', 'Pitch (keeps length)', -12, 12, 1)}
+                        ${mixSlider(c, 'split', 'Split point', 0, c.dur.toFixed(2), 0.01)}
+                    </div>
+                    <button onclick="mixSplit(${c.id})" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200">Split into two clips at the split point</button>
+                </div>`).join('');
+            mixClips.forEach(drawMixWave);
+            document.getElementById('mix-actions').classList.toggle('hidden', !mixClips.length);
+            updateMixTotal();
+        }
+
+        function drawMixWave(c) {
+            const cv = document.getElementById('mx-wave-' + c.id);
+            if (!cv) return;
+            const ctx = cv.getContext('2d'), W = cv.width, H = cv.height, step = Math.max(1, Math.floor(c.data.length / W));
+            ctx.strokeStyle = '#10b981'; ctx.beginPath();
+            for (let x = 0; x < W; x++) {
+                let mn = 1, mx = -1;
+                for (let i = x * step; i < Math.min(c.data.length, (x + 1) * step); i++) { const v = c.data[i]; if (v < mn) mn = v; if (v > mx) mx = v; }
+                ctx.moveTo(x, (1 - mx) * H / 2); ctx.lineTo(x, (1 - mn) * H / 2 + 1);
+            }
+            ctx.stroke();
+        }
+
+        function mixSet(id, key, val) {
+            const c = mixClips.find(x => x.id === id);
+            if (!c) return;
+            let v = +val;
+            if (key === 'tIn') v = Math.min(v, c.tOut - 0.05);
+            if (key === 'tOut') v = Math.max(v, c.tIn + 0.05);
+            c[key] = v;
+            const lab = document.getElementById(`mx-${id}-${key}-val`);
+            if (lab) lab.textContent = mixFmt(key, v);
+            if (key === 'tIn' || key === 'tOut') { const el = document.getElementById(`mx-${id}-${key}`); if (el && +el.value !== v) el.value = v; }
+            updateMixTotal();
+        }
+
+        function mixRemove(id) { mixClips = mixClips.filter(c => c.id !== id); renderMixList(); }
+
+        function mixSplit(id) {
+            const i = mixClips.findIndex(c => c.id === id), c = mixClips[i];
+            if (!c) return;
+            if (mixClips.length >= MIX_MAX_CLIPS) { showToast("You can use up to " + MIX_MAX_CLIPS + " clips.", "info"); return; }
+            const m = c.split;
+            if (m <= c.tIn + 0.05 || m >= c.tOut - 0.05) { showToast("Move the split point inside the part of the clip you're using.", "error"); return; }
+            const b = { ...c, id: mixNextId++, name: c.name + ' (part 2)', tIn: m, tOut: c.tOut, fadeIn: 0, off: c.off + (m - c.tIn) / c.speed };
+            c.tOut = m; c.fadeOut = 0;
+            mixClips.splice(i + 1, 0, b);
+            renderMixList();
+        }
+
+        function updateMixTotal() {
+            const total = mixClips.reduce((mx, c) => Math.max(mx, c.off + mixDur(c)), 0);
+            const el = document.getElementById('mix-total');
+            if (!el) return;
+            el.textContent = mixClips.length ? `Total length ${total.toFixed(1)}s of ${MIX_MAX_SEC}s` + (total > MIX_MAX_SEC ? ' (the end will be cut off)' : '') : 'No clips yet.';
+            el.className = 'text-xs ' + (total > MIX_MAX_SEC ? 'text-amber-400' : 'text-slate-400');
+        }
+
+        function mixRender() {
+            const SR = getRecCtx().sampleRate, MAX = MIX_MAX_SEC * SR;
+            let out = new Float32Array(MAX), end = 0;
+            mixClips.forEach(c => {
+                const seg = c.data.slice(Math.floor(c.tIn * c.sr), Math.floor(c.tOut * c.sr));
+                const r = recRender(seg, c.sr, { pitch: c.pitch, speed: c.speed, fadeIn: c.fadeIn, fadeOut: c.fadeOut });
+                const o = Math.floor(c.off * SR);
+                for (let i = 0; i < r.length && o + i < MAX; i++) out[o + i] += r[i] * c.vol;
+                end = Math.max(end, Math.min(MAX, o + r.length));
+            });
+            if (end < SR * 0.05) return null;
+            out = out.slice(0, end);
+            let peak = 0; for (let i = 0; i < out.length; i++) peak = Math.max(peak, Math.abs(out[i]));
+            if (peak > 1) for (let i = 0; i < out.length; i++) out[i] /= peak;
+            return { data: out, sr: SR };
+        }
+
+        function mixStop() { try { if (mixSource) mixSource.stop(); } catch (e) {} mixSource = null; }
+        function mixPlay() {
+            mixStop();
+            const m = mixRender();
+            if (!m) { showToast("Add a clip first.", "info"); return; }
+            const ctx = getRecCtx(); ctx.resume();
+            const buf = ctx.createBuffer(1, m.data.length, m.sr);
+            buf.copyToChannel(m.data, 0);
+            mixSource = ctx.createBufferSource(); mixSource.buffer = buf; mixSource.connect(ctx.destination); mixSource.start();
+        }
+        function mixDownload() {
+            const m = mixRender();
+            if (!m) { showToast("Add a clip first.", "info"); return; }
+            const url = URL.createObjectURL(recEncodeWav(m.data, m.sr));
+            const a = document.createElement('a');
+            a.href = url; a.download = 'audio_grove_creation.wav';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 10000);
+            showToast("Your sound is downloading.", "success");
+        }
+        function mixToPublish() {
+            const m = mixRender();
+            if (!m) { showToast("Add a clip first.", "info"); return; }
+            processAudioFile(new File([recEncodeWav(m.data, m.sr)], 'creation_' + Date.now() + '.wav', { type: 'audio/wav' }));
+            if (!currentUser) showToast("Sign in to publish. Your sound will be ready on the Publish page.", "info");
+            switchTab('upload');
         }
 
         // ===== RECORD FROM MICROPHONE + EDIT =====
