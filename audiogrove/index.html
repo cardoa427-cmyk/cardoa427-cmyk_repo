@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" class="dark">
+<script>try { if (localStorage.getItem('ag_theme') === 'light') document.documentElement.classList.add('theme-light'); } catch (e) {}</script>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -74,6 +75,27 @@
         .pixel-font {
             font-family: 'Press Start 2P', cursive;
         }
+
+        /* ---- Light mode (switched on from Settings) ---- */
+        html.theme-light body, html.theme-light .bg-\[\#080c14\] { background-color: #f1f5f9 !important; color: #0f172a !important; }
+        html.theme-light .bg-slate-950 { background-color: #f8fafc !important; }
+        html.theme-light .bg-slate-900 { background-color: #ffffff !important; }
+        html.theme-light .bg-slate-900\/80, html.theme-light .bg-slate-900\/90 { background-color: rgba(255,255,255,0.92) !important; }
+        html.theme-light .bg-slate-800, html.theme-light .bg-slate-800\/80 { background-color: #e2e8f0 !important; }
+        html.theme-light .bg-slate-700 { background-color: #cbd5e1 !important; }
+        html.theme-light .border-slate-800, html.theme-light .border-slate-800\/80, html.theme-light .border-slate-700\/60 { border-color: #cbd5e1 !important; }
+        html.theme-light .border-slate-700 { border-color: #94a3b8 !important; }
+        html.theme-light .text-slate-100, html.theme-light .text-slate-200 { color: #0f172a !important; }
+        html.theme-light .text-slate-300 { color: #1e293b !important; }
+        html.theme-light .text-slate-400 { color: #475569 !important; }
+        html.theme-light .text-slate-500 { color: #64748b !important; }
+        html.theme-light .text-slate-600 { color: #94a3b8 !important; }
+        html.theme-light .text-emerald-400, html.theme-light .text-emerald-300 { color: #047857 !important; }
+        html.theme-light .text-amber-400, html.theme-light .text-amber-300 { color: #b45309 !important; }
+        html.theme-light .text-red-400, html.theme-light .text-red-300 { color: #b91c1c !important; }
+        html.theme-light .text-indigo-400 { color: #4338ca !important; }
+        html.theme-light .text-purple-400 { color: #7e22ce !important; }
+        html.theme-light .custom-scrollbar::-webkit-scrollbar-track { background: #e2e8f0; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between custom-scrollbar bg-[#080c14] text-slate-100">
@@ -523,12 +545,21 @@
                 </form>
 
                 <div class="border-t border-slate-800 pt-4 space-y-2">
+                    <h3 class="text-sm font-bold text-slate-200">Appearance</h3>
+                    <div class="flex gap-2">
+                        <button id="theme-dark-btn" onclick="applyTheme('dark')" class="flex-1 bg-slate-800 text-slate-200 text-xs font-medium py-2.5 rounded-xl"><i class="fa-solid fa-moon mr-2"></i>Dark</button>
+                        <button id="theme-light-btn" onclick="applyTheme('light')" class="flex-1 bg-slate-800 text-slate-200 text-xs font-medium py-2.5 rounded-xl"><i class="fa-solid fa-sun mr-2"></i>Light</button>
+                    </div>
+                </div>
+
+                <div class="border-t border-slate-800 pt-4 space-y-2">
                     <h3 class="text-sm font-bold text-slate-200">Blocked users</h3>
                     <div id="blocked-users-list" class="space-y-2"><p class="text-xs text-slate-500 italic">Sign in to manage blocked users.</p></div>
                 </div>
 
                 <div class="border-t border-slate-800 pt-4 space-y-2">
-                    <h3 class="text-sm font-bold text-slate-200">Your data</h3>
+                    <h3 class="text-sm font-bold text-slate-200">Your data &amp; privacy</h3>
+                    <p class="text-xs text-slate-500 leading-relaxed">Audio Grove records when you created your account, your username, your posts (public and private) and when you made them, the likes and downloads your posts receive, and which posts you like or download. Only moderators and administrators can see this, to keep the community safe. Deleting your account erases it.</p>
                     <p class="text-xs text-slate-400">Get a copy of everything Audio Grove stores about you as a file.</p>
                     <button onclick="downloadMyData()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium text-xs px-4 py-2.5 rounded-xl"><i class="fa-solid fa-file-arrow-down mr-2"></i>Download my data</button>
                 </div>
@@ -1077,6 +1108,13 @@
             try {
                 localStorage.setItem(`ag_likes_${userKey}`, JSON.stringify(likedIds));
             } catch (e) {}
+
+            if (supabaseClient && currentUser && sound.id) {
+                try {
+                    if (hasLiked) await supabaseClient.from('post_likes').delete().eq('user_id', currentUser.id).eq('sound_id', sound.id);
+                    else await supabaseClient.from('post_likes').insert({ user_id: currentUser.id, sound_id: sound.id });
+                } catch (e) { /* record only */ }
+            }
 
             if (supabaseClient && sound.id) {
                 try {
@@ -1868,6 +1906,7 @@
             } else if (tabId === 'homeboard') {
                 renderSoundboard();
             } else if (tabId === 'settings') {
+                updateThemeButtons();
                 blocksLoadedFor = null; loadBlocks();
             }
         }
@@ -2414,19 +2453,42 @@
             }
         }
 
+        // ===== LIGHT / DARK MODE =====
+        function applyTheme(t) {
+            document.documentElement.classList.toggle('theme-light', t === 'light');
+            try { localStorage.setItem('ag_theme', t); } catch (e) {}
+            updateThemeButtons();
+        }
+        function updateThemeButtons() {
+            const light = document.documentElement.classList.contains('theme-light');
+            const on = ['ring-2', 'ring-emerald-500'];
+            const d = document.getElementById('theme-dark-btn'), l = document.getElementById('theme-light-btn');
+            if (d) on.forEach(c => d.classList.toggle(c, !light));
+            if (l) on.forEach(c => l.classList.toggle(c, light));
+        }
+
+        // ===== RECORDS FOR MODERATORS (likes + downloads) =====
+        async function recordDownload(sound) {
+            if (!supabaseClient || !sound || !sound.id) return;
+            try { await supabaseClient.from('post_downloads').insert({ sound_id: sound.id, user_id: currentUser ? currentUser.id : null }); }
+            catch (e) { /* records are best-effort and never block a download */ }
+        }
+
         // ===== YOUR DATA + ACCOUNT DELETION =====
         async function downloadMyData() {
             if (!currentUser || !supabaseClient) { showToast("Sign in to download your data", "info"); return; }
             try {
-                const [p, snd, bl] = await Promise.all([
+                const [p, snd, bl, lk, dl] = await Promise.all([
                     supabaseClient.from('profiles').select('*').eq('id', currentUser.id).maybeSingle(),
                     supabaseClient.from('sounds').select('*').eq('user_id', currentUser.id),
-                    supabaseClient.from('blocks').select('blocked_id,created_at').eq('blocker_id', currentUser.id)
+                    supabaseClient.from('blocks').select('blocked_id,created_at').eq('blocker_id', currentUser.id),
+                    supabaseClient.from('post_likes').select('sound_id,created_at').eq('user_id', currentUser.id),
+                    supabaseClient.from('post_downloads').select('sound_id,created_at').eq('user_id', currentUser.id)
                 ]);
                 const data = {
                     exported_at: new Date().toISOString(),
                     account: { id: currentUser.id, email: currentUser.email, created_at: currentUser.created_at, sign_in_method: currentUser.app_metadata?.provider },
-                    profile: p.data, sounds: snd.data || [], blocked_users: bl.data || [], liked_post_ids_on_this_device: getLikedPostIds()
+                    profile: p.data, sounds: snd.data || [], blocked_users: bl.data || [], likes_given: lk.data || [], downloads_made: dl.data || [], liked_post_ids_on_this_device: getLikedPostIds()
                 };
                 const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
                 const a = document.createElement('a');
@@ -2672,17 +2734,25 @@
         async function viewStaffUser(uid) {
             if (!(isAdminRole || isModRole) || !uid || uid === 'null') return;
             const box = document.getElementById('staff-user-view');
-            const [p, snd, st] = await Promise.all([
+            const [p, snd, st, lk, dl] = await Promise.all([
                 supabaseClient.from('profiles').select('id,username,created_at').eq('id', uid).maybeSingle(),
                 supabaseClient.from('sounds').select('id,likes,is_private').eq('user_id', uid),
-                supabaseClient.from('user_status').select('*').eq('user_id', uid).maybeSingle()
+                supabaseClient.from('user_status').select('*').eq('user_id', uid).maybeSingle(),
+                supabaseClient.from('post_likes').select('created_at, sounds(title)').eq('user_id', uid).order('created_at', { ascending: false }).limit(10),
+                supabaseClient.from('post_downloads').select('created_at, sounds(title)').eq('user_id', uid).order('created_at', { ascending: false }).limit(10)
             ]);
+            const myIds = (snd.data || []).map(x => x.id);
+            const dr = myIds.length ? await supabaseClient.from('post_downloads').select('*', { count: 'exact', head: true }).in('sound_id', myIds) : { count: 0 };
+            const titles = r => (r.data || []).map(x => esc(x.sounds?.title || 'removed post')).join(', ') || 'none';
             if (!p.data) { box.innerHTML = '<p class="text-xs text-red-400">User not found (account may be deleted).</p>'; return; }
             const posts = snd.data || [];
             const status = st.data ? `${st.data.status.replace('_', '-')}${st.data.until ? ' until ' + new Date(st.data.until).toLocaleDateString() : ''}` : 'none';
             box.innerHTML = `<div class="bg-slate-950 border border-emerald-500/30 rounded-xl p-3.5 space-y-2">
                 <div class="flex justify-between"><b class="text-emerald-400">${esc(p.data.username)}</b><button onclick="document.getElementById('staff-user-view').innerHTML=''" class="text-slate-500 text-xs">close</button></div>
                 <div class="text-xs text-slate-400">Joined ${new Date(p.data.created_at).toLocaleDateString()} · ${posts.length} posts (${posts.filter(x => x.is_private).length} private) · ${posts.reduce((a, x) => a + (x.likes || 0), 0)} likes · Status: <b class="text-slate-200">${status}</b></div>
+                <div class="text-xs text-slate-400">Downloads received: <b class="text-slate-200">${dr.count ?? 0}</b></div>
+                <div class="text-xs text-slate-500">Recently liked: ${titles(lk)}</div>
+                <div class="text-xs text-slate-500">Recently downloaded: ${titles(dl)}</div>
                 <div class="flex flex-wrap gap-2">
                     <button onclick="staffSendMessage('${uid}','warning')" class="px-3 py-1.5 rounded-lg bg-amber-500/20 text-xs text-amber-300">Warn</button>
                     <button onclick="staffSendMessage('${uid}','message')" class="px-3 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-200">Message</button>
@@ -2833,13 +2903,13 @@
         async function loadAdminStats() {
             const box = document.getElementById('admin-stats');
             const n = (t, f) => { let q = supabaseClient.from(t).select('*', { count: 'exact', head: true }); if (f) q = f(q); return q.then(r => r.count ?? 0); };
-            const [users, posts, priv, mods, banned, shadow, susp, hidden, open] = await Promise.all([
+            const [users, posts, priv, mods, banned, shadow, susp, hidden, open, likesN, dlN] = await Promise.all([
                 n('profiles'), n('sounds'), n('sounds', q => q.eq('is_private', true)), n('moderators'),
                 n('user_status', q => q.eq('status', 'banned')), n('user_status', q => q.eq('status', 'shadow_banned')), n('user_status', q => q.eq('status', 'suspended')),
-                n('hidden_sounds'), n('reports', q => q.eq('status', 'open'))
+                n('hidden_sounds'), n('reports', q => q.eq('status', 'open')), n('post_likes'), n('post_downloads')
             ]);
             const tile = (label, v) => `<div class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2"><div class="text-lg font-bold text-emerald-400">${v}</div><div class="text-[11px] text-slate-400">${label}</div></div>`;
-            box.innerHTML = tile('Users', users) + tile('Posts', posts) + tile('Private posts', priv) + tile('Moderators', mods) + tile('Banned', banned) + tile('Shadow-banned', shadow) + tile('Suspended', susp) + tile('Hidden posts', hidden) + tile('Open reports', open);
+            box.innerHTML = tile('Users', users) + tile('Posts', posts) + tile('Private posts', priv) + tile('Moderators', mods) + tile('Banned', banned) + tile('Shadow-banned', shadow) + tile('Suspended', susp) + tile('Hidden posts', hidden) + tile('Open reports', open) + tile('Likes recorded', likesN) + tile('Downloads recorded', dlN);
         }
 
         async function addModerator() {
@@ -3196,6 +3266,7 @@
             if (!url && sound.synth_config) {
                 try {
                     showToast(`Downloading "${sound.title}"...`, "success");
+                    recordDownload(sound);
                     const wavBlob = await renderSynthToWav(sound.synth_config);
                     const wavUrl = URL.createObjectURL(wavBlob);
                     const wa = document.createElement('a');
@@ -3234,6 +3305,7 @@
             };
 
             showToast(`Downloading "${sound.title}"...`, "success");
+                    recordDownload(sound);
 
             try {
                 // Browsers ignore the "download" attribute on cross-origin links,
