@@ -96,6 +96,18 @@
         html.theme-light .text-indigo-400 { color: #4338ca !important; }
         html.theme-light .text-purple-400 { color: #7e22ce !important; }
         html.theme-light .custom-scrollbar::-webkit-scrollbar-track { background: #e2e8f0; }
+        /* menu bar, search box, inner panels, visualizer tabs, drop zone */
+        html.theme-light .bg-slate-950\/80:not(.fixed), html.theme-light .bg-slate-950\/60, html.theme-light .bg-slate-950\/50 { background-color: #f8fafc !important; }
+        /* bottom player */
+        html.theme-light .bg-slate-950\/95 { background-color: rgba(255,255,255,0.96) !important; }
+        /* filter panel, empty states */
+        html.theme-light .bg-slate-900\/60, html.theme-light .bg-slate-900\/40, html.theme-light .bg-slate-900\/30 { background-color: rgba(255,255,255,0.9) !important; }
+        html.theme-light .bg-indigo-950\/60 { background-color: #eef2ff !important; }
+        html.theme-light .text-indigo-300 { color: #4338ca !important; }
+        html.theme-light .shadow-2xl, html.theme-light .shadow-xl { --tw-shadow-color: rgba(15,23,42,0.12); box-shadow: 0 10px 25px -8px rgba(15,23,42,0.18) !important; }
+        html.theme-light #visualizer-dock { box-shadow: 0 -6px 20px -8px rgba(15,23,42,0.15) !important; }
+        html.theme-light input, html.theme-light textarea, html.theme-light select { color: #0f172a; }
+        html.theme-light input::placeholder, html.theme-light textarea::placeholder { color: #64748b; }
 
         /* ---- Site shutdown: everything except the overlay, popups and toasts disappears ---- */
         body.maintenance > *:not(#maintenance-overlay):not([id$="-modal"]):not(#toast-container):not(script):not(style) { display: none !important; }
@@ -598,38 +610,26 @@
         <section id="tab-record" class="hidden max-w-2xl mx-auto">
             <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 space-y-4">
                 <h2 class="text-xl font-bold text-slate-100">Record a sound</h2>
-                <p class="text-xs text-slate-400">Record from your microphone (up to 60 seconds), edit it, listen back, then send it to Publish.</p>
+                <p class="text-xs text-slate-400">Record from your microphone (up to 60 seconds). When you finish, you can publish it as it is, or send it to the editor to change it first.</p>
                 <div class="flex items-center gap-3">
                     <button id="rec-btn" onclick="toggleRecording()" class="bg-red-500 hover:bg-red-400 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all"><i class="fa-solid fa-microphone mr-2"></i><span id="rec-label">Start recording</span></button>
                     <span id="rec-timer" class="text-sm font-mono text-slate-400">0:00</span>
                 </div>
-                <div id="rec-editor" class="hidden space-y-4">
-                    <canvas id="rec-canvas" width="640" height="110" class="w-full h-28 rounded-xl bg-slate-950 border border-slate-800"></canvas>
+                <div id="rec-result" class="hidden space-y-4">
+                    <canvas id="rec-canvas" width="640" height="90" class="w-full h-24 rounded-xl bg-slate-950 border border-slate-800"></canvas>
                     <div id="rec-info" class="text-xs text-slate-400"></div>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div><div class="flex justify-between text-xs text-slate-400 mb-1"><span>Selection start (s)</span><span id="rec-start-val" class="text-emerald-400 font-mono"></span></div><input id="rec-start" type="range" min="0" max="1" step="0.01" value="0" oninput="updateRecRange()" class="w-full accent-emerald-500"></div>
-                        <div><div class="flex justify-between text-xs text-slate-400 mb-1"><span>Selection end (s)</span><span id="rec-end-val" class="text-emerald-400 font-mono"></span></div><input id="rec-end" type="range" min="0" max="1" step="0.01" value="1" oninput="updateRecRange()" class="w-full accent-emerald-500"></div>
-                        <div><div class="flex justify-between text-xs text-slate-400 mb-1"><span>Split marker (s)</span><span id="rec-marker-val" class="text-emerald-400 font-mono"></span></div><input id="rec-marker" type="range" min="0" max="1" step="0.01" value="0.5" oninput="updateRecRange()" class="w-full accent-emerald-500"></div>
-                    </div>
-                    <div class="flex flex-wrap gap-2 text-xs">
-                        <button onclick="recOp('keep')" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200">Cut: keep selection</button>
-                        <button onclick="recOp('remove')" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200">Cut out selection</button>
-                        <button onclick="recOp('before')" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200">Split: keep before marker</button>
-                        <button onclick="recOp('after')" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200">Split: keep after marker</button>
-                        <button onclick="recUndoOp()" class="px-3 py-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300">Undo</button>
-                    </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div><div class="flex justify-between text-xs text-slate-400 mb-1"><span>Fade in (s)</span><span id="rec-fadein-val" class="text-emerald-400 font-mono"></span></div><input id="rec-fadein" type="range" min="0" max="3" step="0.1" value="0" oninput="updateRecFx()" class="w-full accent-emerald-500"></div>
-                        <div><div class="flex justify-between text-xs text-slate-400 mb-1"><span>Fade out (s)</span><span id="rec-fadeout-val" class="text-emerald-400 font-mono"></span></div><input id="rec-fadeout" type="range" min="0" max="3" step="0.1" value="0" oninput="updateRecFx()" class="w-full accent-emerald-500"></div>
-                        <div><div class="flex justify-between text-xs text-slate-400 mb-1"><span>Speed (also changes pitch)</span><span id="rec-speed-val" class="text-emerald-400 font-mono"></span></div><input id="rec-speed" type="range" min="0.5" max="2" step="0.05" value="1" oninput="updateRecFx()" class="w-full accent-emerald-500"></div>
-                        <div><div class="flex justify-between text-xs text-slate-400 mb-1"><span>Pitch (semitones, keeps length)</span><span id="rec-pitch-val" class="text-emerald-400 font-mono"></span></div><input id="rec-pitch" type="range" min="-12" max="12" step="1" value="0" oninput="updateRecFx()" class="w-full accent-emerald-500"></div>
-                    </div>
-                    <div class="flex flex-wrap gap-2">
-                        <button onclick="playRec()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-sm"><i class="fa-solid fa-play mr-2"></i>Play edited sound</button>
+                    <div class="flex gap-2">
+                        <button onclick="playRec()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-sm"><i class="fa-solid fa-play mr-2"></i>Play recording</button>
                         <button onclick="stopRecPlayback()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2.5 rounded-xl text-sm">Stop</button>
-                        <button onclick="useRecInPublish()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2.5 rounded-xl text-sm ml-auto"><i class="fa-solid fa-cloud-arrow-up mr-2"></i>Continue to Publish</button>
                     </div>
-                    <p class="text-[10px] text-slate-500">Speed changes pitch like a tape player. Pitch changes the note but keeps the length, and sounds best with small changes.</p>
+                    <div class="border-t border-slate-800 pt-4">
+                        <p class="text-sm font-bold text-slate-200 mb-2">What would you like to do with it?</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <button onclick="recPublishAsIs()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-3 rounded-xl text-sm"><i class="fa-solid fa-cloud-arrow-up mr-2"></i>Publish it as it is</button>
+                            <button onclick="recSendToEditor()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-4 py-3 rounded-xl text-sm border border-slate-700"><i class="fa-solid fa-layer-group mr-2"></i>Edit it in the editor</button>
+                        </div>
+                        <p class="text-[11px] text-slate-500 mt-2">The editor lets you cut, split, fade, change pitch and speed, and layer other clips. From there you can download it or publish it.</p>
+                    </div>
                 </div>
             </div>
         </section>
@@ -639,11 +639,13 @@
             <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 space-y-4">
                 <h2 class="text-xl font-bold text-slate-100">Create audio</h2>
                 <p class="text-xs text-slate-400">Add up to 6 clips from your device, edit each one, and layer them. Clips can play at the same time. The finished sound can be up to 10 seconds.</p>
-                <div class="flex flex-wrap items-center gap-3">
-                    <button onclick="document.getElementById('mix-file-input').click()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-sm"><i class="fa-solid fa-plus mr-2"></i>Add clips</button>
-                    <input id="mix-file-input" type="file" accept="audio/*" multiple class="hidden" onchange="mixAddFiles(event)">
-                    <span id="mix-total" class="text-xs text-slate-400"></span>
-                </div>
+                <label for="mix-file-input" ondragover="event.preventDefault()" ondrop="mixDrop(event)" class="block cursor-pointer border-2 border-dashed border-slate-700 hover:border-emerald-500 rounded-xl p-6 text-center transition-all">
+                    <i class="fa-solid fa-file-audio text-emerald-400 text-2xl mb-2"></i>
+                    <div class="text-sm font-bold text-slate-200">Tap to add audio clips</div>
+                    <div class="text-[11px] text-slate-400 mt-1">Audio files only (MP3, WAV, M4A, OGG, AAC, FLAC). You can pick several at once or drop them here.</div>
+                </label>
+                <input id="mix-file-input" type="file" accept="audio/*,.mp3,.wav,.ogg,.oga,.m4a,.aac,.flac,.webm,.opus,.aif,.aiff,.caf" multiple class="sr-only" onchange="mixAddFiles(event)">
+                <div id="mix-total" class="text-xs text-slate-400"></div>
                 <div id="mix-list" class="space-y-3"></div>
                 <div id="mix-actions" class="hidden flex flex-wrap gap-2">
                     <button onclick="mixPlay()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-sm"><i class="fa-solid fa-play mr-2"></i>Play mix</button>
@@ -2569,22 +2571,28 @@
         const mixFmt = (k, v) => k === 'speed' ? v.toFixed(2) + 'x' : k === 'pitch' ? ((v > 0 ? '+' : '') + v) : k === 'vol' ? Math.round(v * 100) + '%' : v.toFixed(2) + 's';
         const mixDur = c => (c.tOut - c.tIn) / c.speed;
 
+        const MIX_AUDIO_EXT = /\.(mp3|wav|ogg|oga|m4a|aac|flac|webm|opus|aif|aiff|caf|mp4)$/i;
+        function mixDrop(e) { e.preventDefault(); mixAddFileList(Array.from((e.dataTransfer && e.dataTransfer.files) || [])); }
         async function mixAddFiles(e) {
             const files = Array.from(e.target.files || []);
             e.target.value = '';
+            await mixAddFileList(files);
+        }
+        async function mixAddFileList(files) {
             for (const file of files) {
+                if (!((file.type || '').startsWith('audio/') || MIX_AUDIO_EXT.test(file.name))) { showToast(file.name + " isn't an audio file, so it was skipped.", "error"); continue; }
                 if (mixClips.length >= MIX_MAX_CLIPS) { showToast("You can use up to " + MIX_MAX_CLIPS + " clips.", "info"); break; }
                 if (file.size > 10 * 1024 * 1024) { showToast(file.name + " is larger than 10 MB.", "error"); continue; }
                 try {
                     const ctx = getRecCtx(); ctx.resume();
-                    const audio = await ctx.decodeAudioData(await file.arrayBuffer());
+                    const audio = await decodeAudioCompat(ctx, await file.arrayBuffer());
                     const len = Math.min(audio.length, Math.floor(MIX_MAX_SOURCE_SEC * audio.sampleRate));
                     const mono = new Float32Array(len);
                     for (let ch = 0; ch < audio.numberOfChannels; ch++) { const d = audio.getChannelData(ch); for (let i = 0; i < len; i++) mono[i] += d[i] / audio.numberOfChannels; }
                     const dur = len / audio.sampleRate;
                     if (audio.length > len) showToast(file.name + " is long. Only the first " + MIX_MAX_SOURCE_SEC + " seconds were loaded.", "info");
                     mixClips.push({ id: mixNextId++, name: file.name, data: mono, sr: audio.sampleRate, dur, off: 0, tIn: 0, tOut: dur, split: dur / 2, fadeIn: 0, fadeOut: 0, speed: 1, pitch: 0, vol: 1 });
-                } catch (err) { console.error(err); showToast("Could not read " + file.name + " as audio.", "error"); }
+                } catch (err) { console.error(err); showToast("Could not read " + file.name + " as audio (" + ((err && err.message) || "unsupported format") + ").", "error"); }
             }
             renderMixList();
         }
@@ -2712,10 +2720,18 @@
             switchTab('upload');
         }
 
-        // ===== RECORD FROM MICROPHONE + EDIT =====
+        // ===== RECORD FROM MICROPHONE =====
         const REC_MAX = 60;
-        let recCtx = null, recData = null, recSR = 44100, recUndoStack = [], mediaRec = null, recChunks = [], recStream = null, recTick = null, recStartTs = 0, recSource = null;
+        let recCtx = null, recData = null, recSR = 44100, mediaRec = null, recChunks = [], recStream = null, recTick = null, recStartTs = 0, recSource = null;
         const getRecCtx = () => recCtx || (recCtx = new (window.AudioContext || window.webkitAudioContext)());
+
+        // decodeAudioData in both its promise and older callback forms (Safari)
+        function decodeAudioCompat(ctx, arrayBuffer) {
+            return new Promise((resolve, reject) => {
+                const p = ctx.decodeAudioData(arrayBuffer, resolve, reject);
+                if (p && typeof p.catch === 'function') p.catch(reject);
+            });
+        }
 
         function recResample(x, factor) {
             const n = Math.max(1, Math.floor(x.length / factor)), out = new Float32Array(n);
@@ -2763,17 +2779,13 @@
             return new Blob([v], { type: 'audio/wav' });
         }
 
-        const recOpts = () => ({
-            pitch: +document.getElementById('rec-pitch').value, speed: +document.getElementById('rec-speed').value,
-            fadeIn: +document.getElementById('rec-fadein').value, fadeOut: +document.getElementById('rec-fadeout').value
-        });
-
         async function toggleRecording() {
             if (mediaRec && mediaRec.state === 'recording') { mediaRec.stop(); return; }
             if (!navigator.mediaDevices || !window.MediaRecorder) { showToast("Recording isn't supported in this browser.", "error"); return; }
             try { getRecCtx().resume(); recStream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
             catch (e) { showToast("Microphone access was blocked. Allow it in your browser settings and try again.", "error"); return; }
             stopRecPlayback();
+            document.getElementById('rec-result').classList.add('hidden');
             recChunks = [];
             mediaRec = new MediaRecorder(recStream);
             mediaRec.ondataavailable = e => { if (e.data && e.data.size) recChunks.push(e.data); };
@@ -2784,14 +2796,13 @@
                 document.getElementById('rec-btn').classList.replace('bg-slate-600', 'bg-red-500');
                 try {
                     const blob = new Blob(recChunks, { type: mediaRec.mimeType || 'audio/webm' });
-                    const audio = await getRecCtx().decodeAudioData(await blob.arrayBuffer());
+                    const audio = await decodeAudioCompat(getRecCtx(), await blob.arrayBuffer());
                     const mono = new Float32Array(audio.length);
                     for (let c = 0; c < audio.numberOfChannels; c++) { const ch = audio.getChannelData(c); for (let i = 0; i < mono.length; i++) mono[i] += ch[i] / audio.numberOfChannels; }
-                    recData = mono; recSR = audio.sampleRate; recUndoStack = [];
-                    document.getElementById('rec-editor').classList.remove('hidden');
-                    ['rec-fadein', 'rec-fadeout', 'rec-pitch'].forEach(id => document.getElementById(id).value = 0);
-                    document.getElementById('rec-speed').value = 1;
-                    resetRecRanges(); updateRecFx();
+                    recData = mono; recSR = audio.sampleRate;
+                    document.getElementById('rec-result').classList.remove('hidden');
+                    document.getElementById('rec-info').textContent = `Recorded ${(recData.length / recSR).toFixed(1)} seconds`;
+                    drawRecWave();
                 } catch (err) { console.error(err); showToast("Could not read the recording. Please try again.", "error"); }
             };
             mediaRec.start();
@@ -2805,88 +2816,49 @@
             }, 200);
         }
 
-        function resetRecRanges() {
-            const dur = recData.length / recSR;
-            ['rec-start', 'rec-end', 'rec-marker'].forEach(id => { const el = document.getElementById(id); el.max = dur.toFixed(2); });
-            document.getElementById('rec-start').value = 0;
-            document.getElementById('rec-end').value = dur.toFixed(2);
-            document.getElementById('rec-marker').value = (dur / 2).toFixed(2);
-            updateRecRange();
-        }
-        function updateRecRange() {
-            let a = +document.getElementById('rec-start').value, b = +document.getElementById('rec-end').value;
-            if (a > b) { [a, b] = [b, a]; }
-            document.getElementById('rec-start-val').textContent = a.toFixed(2) + 's';
-            document.getElementById('rec-end-val').textContent = b.toFixed(2) + 's';
-            document.getElementById('rec-marker-val').textContent = (+document.getElementById('rec-marker').value).toFixed(2) + 's';
-            drawRecWave();
-        }
-        function updateRecFx() {
-            const o = recOpts();
-            document.getElementById('rec-fadein-val').textContent = o.fadeIn.toFixed(1) + 's';
-            document.getElementById('rec-fadeout-val').textContent = o.fadeOut.toFixed(1) + 's';
-            document.getElementById('rec-speed-val').textContent = o.speed.toFixed(2) + 'x';
-            document.getElementById('rec-pitch-val').textContent = (o.pitch > 0 ? '+' : '') + o.pitch;
-            drawRecWave();
-        }
         function drawRecWave() {
             const cv = document.getElementById('rec-canvas');
             if (!cv || !recData) return;
-            const ctx = cv.getContext('2d'), W = cv.width, H = cv.height, dur = recData.length / recSR;
+            const ctx = cv.getContext('2d'), W = cv.width, H = cv.height, step = Math.max(1, Math.floor(recData.length / W));
             ctx.clearRect(0, 0, W, H);
-            let a = +document.getElementById('rec-start').value, b = +document.getElementById('rec-end').value;
-            if (a > b) [a, b] = [b, a];
-            ctx.fillStyle = 'rgba(16,185,129,0.15)'; ctx.fillRect(a / dur * W, 0, (b - a) / dur * W, H);
             ctx.strokeStyle = '#10b981'; ctx.lineWidth = 1; ctx.beginPath();
-            const step = Math.max(1, Math.floor(recData.length / W));
             for (let x = 0; x < W; x++) {
                 let mn = 1, mx = -1;
                 for (let i = x * step; i < Math.min(recData.length, (x + 1) * step); i++) { const v = recData[i]; if (v < mn) mn = v; if (v > mx) mx = v; }
                 ctx.moveTo(x, (1 - mx) * H / 2); ctx.lineTo(x, (1 - mn) * H / 2 + 1);
             }
             ctx.stroke();
-            const m = +document.getElementById('rec-marker').value;
-            ctx.strokeStyle = '#f59e0b'; ctx.beginPath(); ctx.moveTo(m / dur * W, 0); ctx.lineTo(m / dur * W, H); ctx.stroke();
-            const o = recOpts();
-            const outDur = dur * (o.speed ? 1 / o.speed : 1);
-            document.getElementById('rec-info').textContent = `Length now ${dur.toFixed(2)}s · after effects about ${outDur.toFixed(2)}s`;
-        }
-
-        function recOp(kind) {
-            if (!recData) return;
-            let a = Math.floor(+document.getElementById('rec-start').value * recSR), b = Math.floor(+document.getElementById('rec-end').value * recSR);
-            if (a > b) [a, b] = [b, a];
-            const m = Math.floor(+document.getElementById('rec-marker').value * recSR);
-            let next;
-            if (kind === 'keep') next = recData.slice(a, b);
-            else if (kind === 'remove') { next = new Float32Array(recData.length - (b - a)); next.set(recData.slice(0, a)); next.set(recData.slice(b), a); }
-            else if (kind === 'before') next = recData.slice(0, m);
-            else next = recData.slice(m);
-            if (next.length < recSR * 0.05) { showToast("That would leave almost nothing. Adjust the sliders first.", "error"); return; }
-            recUndoStack.push(recData); recData = next; resetRecRanges();
-        }
-        function recUndoOp() {
-            if (!recUndoStack.length) { showToast("Nothing to undo.", "info"); return; }
-            recData = recUndoStack.pop(); resetRecRanges();
         }
 
         function stopRecPlayback() { try { if (recSource) recSource.stop(); } catch (e) {} recSource = null; }
         function playRec() {
             if (!recData) return;
             stopRecPlayback();
-            const out = recRender(recData, recSR, recOpts());
             const ctx = getRecCtx(); ctx.resume();
-            const buf = ctx.createBuffer(1, out.length, recSR);
-            buf.copyToChannel(out, 0);
+            const buf = ctx.createBuffer(1, recData.length, recSR);
+            buf.copyToChannel(recData, 0);
             recSource = ctx.createBufferSource(); recSource.buffer = buf; recSource.connect(ctx.destination); recSource.start();
         }
-        function useRecInPublish() {
+
+        // Option 1: publish the recording exactly as recorded
+        function recPublishAsIs() {
             if (!recData) return;
-            const out = recRender(recData, recSR, recOpts());
-            const file = new File([recEncodeWav(out, recSR)], 'recording_' + Date.now() + '.wav', { type: 'audio/wav' });
-            processAudioFile(file);
+            stopRecPlayback();
+            processAudioFile(new File([recEncodeWav(recData, recSR)], 'recording_' + Date.now() + '.wav', { type: 'audio/wav' }));
             if (!currentUser) showToast("Sign in to publish. Your recording will be ready on the Publish page.", "info");
             switchTab('upload');
+        }
+
+        // Option 2: move the recording into the editor as a clip
+        function recSendToEditor() {
+            if (!recData) return;
+            if (mixClips.length >= MIX_MAX_CLIPS) { showToast("The editor already has " + MIX_MAX_CLIPS + " clips. Remove one first.", "info"); switchTab('create'); return; }
+            stopRecPlayback();
+            const dur = recData.length / recSR;
+            mixClips.push({ id: mixNextId++, name: 'Recording ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), data: recData, sr: recSR, dur, off: 0, tIn: 0, tOut: dur, split: dur / 2, fadeIn: 0, fadeOut: 0, speed: 1, pitch: 0, vol: 1 });
+            renderMixList();
+            switchTab('create');
+            showToast("Your recording is in the editor. Edit it, then download or publish it.", "success");
         }
 
         // ===== LIGHT / DARK MODE =====
