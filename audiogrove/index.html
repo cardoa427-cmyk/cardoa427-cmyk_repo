@@ -688,6 +688,12 @@
             </div>
         </section>
 
+        <!-- TAB: POST PAGE -->
+        <section id="tab-post" class="hidden max-w-5xl mx-auto space-y-5">
+            <button onclick="closePostPage()" class="text-sm text-slate-400 hover:text-emerald-400"><i class="fa-solid fa-arrow-left mr-2"></i>Back</button>
+            <div id="post-body"></div>
+        </section>
+
         <!-- TAB: OTHER CREATOR'S PROFILE HOMEPAGE -->
         <section id="tab-userpage" class="hidden space-y-6">
             <button onclick="switchTab('homeboard')" class="text-sm text-slate-400 hover:text-emerald-400"><i class="fa-solid fa-arrow-left mr-2"></i>Back to Homeboard</button>
@@ -1183,7 +1189,8 @@
                              'fa-circle-info text-indigo-400';
 
             toast.className = `pointer-events-auto px-4 py-3 rounded-xl border backdrop-blur-md shadow-2xl text-xs font-semibold flex items-center gap-3 transition-all ${colorClass}`;
-            toast.innerHTML = `<i class="fa-solid ${iconClass} text-base"></i><span>${message}</span>`;
+            toast.innerHTML = `<i class="fa-solid ${iconClass} text-base"></i><span></span>`;
+            toast.querySelector('span').textContent = message;
             
             container.appendChild(toast);
 
@@ -1734,24 +1741,24 @@
             const isLiked = likedIds.includes(sound.id);
 
             return `
-                <div class="sound-pad-glow bg-slate-900/90 rounded-2xl border border-slate-800 p-4 flex flex-col justify-between relative group" style="--pad-color-glow: ${sound.button_color || '#10b981'}40;">
+                <div onclick="cardClick(event,'${sound.id}')" class="sound-pad-glow bg-slate-900/90 rounded-2xl border border-slate-800 p-4 flex flex-col justify-between relative group cursor-pointer" style="--pad-color-glow: ${sound.button_color || '#10b981'}40;">
                     <div>
                         <div class="flex items-start justify-between gap-2 mb-3">
                             <div class="flex items-center gap-2">
                                 <span class="w-3 h-3 rounded-full shrink-0" style="background-color: ${sound.button_color || '#10b981'};"></span>
-                                <span class="text-[11px] font-semibold text-slate-400 truncate">${sound.category}</span>
+                                <span class="text-[11px] font-semibold text-slate-400 truncate">${esc(sound.category)}</span>
                             </div>
                             ${sound.is_private ? '<span class="text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-full font-bold shrink-0">🔒 Private</span>' : '<span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold shrink-0">🌐 Public</span>'}
                         </div>
 
-                        <h3 class="font-bold text-slate-100 text-base line-clamp-1 group-hover:text-emerald-400 transition-colors">${sound.title}</h3>
-                        <p class="text-xs text-slate-400 mt-1 line-clamp-2">${sound.description || 'No description provided.'}</p>
+                        <h3 class="font-bold text-slate-100 text-base line-clamp-1 group-hover:text-emerald-400 transition-colors">${esc(sound.title)}</h3>
+                        <p class="text-xs text-slate-400 mt-1 line-clamp-2">${esc(sound.description) || 'No description provided.'}</p>
                     </div>
 
                     <div class="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
                         <div class="flex items-center gap-1.5 min-w-0 flex-1">
                             <i class="fa-solid fa-circle-user text-emerald-400 text-xs shrink-0"></i>
-                            <span onclick="openUserProfile('${sound.user_id}')" class="text-xs font-semibold text-emerald-400 truncate cursor-pointer hover:underline" title="View creator">${sound.username || '@creator'}</span>
+                            <span data-act="1" onclick="openUserProfile('${sound.user_id}')" class="text-xs font-semibold text-emerald-400 truncate cursor-pointer hover:underline" title="View creator">${esc(sound.username || '@creator')}</span>
                         </div>
 
                         <div class="flex items-center gap-1.5 shrink-0">
@@ -1827,6 +1834,7 @@
 
             activeSoundsList = sounds;
             if (userPageId && !document.getElementById('tab-userpage').classList.contains('hidden')) loadUserPage(userPageId, true);
+            if (postPageId && postVisible()) loadPostPage(postPageId, true);
             let filteredSounds = sounds.filter(s => !blockedIds.has(s.user_id));
 
             if (queryStr) {
@@ -2020,7 +2028,7 @@
         function switchTab(tabId) {
             if (tabId === 'soundboard') tabId = 'homeboard';
 
-            const tabs = ['homeboard', 'synth', 'upload', 'profile', 'settings', 'userpage', 'record', 'create'];
+            const tabs = ['homeboard', 'synth', 'upload', 'profile', 'settings', 'userpage', 'record', 'create', 'post'];
             tabs.forEach(t => {
                 const el = document.getElementById(`tab-${t}`);
                 const nav = document.getElementById(`nav-${t}`);
@@ -3130,8 +3138,11 @@
         // ===== RECORDS FOR MODERATORS (likes + downloads) =====
         async function recordDownload(sound) {
             if (!supabaseClient || !sound || !sound.id) return;
-            try { await supabaseClient.from('post_downloads').insert({ sound_id: sound.id, user_id: currentUser ? currentUser.id : null }); }
-            catch (e) { /* records are best-effort and never block a download */ }
+            try {
+                const { error } = await supabaseClient.rpc('record_download', { sid: sound.id });
+                if (error) await supabaseClient.from('post_downloads').insert({ sound_id: sound.id, user_id: currentUser ? currentUser.id : null });
+                if (postPageId && postVisible()) loadPostPage(postPageId, true);
+            } catch (e) { /* records are best-effort and never block a download */ }
         }
 
         // ===== YOUR DATA + ACCOUNT DELETION =====
@@ -3239,6 +3250,110 @@
                 console.error("Account deletion error:", err);
                 showToast("Could not delete the account: " + (err.message || err), "error");
             }
+        }
+
+        // ===== POST PAGE =====
+        let postPageId = null, postPageFrom = 'homeboard';
+        const postVisible = () => { const t = document.getElementById('tab-post'); return t && !t.classList.contains('hidden'); };
+
+        function cardClick(e, id) {
+            const hit = e.target.closest('button,[data-act]');
+            if (hit && hit !== e.currentTarget) return;
+            openPostPage(id);
+        }
+
+        function closePostPage() {
+            const back = postPageFrom === 'userpage' && userPageId ? 'userpage' : 'homeboard';
+            postPageId = null;
+            switchTab(back);
+        }
+
+        async function openPostPage(id) {
+            const up = document.getElementById('tab-userpage');
+            postPageFrom = (up && !up.classList.contains('hidden')) ? 'userpage' : 'homeboard';
+            const local = activeSoundsList.find(x => x.id === id);
+            if (local && blockedIds.has(local.user_id)) { showToast("You've blocked this creator.", "info"); return; }
+            postPageId = id;
+            document.getElementById('post-body').innerHTML = '<p class="text-sm text-slate-500">Loading...</p>';
+            switchTab('post');
+            window.scrollTo(0, 0);
+            await loadPostPage(id, false);
+        }
+
+        async function loadPostPage(id, silent) {
+            const body = document.getElementById('post-body');
+            let s = activeSoundsList.find(x => x.id === id);
+            let prof = null, pubCount = null;
+            if (supabaseClient) {
+                const { data } = await supabaseClient.from('sounds').select('*').eq('id', id).maybeSingle();
+                if (data) { s = data; const ex = activeSoundsList.find(x => x.id === id); if (ex) Object.assign(ex, data); else activeSoundsList.push(data); }
+                else s = null;
+            }
+            if (postPageId !== id) return;
+            if (!s) { body.innerHTML = '<div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-8 text-center"><p class="text-slate-200 font-bold">This post isn\'t available</p><p class="text-xs text-slate-400 mt-1">It may have been removed, hidden or made private.</p></div>'; return; }
+            if (blockedIds.has(s.user_id)) { body.innerHTML = '<p class="text-sm text-slate-400">You\'ve blocked this creator.</p>'; return; }
+            if (supabaseClient && s.user_id) {
+                const [p, c] = await Promise.all([
+                    supabaseClient.from('profiles').select('id,username,created_at').eq('id', s.user_id).maybeSingle(),
+                    supabaseClient.from('sounds').select('id', { count: 'exact', head: true }).eq('user_id', s.user_id).eq('is_private', false)
+                ]);
+                prof = p.data; pubCount = c.count;
+                if (postPageId !== id) return;
+            }
+            const own = currentUser && s.user_id === currentUser.id, staff = isAdminRole || isModRole;
+            const liked = getLikedPostIds().includes(s.id);
+            const date = s.created_at ? new Date(s.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : 'Unknown';
+            const color = s.button_color || '#10b981';
+            const desc = (s.description || '').trim();
+            const descHtml = desc ? desc.split(/(#[\w-]+)/g).map(part => /^#[\w-]+$/.test(part) ? `<span class="inline-block bg-emerald-500/10 text-emerald-400 text-xs font-semibold px-2 py-0.5 rounded-full mx-0.5">${esc(part)}</span>` : esc(part)).join('') : '<span class="text-slate-500 italic">The creator didn\'t add a description.</span>';
+            const name = esc(s.username || (prof && prof.username) || '@creator');
+            const row = (label, value) => `<div class="flex justify-between gap-3 text-sm py-1.5 border-b border-slate-800/70 last:border-0"><span class="text-slate-400">${label}</span><span class="text-slate-100 font-semibold text-right">${value}</span></div>`;
+            body.innerHTML = `
+                <div class="space-y-5">
+                    <div>
+                        <div class="flex flex-wrap items-center gap-2 mb-3">
+                            <span class="inline-flex items-center gap-2 text-xs font-semibold text-slate-300 bg-slate-800 rounded-full px-3 py-1"><span class="w-2.5 h-2.5 rounded-full" style="background:${color}"></span>${esc(s.category)}</span>
+                            ${s.is_private ? '<span class="text-[11px] bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2.5 py-1 rounded-full font-bold">🔒 Private</span>' : '<span class="text-[11px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-full font-bold">🌐 Public</span>'}
+                        </div>
+                        <h1 class="text-3xl md:text-4xl font-bold text-slate-100 break-words">${esc(s.title)}</h1>
+                        <p class="text-sm text-slate-400 mt-2">By <span data-act="1" onclick="openUserProfile('${s.user_id}')" class="text-emerald-400 font-semibold cursor-pointer hover:underline">${name}</span> · ${date}</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                        <div class="lg:col-span-2 space-y-5">
+                            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 flex flex-wrap items-center gap-3">
+                                <button onclick="playSound('${s.id}')" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-6 py-3 rounded-xl text-sm flex items-center gap-2"><i class="fa-solid fa-play"></i>Play</button>
+                                <button onclick="toggleLike('${s.id}')" class="h-11 px-4 rounded-xl bg-slate-800 hover:bg-rose-500/20 ${liked ? 'text-rose-500' : 'text-slate-300'} text-sm font-semibold flex items-center gap-2"><i class="fa-solid fa-heart"></i>${s.likes || 0}</button>
+                                <button onclick="requestDownload('${s.id}')" class="h-11 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-semibold flex items-center gap-2"><i class="fa-solid fa-download"></i>Download</button>
+                                ${own ? `<button onclick="openEditModal('${s.id}')" class="h-11 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-semibold flex items-center gap-2"><i class="fa-solid fa-pen-to-square"></i>Edit</button>` : `<button onclick="openReportModal('${s.id}')" class="h-11 px-4 rounded-xl bg-slate-800 hover:bg-amber-500/20 text-slate-300 hover:text-amber-400 text-sm font-semibold flex items-center gap-2"><i class="fa-solid fa-flag"></i>Report</button>`}
+                                ${staff && !own ? `<button onclick="staffRemoveCaption('${s.id}')" class="h-11 px-4 rounded-xl bg-slate-800 hover:bg-emerald-500/20 text-slate-300 hover:text-emerald-400 text-sm font-semibold flex items-center gap-2"><i class="fa-solid fa-eraser"></i>Remove caption</button>` : ''}
+                                <p class="w-full text-[11px] text-slate-500">The sound plays in the player at the bottom of the page.</p>
+                            </div>
+                            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5">
+                                <h2 class="text-xl font-bold text-slate-100 mb-3">Description</h2>
+                                <div class="text-sm text-slate-300 leading-relaxed" style="white-space: pre-wrap; overflow-wrap: anywhere;">${descHtml}</div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-5">
+                            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5">
+                                <p class="text-xs text-slate-400 mb-1">Created by</p>
+                                <p data-act="1" onclick="openUserProfile('${s.user_id}')" class="text-xl font-bold text-emerald-400 cursor-pointer hover:underline break-words">${name}</p>
+                                <p class="text-xs text-slate-400 mt-1">${prof ? 'Joined ' + new Date(prof.created_at).toLocaleDateString() : ''}${pubCount !== null ? ' · ' + pubCount + ' public posts' : ''}</p>
+                                <button onclick="openUserProfile('${s.user_id}')" class="mt-4 w-full border border-emerald-500 text-emerald-400 hover:bg-emerald-500/10 font-semibold py-2.5 rounded-xl text-sm">Visit profile</button>
+                            </div>
+                            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5">
+                                <h2 class="text-xl font-bold text-slate-100 mb-2">Statistics</h2>
+                                ${row('Likes', s.likes || 0)}
+                                ${row('Downloads', s.downloads || 0)}
+                                ${row('Plays', s.plays || 0)}
+                                ${row('Filed under', esc(s.category))}
+                                ${row('Visibility', s.is_private ? 'Private' : 'Public')}
+                                ${row('Released', date)}
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
         }
 
         // ===== BLOCKING + OTHER CREATORS' PROFILES =====
