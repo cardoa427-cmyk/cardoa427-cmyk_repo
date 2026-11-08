@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Adri-Cardo Repo ✧ Cloudscape</title>
+    <title>Adri-Cardo Repo ✧ Cloudscape & Grove Studio</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -14,7 +14,7 @@
     <!-- Google Fonts: Quicksand & Outfit -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Custom Tailwind Configuration -->
     <script>
@@ -111,6 +111,11 @@
             border-color: rgba(216, 180, 254, 0.9);
         }
 
+        .glass-card.featured-card {
+            border: 2px solid rgba(168, 85, 247, 0.6);
+            background: rgba(255, 255, 255, 0.78);
+        }
+
         .glass-button {
             background: rgba(255, 255, 255, 0.7);
             backdrop-filter: blur(8px);
@@ -143,11 +148,6 @@
             -webkit-text-fill-color: transparent;
         }
 
-        .cloud-shape {
-            fill: rgba(255, 255, 255, 0.45);
-            filter: drop-shadow(0 10px 15px rgba(168, 85, 247, 0.08));
-        }
-
         #skyCanvas {
             position: fixed;
             top: 0;
@@ -178,22 +178,26 @@
                 
                 <div class="flex items-center space-x-3 cursor-pointer group" id="logoTitle" onclick="resetFilters()">
                     <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-500 via-pink-400 to-indigo-400 flex items-center justify-center text-white shadow-lg shadow-purple-300/50 group-hover:scale-105 transition-transform duration-300">
-                        <i class="fa-solid fa-cloud-moon text-lg animate-pulse"></i>
+                        <i class="fa-solid fa-sliders text-lg animate-pulse"></i>
                     </div>
                     <div>
                         <div class="flex items-center gap-2">
                             <h1 class="font-display font-bold text-xl sm:text-2xl text-dreamy-gradient tracking-tight">adri-cardo-repo</h1>
-                            <span class="px-2 py-0.5 text-[10px] font-semibold bg-purple-200/80 text-purple-700 rounded-full border border-purple-300/50">v2.6 root</span>
+                            <span class="px-2 py-0.5 text-[10px] font-semibold bg-purple-200/80 text-purple-700 rounded-full border border-purple-300/50">v3.0 root</span>
                         </div>
                         <p class="text-xs text-purple-600/90 font-medium flex items-center gap-1">
-                            <span>✧ cloud project vault & directory launcher</span>
+                            <span>✧ cloud project vault & app launcher</span>
                         </p>
                     </div>
                 </div>
 
                 <div class="flex flex-wrap items-center gap-2">
-                    <button onclick="toggleModal('projectModal')" class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white text-xs font-semibold shadow-md shadow-purple-300/50 flex items-center gap-1.5">
-                        <i class="fa-solid fa-plus text-[11px]"></i>
+                    <a href="./grove-studio.html" class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white text-xs font-bold shadow-md shadow-purple-300/50 flex items-center gap-1.5 transition-transform hover:scale-105">
+                        <i class="fa-solid fa-compact-disc animate-spin" style="animation-duration: 4s;"></i>
+                        <span>Launch Grove Studio</span>
+                    </a>
+                    <button onclick="toggleModal('projectModal')" class="px-3.5 py-1.5 rounded-xl glass-button text-xs font-semibold text-purple-800 flex items-center gap-1.5 border border-purple-200/80 shadow-sm">
+                        <i class="fa-solid fa-plus text-[11px] text-purple-600"></i>
                         <span>Add Project</span>
                     </button>
                     <button id="btnGithub" onclick="toggleModal('githubModal')" class="px-3 py-1.5 rounded-xl glass-button text-xs font-semibold text-purple-800 flex items-center gap-1.5 hover:text-purple-900 border border-purple-200/80 shadow-sm">
@@ -211,8 +215,53 @@
         </header>
 
         <!-- MAIN CONTENT AREA -->
-        <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-8 py-8 space-y-6">
-            <section>
+        <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-8 py-8 space-y-8">
+            
+            <!-- GROVE STUDIO FEATURED HERO SPOTLIGHT -->
+            <section class="glass-panel rounded-3xl p-6 sm:p-8 border border-white/80 shadow-xl relative overflow-hidden group">
+                <div class="absolute -right-10 -bottom-10 w-60 h-60 bg-gradient-to-tr from-purple-400/20 to-pink-400/30 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-700"></div>
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
+                    <div class="space-y-3 max-w-2xl">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-purple-600 to-pink-500 text-white shadow-md animate-pulse">
+                                ⚡ Featured App Launch
+                            </span>
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
+                                🟢 Live DAW Workstation
+                            </span>
+                        </div>
+                        <h2 class="font-display font-extrabold text-2xl sm:text-3xl text-slate-800 tracking-tight flex items-center gap-3">
+                            <span>🎛️ Grove Studio</span>
+                            <span class="text-xs font-semibold text-purple-600 bg-purple-100/80 px-2.5 py-1 rounded-lg border border-purple-200/80">Pro Audio Web DAW</span>
+                        </h2>
+                        <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                            Complete browser-based Digital Audio Workstation featuring multi-track MIDI synth sequencing, drum drum-machines, interactive piano roll, audio stem importer, real-time parametric EQ, dynamic compression, master reverb/delay sends, and offline WAV bouncing.
+                        </p>
+                    </div>
+                    <div class="flex flex-col sm:flex-row md:flex-col lg:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto shrink-0">
+                        <a href="./grove-studio.html" class="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 via-pink-500 to-indigo-600 hover:from-purple-700 hover:via-pink-600 hover:to-indigo-700 text-white font-bold text-xs sm:text-sm shadow-lg shadow-purple-400/40 flex items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95">
+                            <i class="fa-solid fa-play text-xs"></i>
+                            <span>Launch Grove Studio</span>
+                            <i class="fa-solid fa-arrow-right text-xs"></i>
+                        </a>
+                        <a href="https://github.com/cardoa427-cmyk/cardoa427-cmyk_repo/blob/main/grove-studio.html" target="_blank" rel="noopener" class="px-4 py-3.5 rounded-2xl glass-button text-xs font-bold text-purple-800 flex items-center justify-center gap-2 border border-purple-200 hover:text-purple-900 shadow-sm">
+                            <i class="fa-brands fa-github text-sm"></i>
+                            <span>View DAW Source</span>
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ALL PROJECTS VAULT GRID -->
+            <section class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-display font-bold text-lg text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-cubes text-purple-500"></i>
+                        <span>Repository Directory Index</span>
+                    </h3>
+                    <span id="projectCount" class="text-xs font-semibold text-purple-600 bg-purple-100/60 px-3 py-1 rounded-full border border-purple-200/50">0 Apps Loaded</span>
+                </div>
+
                 <div id="projectsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <!-- Dynamic project cards rendered here -->
                 </div>
@@ -262,18 +311,18 @@
                 </div>
                 <div>
                     <h3 id="modalTitle" class="font-display font-bold text-xl text-slate-800">Add New Project</h3>
-                    <p class="text-xs text-purple-600">Add subfolder or external link to your index</p>
+                    <p class="text-xs text-purple-600">Add subfolder or file link to your repository index</p>
                 </div>
             </div>
             <form id="projectForm" onsubmit="saveProject(event)" class="space-y-4">
                 <input type="hidden" id="projectId">
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Project Title *</label>
-                    <input type="text" id="inputTitle" required placeholder="e.g. audiogrove or doom" class="w-full px-4 py-2.5 rounded-xl glass-input text-xs text-slate-800">
+                    <input type="text" id="inputTitle" required placeholder="e.g. Grove Studio or Doom" class="w-full px-4 py-2.5 rounded-xl glass-input text-xs text-slate-800">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Folder Path / URL *</label>
-                    <input type="text" id="inputUrl" required placeholder="e.g. ./audiogrove/ or ./doom/" class="w-full px-4 py-2.5 rounded-xl glass-input text-xs text-slate-800">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">File Path / URL *</label>
+                    <input type="text" id="inputUrl" required placeholder="e.g. ./grove-studio.html or ./doom/" class="w-full px-4 py-2.5 rounded-xl glass-input text-xs text-slate-800">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Description</label>
@@ -282,7 +331,7 @@
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Icon / Emoji</label>
-                        <input type="text" id="inputIcon" placeholder="e.g. 🎵 or fa-music" class="w-full px-4 py-2.5 rounded-xl glass-input text-xs text-slate-800">
+                        <input type="text" id="inputIcon" placeholder="e.g. 🎛️ or fa-music" class="w-full px-4 py-2.5 rounded-xl glass-input text-xs text-slate-800">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Status Badge</label>
@@ -339,7 +388,7 @@
             </div>
             <textarea id="jsonArea" rows="6" class="w-full p-3 rounded-xl glass-input text-xs font-mono text-slate-800 resize-none"></textarea>
             <div class="flex justify-between gap-2">
-                <button onclick="resetToDefaults()" class="px-3 py-2 rounded-xl text-xs font-semibold text-red-600 border border-red-200">Reset Defaults</button>
+                <button onclick="resetToDefaults()" class="px-3 py-2 rounded-xl text-xs font-semibold text-red-600 border border-red-200 hover:bg-red-50">Reset Defaults</button>
                 <div class="flex gap-2">
                     <button onclick="copyJsonData()" class="px-3 py-2 rounded-xl glass-button text-xs font-semibold text-purple-800">Copy JSON</button>
                     <button onclick="importJsonData()" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs shadow-md">Import JSON</button>
@@ -353,12 +402,12 @@
         <div class="glass-panel w-full max-w-md rounded-3xl p-6 shadow-2xl border border-white/80 space-y-4 relative">
             <button onclick="closeModal('quickHelpModal')" class="absolute top-5 right-5 text-purple-400 hover:text-purple-700"><i class="fa-solid fa-xmark text-lg"></i></button>
             <h3 class="font-display font-bold text-lg text-slate-800">GitHub Pages Integration Guide</h3>
-            <div class="space-y-2 text-xs text-slate-600">
-                <p>1. Save this file as <code>index.html</code> in the repo root.</p>
-                <p>2. Save Audio Grove inside the <code>./audiogrove/index.html</code> folder.</p>
-                <p>3. Clicking <strong>Launch</strong> on the Audio Grove card opens <code>./audiogrove/</code> smoothly!</p>
+            <div class="space-y-2 text-xs text-slate-600 leading-relaxed">
+                <p>1. Save this index as <code>index.html</code> in your repository root.</p>
+                <p>2. Keep <code>grove-studio.html</code> in the same repository folder.</p>
+                <p>3. Clicking <strong>Launch</strong> on Grove Studio instantly navigates to <code>./grove-studio.html</code>!</p>
             </div>
-            <button onclick="closeModal('quickHelpModal')" class="w-full py-2.5 rounded-xl bg-purple-600 text-white text-xs font-semibold">Got it!</button>
+            <button onclick="closeModal('quickHelpModal')" class="w-full py-2.5 rounded-xl bg-purple-600 text-white text-xs font-semibold shadow-md">Got it!</button>
         </div>
     </div>
 
@@ -369,8 +418,20 @@
     </div>
 
     <script>
-        // DEFAULT PROJECT LIST INCLUDING AUDIOGROVE
+        // DEFAULT PROJECT LIST INCLUDING GROVE STUDIO
         const DEFAULT_PROJECTS = [
+            {
+                id: 'grove-studio-app',
+                title: 'Grove Studio',
+                url: './grove-studio.html',
+                description: 'Full-featured browser Digital Audio Workstation with MIDI synth channels, drum sequencers, piano roll, stem importing, and WAV rendering.',
+                icon: '🎛️',
+                status: 'Live',
+                githubUrl: 'https://github.com/cardoa427-cmyk/cardoa427-cmyk_repo/blob/main/grove-studio.html',
+                starred: true,
+                featured: true,
+                createdAt: '2026-11-08T10:00:00Z'
+            },
             {
                 id: 'doom-1',
                 title: 'doom',
@@ -401,7 +462,7 @@
                 icon: '🎵',
                 status: 'Live',
                 githubUrl: 'https://github.com/cardoa427-cmyk/cardoa427-cmyk_repo/tree/main/audiogrove',
-                starred: true,
+                starred: false,
                 createdAt: '2026-10-08T10:00:00Z'
             }
         ];
@@ -423,9 +484,9 @@
             if (savedProjects) {
                 try {
                     projects = JSON.parse(savedProjects);
-                    // Ensure audiogrove exists in returning visitors local state
-                    if (!projects.some(p => p.id === 'audiogrove-3' || p.title === 'audiogrove')) {
-                        projects.push(DEFAULT_PROJECTS[2]);
+                    // Ensure Grove Studio is automatically present for returning visitors
+                    if (!projects.some(p => p.id === 'grove-studio-app' || p.title.toLowerCase() === 'grove studio')) {
+                        projects.unshift(DEFAULT_PROJECTS[0]);
                         localStorage.setItem('adri_repo_projects', JSON.stringify(projects));
                     }
                 } catch (e) {
@@ -448,6 +509,11 @@
         function renderProjects() {
             const grid = document.getElementById('projectsGrid');
             const emptyState = document.getElementById('emptyState');
+            const projectCount = document.getElementById('projectCount');
+
+            if (projectCount) {
+                projectCount.textContent = `${projects.length} App${projects.length === 1 ? '' : 's'} Loaded`;
+            }
 
             if (projects.length === 0) {
                 grid.innerHTML = '';
@@ -461,6 +527,7 @@
 
             grid.innerHTML = projects.map(project => {
                 const isStar = project.starred;
+                const isFeatured = project.featured;
                 const statusBadge = getStatusBadgeHTML(project.status);
                 const githubBtn = project.githubUrl 
                     ? `<a href="${project.githubUrl}" target="_blank" rel="noopener" class="p-2 rounded-xl glass-button text-purple-700 hover:text-purple-900 text-xs" title="View Source on GitHub">
@@ -469,14 +536,17 @@
                     : '';
 
                 return `
-                    <div class="glass-card rounded-3xl p-6 flex flex-col justify-between space-y-4 relative border border-white/80 group">
+                    <div class="glass-card ${isFeatured ? 'featured-card' : ''} rounded-3xl p-6 flex flex-col justify-between space-y-4 relative border border-white/80 group">
                         <div class="flex items-start justify-between gap-3">
-                            <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-200/80 to-pink-200/80 flex items-center justify-center text-2xl shadow-inner border border-white/60 group-hover:scale-110 transition-transform">
+                            <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr ${isFeatured ? 'from-purple-500 to-pink-500 text-white' : 'from-purple-200/80 to-pink-200/80 text-purple-800'} flex items-center justify-center text-2xl shadow-inner border border-white/60 group-hover:scale-110 transition-transform">
                                 ${renderIcon(project.icon)}
                             </div>
-                            <button onclick="toggleStar('${project.id}')" class="w-8 h-8 rounded-xl glass-button flex items-center justify-center text-xs ${isStar ? 'text-amber-500' : 'text-purple-400 hover:text-purple-600'}">
-                                <i class="${isStar ? 'fa-solid' : 'fa-regular'} fa-star"></i>
-                            </button>
+                            <div class="flex items-center gap-1.5">
+                                ${isFeatured ? `<span class="px-2 py-0.5 text-[9px] font-extrabold bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-md shadow-xs">NEW</span>` : ''}
+                                <button onclick="toggleStar('${project.id}')" class="w-8 h-8 rounded-xl glass-button flex items-center justify-center text-xs ${isStar ? 'text-amber-500' : 'text-purple-400 hover:text-purple-600'}">
+                                    <i class="${isStar ? 'fa-solid' : 'fa-regular'} fa-star"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="space-y-2">
                             <div class="flex items-center justify-between gap-2">
@@ -506,7 +576,7 @@
 
         function renderIcon(iconStr) {
             if (!iconStr) return '📁';
-            if (iconStr.startsWith('fa-')) return `<i class="fa-solid ${iconStr} text-purple-600"></i>`;
+            if (iconStr.startsWith('fa-')) return `<i class="fa-solid ${iconStr}"></i>`;
             return iconStr;
         }
 
@@ -567,6 +637,13 @@
             modal.children[0].classList.remove('scale-100');
             modal.children[0].classList.add('scale-95');
             modal.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        function saveGithubConfig() {
+            githubConfig.username = document.getElementById('cfgUsername').value.trim();
+            githubConfig.repo = document.getElementById('cfgRepo').value.trim();
+            closeModal('githubModal');
+            showToast('GitHub Config Updated!');
         }
 
         function copyJsonData() {
