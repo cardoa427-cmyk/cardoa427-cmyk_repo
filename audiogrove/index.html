@@ -354,6 +354,9 @@
                             <button onclick="exportSynthToUpload()" class="w-full bg-emerald-600 hover:bg-emerald-400 text-slate-950 font-bold py-3 rounded-xl text-sm transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2">
                                 <i class="fa-solid fa-share-from-square"></i> Export to Publish Form
                             </button>
+                            <button onclick="synthSendToEditor()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold py-3 rounded-xl text-sm transition-all flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-layer-group"></i> Edit in the Editor
+                            </button>
                         </div>
                     </div>
 
@@ -638,30 +641,50 @@
             </div>
         </section>
 
-        <!-- TAB: CREATE AUDIO (multi-clip editor) -->
-        <section id="tab-create" class="hidden max-w-3xl mx-auto">
-            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 space-y-4">
-                <h2 class="text-xl font-bold text-slate-100">Create audio</h2>
-                <p class="text-xs text-slate-400">Add up to 6 clips from your device, edit each one, and layer them. Clips can play at the same time. The finished sound can be up to 10 seconds.</p>
-                <label for="mix-file-input" ondragover="event.preventDefault()" ondrop="mixDrop(event)" class="block cursor-pointer border-2 border-dashed border-slate-700 hover:border-emerald-500 rounded-xl p-6 text-center transition-all">
-                    <i class="fa-solid fa-file-audio text-emerald-400 text-2xl mb-2"></i>
-                    <div class="text-sm font-bold text-slate-200">Tap to add audio clips</div>
-                    <div class="text-[11px] text-slate-400 mt-1">Audio files only (MP3, WAV, M4A, OGG, AAC, FLAC). You can pick several at once or drop them here.</div>
-                </label>
-                <input id="mix-file-input" type="file" accept="audio/*,.mp3,.wav,.ogg,.oga,.m4a,.aac,.flac,.webm,.opus,.aif,.aiff,.caf" multiple class="sr-only" onchange="mixAddFiles(event)">
-                <div id="mix-total" class="text-xs text-slate-400"></div>
-                <div id="mix-timeline-wrap" class="hidden">
-                    <canvas id="mix-timeline" class="w-full rounded-xl bg-slate-950 border border-slate-800"></canvas>
-                    <p class="text-[10px] text-slate-500 mt-1">Timeline: each row is a clip, placed where it starts. Cuts, fades, volume and speed change its shape live. The red line is the 10-second limit.</p>
+        <!-- TAB: CREATE AUDIO (timeline editor) -->
+        <section id="tab-create" class="hidden max-w-6xl mx-auto">
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-hidden flex flex-col" style="height: calc(100vh - 340px); min-height: 540px;">
+                <!-- toolbar: always visible, so Play never scrolls away -->
+                <div class="px-3 py-2 border-b border-slate-800 space-y-2">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button id="ed-play-btn" onclick="edPlayPause()" title="Play / pause (Space)" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold w-11 h-9 rounded-lg"><i class="fa-solid fa-play"></i></button>
+                        <button onclick="edStop()" title="Stop" class="w-11 h-9 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"><i class="fa-solid fa-stop"></i></button>
+                        <button id="ed-loop-btn" onclick="edToggleLoop()" title="Loop playback" class="w-11 h-9 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300"><i class="fa-solid fa-repeat"></i></button>
+                        <span id="ed-time" class="text-xs font-mono text-slate-200 w-16">0.00s</span>
+                        <span id="ed-info" class="text-xs text-slate-400"></span>
+                        <div class="flex items-center gap-2 ml-auto">
+                            <span class="text-[11px] text-slate-400 whitespace-nowrap">Track speed <b id="ed-speed-val" class="text-emerald-400 font-mono">1.00x</b></span>
+                            <input id="ed-speed" type="range" min="0.5" max="2" step="0.05" value="1" oninput="edSpeedSet(this.value)" class="w-32 accent-emerald-500">
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 text-xs">
+                        <label for="ed-file-input" class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg"><i class="fa-solid fa-plus mr-1.5"></i>Add clips</label>
+                        <input id="ed-file-input" type="file" accept="audio/*,.mp3,.wav,.ogg,.oga,.m4a,.aac,.flac,.webm,.opus,.aif,.aiff,.caf" multiple class="sr-only" onchange="edAddFiles(event)">
+                        <button onclick="edAddTrack()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg"><i class="fa-solid fa-bars mr-1.5"></i>Track</button>
+                        <button onclick="edSplit()" title="Split the selected clip at the playhead (S)" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 px-3 py-2 rounded-lg"><i class="fa-solid fa-scissors mr-1.5"></i>Split</button>
+                        <button onclick="edCopy()" title="Copy (Ctrl/Cmd+C)" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg"><i class="fa-solid fa-copy mr-1.5"></i>Copy</button>
+                        <button onclick="edPaste()" title="Paste at the playhead (Ctrl/Cmd+V)" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg"><i class="fa-solid fa-paste mr-1.5"></i>Paste</button>
+                        <button onclick="edDuplicate()" title="Duplicate (Ctrl/Cmd+D)" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg"><i class="fa-solid fa-clone mr-1.5"></i>Duplicate</button>
+                        <button onclick="edDelete()" title="Delete (Delete key)" class="bg-red-500/15 hover:bg-red-500/25 text-red-300 px-3 py-2 rounded-lg"><i class="fa-solid fa-trash mr-1.5"></i>Delete</button>
+                        <div class="ml-auto flex gap-2">
+                            <button onclick="edDownload()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg"><i class="fa-solid fa-download mr-1.5"></i>Download</button>
+                            <button onclick="edToPublish()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-2 rounded-lg"><i class="fa-solid fa-cloud-arrow-up mr-1.5"></i>Continue to Publish</button>
+                        </div>
+                    </div>
                 </div>
-                <div id="mix-list" class="space-y-3"></div>
-                <div id="mix-actions" class="hidden flex flex-wrap gap-2">
-                    <button onclick="mixPlay()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-sm"><i class="fa-solid fa-play mr-2"></i>Play mix</button>
-                    <button onclick="mixStop()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2.5 rounded-xl text-sm">Stop</button>
-                    <button onclick="mixDownload()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2.5 rounded-xl text-sm"><i class="fa-solid fa-download mr-2"></i>Download</button>
-                    <button onclick="mixToPublish()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2.5 rounded-xl text-sm ml-auto"><i class="fa-solid fa-cloud-arrow-up mr-2"></i>Continue to Publish</button>
+                <!-- timeline -->
+                <div id="ed-scroll" class="flex-1 relative overflow-auto" ondragover="event.preventDefault()" ondrop="edDrop(event)">
+                    <div id="ed-inner" class="relative"></div>
+                    <div id="ed-empty" class="hidden absolute inset-0 flex items-center justify-center text-center p-6 pointer-events-none">
+                        <div class="bg-slate-900/90 border border-slate-700 rounded-2xl px-6 py-5 max-w-sm pointer-events-auto">
+                            <i class="fa-solid fa-file-audio text-emerald-400 text-2xl mb-2"></i>
+                            <div class="text-sm font-bold text-slate-100">Add audio to start</div>
+                            <p class="text-xs text-slate-400 mt-1">Tap <b>Add clips</b> (audio files only), drop files here, or send a recording or synth sound here from the Record and 8-Bit Synth tabs.</p>
+                        </div>
+                    </div>
                 </div>
-                <p class="text-[10px] text-slate-500">On the Publish page you choose Public or Private. Download saves the sound to your device without publishing it. Anything past 10 seconds is cut off.</p>
+                <!-- selected clip -->
+                <div id="ed-inspector" class="border-t border-slate-800 p-3 max-h-52 overflow-auto"></div>
             </div>
         </section>
 
@@ -2016,6 +2039,8 @@
                 renderProfile();
             } else if (tabId === 'homeboard') {
                 renderSoundboard();
+            } else if (tabId === 'create') {
+                requestAnimationFrame(editorRender);
             } else if (tabId === 'settings') {
                 updateThemeButtons();
                 blocksLoadedFor = null; loadBlocks();
@@ -2262,6 +2287,19 @@
 
             osc.start(now);
             osc.stop(now + synthParams.attack + synthParams.decay);
+        }
+
+        async function synthSendToEditor() {
+            try {
+                const samples = await renderSynthToWav(synthParams, true);
+                const c = editorAddClip({ name: 'Synth (' + synthParams.wave + ')', data: Float32Array.from(samples), sr: 44100 });
+                if (!c) return;
+                switchTab('create');
+                showToast("Your synth sound is in the editor.", "success");
+            } catch (err) {
+                console.error(err);
+                showToast("Could not send the synth sound to the editor.", "error");
+            }
         }
 
         function exportSynthToUpload() {
@@ -2572,72 +2610,22 @@
             }
         }
 
-        // ===== CREATE AUDIO: MULTI-CLIP EDITOR =====
-        const MIX_MAX_SEC = 10, MIX_MAX_CLIPS = 6, MIX_MAX_SOURCE_SEC = 60;
-        let mixClips = [], mixNextId = 1, mixSource = null;
+        // ===== CREATE AUDIO: TIMELINE EDITOR =====
+        const ED_MAX_SEC = 10, ED_MAX_CLIPS = 12, ED_MAX_ROWS = 8, ED_ROW_H = 58, ED_LABEL_W = 64, ED_RULER_H = 26, ED_MAX_SOURCE_SEC = 60;
+        const ED_COLORS = ['#10b981', '#6366f1', '#f59e0b', '#ef4444', '#06b6d4', '#a855f7', '#ec4899', '#84cc16'];
+        const ED_AUDIO_EXT = /\.(mp3|wav|ogg|oga|m4a|aac|flac|webm|opus|aif|aiff|caf|mp4)$/i;
+        let edClips = [], edNextId = 1, edSel = null, edRows = 3, edPPS = 80, edSpeed = 1, edPlayhead = 0, edLoop = false, edClipboard = null;
+        let edSource = null, edPlayT0 = 0, edPlayFrom = 0, edPlayLen = 0, edRaf = null, edCache = null, edDirty = true, edDrag = null, edScrubbing = false, edFlash = [];
 
-        const mixFmt = (k, v) => k === 'speed' ? v.toFixed(2) + 'x' : k === 'pitch' ? ((v > 0 ? '+' : '') + v) : k === 'vol' ? Math.round(v * 100) + '%' : v.toFixed(2) + 's';
-        const mixDur = c => (c.tOut - c.tIn) / c.speed;
+        const edDur1 = c => (c.tOut - c.tIn) / c.speed;           // one repeat, in the clip's own seconds
+        const edDur = c => edDur1(c) * c.loops;
+        const edEnd = () => edClips.reduce((m, c) => Math.max(m, c.off + edDur(c)), 0);
+        const edFmt = (k, v) => k === 'speed' ? (+v).toFixed(2) + 'x' : k === 'pitch' ? ((v > 0 ? '+' : '') + v) : k === 'vol' ? Math.round(v * 100) + '%' : k === 'loops' ? '×' + v : (+v).toFixed(1) + 's';
+        const edVisible = () => { const t = document.getElementById('tab-create'); return t && !t.classList.contains('hidden'); };
 
-        const MIX_AUDIO_EXT = /\.(mp3|wav|ogg|oga|m4a|aac|flac|webm|opus|aif|aiff|caf|mp4)$/i;
-        function mixDrop(e) { e.preventDefault(); mixAddFileList(Array.from((e.dataTransfer && e.dataTransfer.files) || [])); }
-        async function mixAddFiles(e) {
-            const files = Array.from(e.target.files || []);
-            e.target.value = '';
-            await mixAddFileList(files);
-        }
-        async function mixAddFileList(files) {
-            for (const file of files) {
-                if (!((file.type || '').startsWith('audio/') || MIX_AUDIO_EXT.test(file.name))) { showToast(file.name + " isn't an audio file, so it was skipped.", "error"); continue; }
-                if (mixClips.length >= MIX_MAX_CLIPS) { showToast("You can use up to " + MIX_MAX_CLIPS + " clips.", "info"); break; }
-                if (file.size > 10 * 1024 * 1024) { showToast(file.name + " is larger than 10 MB.", "error"); continue; }
-                try {
-                    const ctx = getRecCtx(); ctx.resume();
-                    const audio = await decodeAudioCompat(ctx, await file.arrayBuffer());
-                    const len = Math.min(audio.length, Math.floor(MIX_MAX_SOURCE_SEC * audio.sampleRate));
-                    const mono = new Float32Array(len);
-                    for (let ch = 0; ch < audio.numberOfChannels; ch++) { const d = audio.getChannelData(ch); for (let i = 0; i < len; i++) mono[i] += d[i] / audio.numberOfChannels; }
-                    const dur = len / audio.sampleRate;
-                    if (audio.length > len) showToast(file.name + " is long. Only the first " + MIX_MAX_SOURCE_SEC + " seconds were loaded.", "info");
-                    mixClips.push({ id: mixNextId++, name: file.name, data: mono, sr: audio.sampleRate, dur, off: 0, tIn: 0, tOut: dur, split: dur / 2, fadeIn: 0, fadeOut: 0, speed: 1, pitch: 0, vol: 1 });
-                } catch (err) { console.error(err); showToast("Could not read " + file.name + " as audio (" + ((err && err.message) || "unsupported format") + ").", "error"); }
-            }
-            renderMixList();
-        }
-
-        function mixSlider(c, key, label, min, max, step) {
-            const v = c[key];
-            return `<div><div class="flex justify-between text-[11px] text-slate-400 mb-0.5"><span>${label}</span><span id="mx-${c.id}-${key}-val" class="text-emerald-400 font-mono">${mixFmt(key, v)}</span></div>
-                <input id="mx-${c.id}-${key}" type="range" min="${min}" max="${max}" step="${step}" value="${v}" oninput="mixSet(${c.id},'${key}',this.value)" class="w-full accent-emerald-500"></div>`;
-        }
-
-        function renderMixList() {
-            const list = document.getElementById('mix-list');
-            list.innerHTML = mixClips.map(c => `
-                <div id="mx-card-${c.id}" class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3 transition-all">
-                    <div class="flex justify-between items-center gap-2"><b class="text-sm text-slate-100 truncate">${esc(c.name)}</b><button onclick="mixRemove(${c.id})" class="text-xs text-red-400 hover:text-red-300 shrink-0">Remove</button></div>
-                    <canvas id="mx-wave-${c.id}" width="600" height="64" class="w-full h-16 rounded-lg bg-slate-900"></canvas>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        ${mixSlider(c, 'off', 'Starts at (timeline)', 0, MIX_MAX_SEC, 0.01)}
-                        ${mixSlider(c, 'tIn', 'Cut: start', 0, c.dur.toFixed(2), 0.01)}
-                        ${mixSlider(c, 'tOut', 'Cut: end', 0, c.dur.toFixed(2), 0.01)}
-                        ${mixSlider(c, 'fadeIn', 'Fade in', 0, 3, 0.1)}
-                        ${mixSlider(c, 'fadeOut', 'Fade out', 0, 3, 0.1)}
-                        ${mixSlider(c, 'vol', 'Volume', 0, 1.5, 0.05)}
-                        ${mixSlider(c, 'speed', 'Speed (changes pitch)', 0.5, 2, 0.05)}
-                        ${mixSlider(c, 'pitch', 'Pitch (keeps length)', -12, 12, 1)}
-                        ${mixSlider(c, 'split', 'Split point', 0, c.dur.toFixed(2), 0.01)}
-                    </div>
-                    <button onclick="mixSplit(${c.id})" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200">Split into two clips at the split point</button>
-                </div>`).join('');
-            mixClips.forEach(drawMixWave);
-            document.getElementById('mix-actions').classList.toggle('hidden', !mixClips.length);
-            updateMixTotal();
-        }
-
-        function mixPeaks(c) {
+        function edPeaks(c) {
             if (c.peaks) return c.peaks;
-            const N = 600, mn = new Float32Array(N), mx = new Float32Array(N), step = Math.max(1, Math.floor(c.data.length / N));
+            const N = 1200, mn = new Float32Array(N), mx = new Float32Array(N), step = Math.max(1, Math.floor(c.data.length / N));
             for (let x = 0; x < N; x++) {
                 let lo = 1, hi = -1;
                 for (let i = x * step; i < Math.min(c.data.length, (x + 1) * step); i++) { const v = c.data[i]; if (v < lo) lo = v; if (v > hi) hi = v; }
@@ -2646,170 +2634,316 @@
             return (c.peaks = { mn, mx, N });
         }
 
-        // The clip's own waveform: used part bright, cut-away parts dimmed, fade ramps and the split marker shown
-        function drawMixWave(c) {
-            const cv = document.getElementById('mx-wave-' + c.id);
-            if (!cv) return;
-            const ctx = cv.getContext('2d'), W = cv.width, H = cv.height, pk = mixPeaks(c), px = t => t / c.dur * W;
+        function edFindRow(off, dur, pref) {
+            const free = r => !edClips.some(x => x.row === r && x.off < off + dur - 0.001 && off < x.off + edDur(x) - 0.001);
+            for (let r = pref; r < ED_MAX_ROWS; r++) if (free(r)) { edRows = Math.max(edRows, r + 1); return r; }
+            for (let r = 0; r < pref; r++) if (free(r)) return r;
+            return pref;
+        }
+
+        // Used by the file picker, the recorder and the 8-bit synth
+        function editorAddClip(o) {
+            if (edClips.length >= ED_MAX_CLIPS) { showToast("The editor can hold up to " + ED_MAX_CLIPS + " clips.", "info"); return null; }
+            const SR = getRecCtx().sampleRate;
+            let data = o.data, sr = o.sr;
+            if (Math.abs(sr - SR) > 1) { data = recResample(data, sr / SR); sr = SR; }
+            const dur = data.length / sr;
+            const c = { id: edNextId++, name: o.name || 'Clip', data, sr, dur, off: o.off || 0, tIn: 0, tOut: dur, row: 0, color: o.color || ED_COLORS[edClips.length % ED_COLORS.length], fadeIn: 0, fadeOut: 0, speed: 1, pitch: 0, vol: 1, loops: 1 };
+            c.row = o.row != null ? o.row : edFindRow(c.off, edDur(c), 0);
+            edClips.push(c); edSel = c.id; edDirty = true;
+            if (edVisible()) editorRender();
+            return c;
+        }
+
+        async function edAddFiles(e) { const files = Array.from(e.target.files || []); e.target.value = ''; await edAddFileList(files); }
+        function edDrop(e) { e.preventDefault(); edAddFileList(Array.from((e.dataTransfer && e.dataTransfer.files) || [])); }
+        async function edAddFileList(files) {
+            for (const file of files) {
+                if (!((file.type || '').startsWith('audio/') || ED_AUDIO_EXT.test(file.name))) { showToast(file.name + " isn't an audio file, so it was skipped.", "error"); continue; }
+                if (file.size > 10 * 1024 * 1024) { showToast(file.name + " is larger than 10 MB.", "error"); continue; }
+                try {
+                    const ctx = getRecCtx(); ctx.resume();
+                    const audio = await decodeAudioCompat(ctx, await file.arrayBuffer());
+                    const len = Math.min(audio.length, Math.floor(ED_MAX_SOURCE_SEC * audio.sampleRate));
+                    const mono = new Float32Array(len);
+                    for (let ch = 0; ch < audio.numberOfChannels; ch++) { const d = audio.getChannelData(ch); for (let i = 0; i < len; i++) mono[i] += d[i] / audio.numberOfChannels; }
+                    if (audio.length > len) showToast(file.name + " is long. Only the first " + ED_MAX_SOURCE_SEC + " seconds were loaded.", "info");
+                    if (!editorAddClip({ name: file.name.replace(/\.[a-z0-9]+$/i, ''), data: mono, sr: audio.sampleRate })) break;
+                } catch (err) { console.error(err); showToast("Could not read " + file.name + " as audio (" + ((err && err.message) || "unsupported format") + ").", "error"); }
+            }
+        }
+
+        // ----- drawing -----
+        function editorRender() {
+            const scroll = document.getElementById('ed-scroll'), inner = document.getElementById('ed-inner');
+            if (!scroll || scroll.clientWidth < 50) return;
+            const laneW = Math.max(280, scroll.clientWidth - ED_LABEL_W - 2);
+            edPPS = laneW / ED_MAX_SEC;
+            edRows = Math.min(ED_MAX_ROWS, Math.max(edRows, 3, ...edClips.map(c => c.row + 1)));
+            inner.style.width = (ED_LABEL_W + laneW) + 'px';
+            inner.style.height = (ED_RULER_H + edRows * ED_ROW_H) + 'px';
+            let h = `<div id="ed-ruler" style="position:absolute;left:${ED_LABEL_W}px;top:0;width:${laneW}px;height:${ED_RULER_H}px;touch-action:none;cursor:pointer" class="border-b border-slate-800">`;
+            for (let sec = 0; sec <= ED_MAX_SEC; sec++) h += `<div style="position:absolute;left:${sec * edPPS}px;top:0;height:${ED_RULER_H}px;border-left:1px solid rgba(148,163,184,.4);padding-left:3px;font-size:10px;line-height:26px;color:#94a3b8;pointer-events:none">${sec}s</div>`;
+            h += '</div>';
+            for (let r = 0; r < edRows; r++) h += `<div style="position:absolute;left:0;top:${ED_RULER_H + r * ED_ROW_H}px;width:${ED_LABEL_W + laneW}px;height:${ED_ROW_H}px" class="border-b border-slate-800 ${r % 2 ? 'bg-slate-900/40' : 'bg-slate-950/50'}"><div style="width:${ED_LABEL_W}px" class="h-full flex items-center justify-center text-[10px] text-slate-500 border-r border-slate-800">Track ${r + 1}</div></div>`;
+            h += `<div style="position:absolute;left:${ED_LABEL_W}px;top:${ED_RULER_H}px;width:${laneW}px;height:${edRows * ED_ROW_H}px;pointer-events:none;background-image:repeating-linear-gradient(to right, rgba(148,163,184,.2) 0, rgba(148,163,184,.2) 1px, transparent 1px, transparent ${edPPS}px)"></div>`;
+            h += `<div style="position:absolute;left:${ED_LABEL_W + laneW - 2}px;top:0;width:2px;height:100%;background:#ef4444;pointer-events:none" title="10 second limit"></div>`;
+            h += `<div id="ed-layer" style="position:absolute;left:${ED_LABEL_W}px;top:${ED_RULER_H}px;width:${laneW}px;height:${edRows * ED_ROW_H}px"></div>`;
+            h += `<div id="ed-playhead" style="position:absolute;top:0;width:2px;height:100%;background:#f8fafc;box-shadow:0 0 0 1px rgba(15,23,42,.5);pointer-events:none;z-index:5"><div style="position:absolute;top:0;left:-5px;border:6px solid transparent;border-top:9px solid #f8fafc;border-bottom:0"></div></div>`;
+            inner.innerHTML = h;
+            edClips.forEach(edBuildClip);
+            edUpdatePlayhead();
+            edInfo();
+            edInspector();
+            document.getElementById('ed-empty').classList.toggle('hidden', edClips.length > 0);
+            if (!inner._bound) {
+                inner._bound = true;
+                const scrub = e => {
+                    const x = e.clientX - inner.getBoundingClientRect().left - ED_LABEL_W;
+                    if (x < 0) return;
+                    edPlayhead = Math.max(0, Math.min(ED_MAX_SEC, x / edPPS));
+                    if (edSource) { edStopSource(); edPlay(); } else edUpdatePlayhead();
+                };
+                inner.addEventListener('pointerdown', e => {
+                    if (e.target.closest('.ed-clip')) return;
+                    if (e.target.closest('#ed-ruler')) { edScrubbing = true; inner.setPointerCapture(e.pointerId); }
+                    else if (edSel !== null) { edSel = null; edRefreshSelection(); edInspector(); }
+                    scrub(e);
+                });
+                inner.addEventListener('pointermove', e => { if (edScrubbing) scrub(e); });
+                inner.addEventListener('pointerup', () => { edScrubbing = false; });
+            }
+        }
+
+        function edDrawClip(c, cv) {
+            const ctx = cv.getContext('2d'), W = cv.width, H = cv.height, pk = edPeaks(c), lw = W / c.loops, dur1 = edDur1(c);
             ctx.clearRect(0, 0, W, H);
-            const x0 = px(c.tIn), x1 = px(c.tOut);
-            for (const used of [false, true]) {
-                ctx.strokeStyle = used ? '#10b981' : '#64748b'; ctx.globalAlpha = used ? 1 : 0.45; ctx.beginPath();
-                for (let x = 0; x < W; x++) {
-                    const inUsed = x >= x0 && x <= x1;
-                    if (inUsed !== used) continue;
-                    const i = Math.min(pk.N - 1, Math.floor(x / W * pk.N));
-                    ctx.moveTo(x, (1 - pk.mx[i]) * H / 2); ctx.lineTo(x, (1 - pk.mn[i]) * H / 2 + 1);
-                }
-                ctx.stroke();
+            const mid = H / 2 + 5, amp = H / 2 - 9;
+            ctx.strokeStyle = 'rgba(255,255,255,0.92)'; ctx.lineWidth = 1; ctx.beginPath();
+            for (let l = 0; l < c.loops; l++) for (let x = 0; x < lw; x++) {
+                const frac = x / lw, src = c.tIn + frac * (c.tOut - c.tIn), idx = Math.min(pk.N - 1, Math.floor(src / c.dur * pk.N)), t = frac * dur1;
+                let env = c.vol;
+                if (c.fadeIn > 0) env *= Math.min(1, t / c.fadeIn);
+                if (c.fadeOut > 0) env *= Math.min(1, (dur1 - t) / c.fadeOut);
+                env = Math.min(1.3, env);
+                const X = l * lw + x + 0.5;
+                ctx.moveTo(X, mid - pk.mx[idx] * env * amp); ctx.lineTo(X, mid - pk.mn[idx] * env * amp + 1);
             }
-            ctx.globalAlpha = 1;
-            // cut-away areas shaded
-            ctx.fillStyle = 'rgba(100,116,139,0.18)';
-            ctx.fillRect(0, 0, x0, H); ctx.fillRect(x1, 0, W - x1, H);
-            // fade ramps (shade the part of the wave that is turned down)
-            const fadeShade = (xa, xb, rising) => {
-                ctx.fillStyle = 'rgba(245,158,11,0.28)'; ctx.beginPath();
-                if (rising) { ctx.moveTo(xa, 0); ctx.lineTo(xb, 0); ctx.lineTo(xa, H); } else { ctx.moveTo(xb, 0); ctx.lineTo(xa, 0); ctx.lineTo(xb, H); }
-                ctx.closePath(); ctx.fill();
-            };
-            if (c.fadeIn > 0) fadeShade(x0, Math.min(x1, x0 + px(c.fadeIn * c.speed)), true);
-            if (c.fadeOut > 0) fadeShade(Math.max(x0, x1 - px(c.fadeOut * c.speed)), x1, false);
-            // cut handles
-            ctx.fillStyle = '#10b981'; ctx.fillRect(x0 - 1, 0, 3, H); ctx.fillRect(x1 - 1, 0, 3, H);
-            // split marker
-            const sx = px(c.split);
-            ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2; ctx.setLineDash([5, 4]); ctx.beginPath(); ctx.moveTo(sx, 0); ctx.lineTo(sx, H); ctx.stroke(); ctx.setLineDash([]);
-            ctx.fillStyle = '#f59e0b'; ctx.font = 'bold 11px sans-serif'; ctx.fillText('split', Math.min(W - 34, sx + 4), 11);
+            ctx.stroke();
+            if (c.loops > 1) {
+                ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.setLineDash([3, 3]);
+                for (let l = 1; l < c.loops; l++) { ctx.beginPath(); ctx.moveTo(l * lw, 0); ctx.lineTo(l * lw, H); ctx.stroke(); }
+                ctx.setLineDash([]);
+            }
         }
 
-        let mixPlayhead = null, mixFlashIds = [];
-        // All clips on one 0-10 second timeline, drawn the way they will sound
-        function drawMixTimeline() {
-            const wrap = document.getElementById('mix-timeline-wrap'), cv = document.getElementById('mix-timeline');
-            if (!cv) return;
-            wrap.classList.toggle('hidden', !mixClips.length);
-            if (!mixClips.length) return;
-            const W = 900, laneH = 46, top = 20;
-            cv.width = W; cv.height = top + mixClips.length * laneH + 6;
-            const ctx = cv.getContext('2d'), X = t => t / MIX_MAX_SEC * W;
-            ctx.clearRect(0, 0, W, cv.height);
-            ctx.font = '10px sans-serif'; ctx.textBaseline = 'alphabetic';
-            for (let sec = 0; sec <= MIX_MAX_SEC; sec++) {
-                ctx.strokeStyle = 'rgba(148,163,184,0.25)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(X(sec) + 0.5, 12); ctx.lineTo(X(sec) + 0.5, cv.height); ctx.stroke();
-                ctx.fillStyle = '#94a3b8'; ctx.fillText(sec + 's', Math.min(W - 16, X(sec) + 3), 10);
-            }
-            mixClips.forEach((c, i) => {
-                const y = top + i * laneH + 3, h = laneH - 6, dur = mixDur(c), bx = X(c.off), bw = Math.max(2, X(dur));
-                const flash = mixFlashIds.includes(c.id), pk = mixPeaks(c);
-                ctx.fillStyle = flash ? 'rgba(245,158,11,0.28)' : 'rgba(16,185,129,0.16)'; ctx.fillRect(bx, y, bw, h);
-                ctx.strokeStyle = flash ? '#f59e0b' : '#10b981'; ctx.lineWidth = flash ? 2.5 : 1.5; ctx.strokeRect(bx + 0.5, y + 0.5, bw - 1, h - 1);
-                // the waveform as it will sound: volume + fades change its height
-                ctx.strokeStyle = flash ? '#fbbf24' : '#10b981'; ctx.lineWidth = 1; ctx.beginPath();
-                const mid = y + h / 2;
-                for (let xp = 0; xp < bw; xp++) {
-                    if (bx + xp > W) break;
-                    const frac = xp / bw, tOutSec = frac * dur;
-                    const src = c.tIn + frac * (c.tOut - c.tIn), idx = Math.min(pk.N - 1, Math.floor(src / c.dur * pk.N));
-                    let env = c.vol;
-                    if (c.fadeIn > 0) env *= Math.min(1, tOutSec / c.fadeIn);
-                    if (c.fadeOut > 0) env *= Math.min(1, (dur - tOutSec) / c.fadeOut);
-                    env = Math.min(1.2, env);
-                    ctx.moveTo(bx + xp + 0.5, mid - pk.mx[idx] * env * (h / 2 - 2)); ctx.lineTo(bx + xp + 0.5, mid - pk.mn[idx] * env * (h / 2 - 2) + 1);
-                }
-                ctx.stroke();
-                // part beyond 10 s is cut off
-                if (c.off + dur > MIX_MAX_SEC) { ctx.fillStyle = 'rgba(239,68,68,0.35)'; ctx.fillRect(W, y, 0, h); ctx.fillRect(X(MIX_MAX_SEC), y, bx + bw - X(MIX_MAX_SEC), h); }
-                // label
-                ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 10px sans-serif';
-                const tag = c.name.replace(/\.[a-z0-9]+$/i, '').slice(0, 22) + (c.pitch ? '  ' + (c.pitch > 0 ? '+' : '') + c.pitch + ' st' : '') + (c.speed !== 1 ? '  ' + c.speed.toFixed(2) + 'x' : '');
-                ctx.save(); ctx.beginPath(); ctx.rect(bx, y, bw, h); ctx.clip(); ctx.fillStyle = 'rgba(15,23,42,0.75)'; ctx.fillRect(bx, y, Math.min(bw, ctx.measureText(tag).width + 8), 13); ctx.fillStyle = '#e2e8f0'; ctx.fillText(tag, bx + 4, y + 10); ctx.restore();
+        function edPlaceClip(c, el, redraw) {
+            const w = Math.max(6, edDur(c) / edSpeed * edPPS), sel = c.id === edSel, flash = edFlash.includes(c.id);
+            el.style.left = (c.off / edSpeed * edPPS) + 'px';
+            el.style.top = (c.row * ED_ROW_H + 3) + 'px';
+            el.style.width = w + 'px';
+            el.style.height = (ED_ROW_H - 6) + 'px';
+            el.style.background = c.color + 'd9';
+            el.style.border = flash ? '2px solid #fbbf24' : sel ? '2px solid #ffffff' : '1px solid rgba(255,255,255,0.4)';
+            el.style.zIndex = sel ? 3 : 2;
+            el.querySelector('.ed-name').textContent = c.name + (c.loops > 1 ? '  ×' + c.loops : '') + (c.speed !== 1 ? '  ' + c.speed.toFixed(2) + 'x' : '') + (c.pitch ? '  ' + (c.pitch > 0 ? '+' : '') + c.pitch + 'st' : '');
+            const cv = el.querySelector('canvas');
+            const pw = Math.round(w);
+            if (redraw !== false || cv.width !== pw) { cv.width = pw; cv.height = ED_ROW_H - 6; edDrawClip(c, cv); }
+        }
+
+        function edBuildClip(c) {
+            const layer = document.getElementById('ed-layer');
+            const el = document.createElement('div');
+            el.className = 'ed-clip'; el.dataset.id = c.id;
+            el.style.cssText = 'position:absolute;touch-action:none;border-radius:8px;overflow:hidden;cursor:grab;user-select:none;-webkit-user-select:none;';
+            el.innerHTML = '<canvas style="position:absolute;inset:0;width:100%;height:100%"></canvas>' +
+                '<span class="ed-name" style="position:absolute;left:8px;top:2px;right:8px;font:700 10px sans-serif;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.7);pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span>' +
+                '<div class="ed-hl" style="position:absolute;left:0;top:0;bottom:0;width:12px;cursor:ew-resize;background:linear-gradient(to right,rgba(255,255,255,.45),transparent)"></div>' +
+                '<div class="ed-hr" style="position:absolute;right:0;top:0;bottom:0;width:12px;cursor:ew-resize;background:linear-gradient(to left,rgba(255,255,255,.45),transparent)"></div>';
+            layer.appendChild(el);
+            edPlaceClip(c, el, true);
+            el.addEventListener('pointerdown', e => {
+                e.stopPropagation();
+                edSel = c.id; edRefreshSelection(); edInspector();
+                const mode = e.target.classList.contains('ed-hl') ? 'L' : e.target.classList.contains('ed-hr') ? 'R' : 'M';
+                edDrag = { c, el, mode, x0: e.clientX, off0: c.off, tIn0: c.tIn, tOut0: c.tOut, moved: false };
+                el.setPointerCapture(e.pointerId); el.style.cursor = 'grabbing';
             });
-            // 10 second limit
-            ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(W - 1, 12); ctx.lineTo(W - 1, cv.height); ctx.stroke();
-            // playhead
-            if (mixPlayhead !== null) { ctx.strokeStyle = '#f8fafc'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(X(mixPlayhead), 12); ctx.lineTo(X(mixPlayhead), cv.height); ctx.stroke(); }
+            el.addEventListener('pointermove', e => {
+                if (!edDrag || edDrag.el !== el) return;
+                const d = edDrag, dReal = (e.clientX - d.x0) / edPPS * edSpeed;
+                if (Math.abs(e.clientX - d.x0) > 2 || d.moved) d.moved = true; else return;
+                if (d.mode === 'M') {
+                    c.off = Math.max(0, d.off0 + dReal);
+                    const rect = document.getElementById('ed-layer').getBoundingClientRect();
+                    c.row = Math.max(0, Math.min(edRows - 1, Math.floor((e.clientY - rect.top) / ED_ROW_H)));
+                } else if (d.mode === 'L') {
+                    const dd = Math.max(-Math.min(d.off0, d.tIn0 / c.speed), Math.min(dReal, (d.tOut0 - d.tIn0) / c.speed - 0.05));
+                    c.off = d.off0 + dd; c.tIn = d.tIn0 + dd * c.speed;
+                } else if (c.loops === 1) {
+                    c.tOut = Math.max(d.tIn0 + 0.05 * c.speed, Math.min(c.dur, d.tOut0 + dReal * c.speed));
+                }
+                edPlaceClip(c, el, d.mode !== 'M');
+            });
+            const end = () => {
+                if (!edDrag || edDrag.el !== el) return;
+                const moved = edDrag.moved; edDrag = null; el.style.cursor = 'grab';
+                if (moved) { edDirty = true; editorRender(); }
+            };
+            el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
         }
 
-        function mixSet(id, key, val) {
-            const c = mixClips.find(x => x.id === id);
-            if (!c) return;
-            let v = +val;
-            if (key === 'tIn') v = Math.min(v, c.tOut - 0.05);
-            if (key === 'tOut') v = Math.max(v, c.tIn + 0.05);
-            c[key] = v;
-            const lab = document.getElementById(`mx-${id}-${key}-val`);
-            if (lab) lab.textContent = mixFmt(key, v);
-            if (key === 'tIn' || key === 'tOut') { const el = document.getElementById(`mx-${id}-${key}`); if (el && +el.value !== v) el.value = v; }
-            drawMixWave(c);
-            updateMixTotal();
+        function edRefreshSelection() {
+            document.querySelectorAll('.ed-clip').forEach(el => { const c = edClips.find(x => x.id === +el.dataset.id); if (c) edPlaceClip(c, el, false); });
         }
 
-        function mixRemove(id) { mixClips = mixClips.filter(c => c.id !== id); renderMixList(); }
-
-        function mixSplit(id) {
-            const i = mixClips.findIndex(c => c.id === id), c = mixClips[i];
-            if (!c) return;
-            if (mixClips.length >= MIX_MAX_CLIPS) { showToast("You can use up to " + MIX_MAX_CLIPS + " clips.", "info"); return; }
-            const m = c.split;
-            if (m <= c.tIn + 0.05 || m >= c.tOut - 0.05) { showToast("Move the split point inside the part of the clip you're using.", "error"); return; }
-            const b = { ...c, id: mixNextId++, name: c.name + ' (part 2)', tIn: m, tOut: c.tOut, fadeIn: 0, off: c.off + (m - c.tIn) / c.speed };
-            c.tOut = m; c.fadeOut = 0;
-            mixClips.splice(i + 1, 0, b);
-            mixFlashIds = [c.id, b.id];
-            renderMixList();
-            ['mx-card-' + c.id, 'mx-card-' + b.id].forEach(cid => { const el = document.getElementById(cid); if (el) { el.classList.add('ring-2', 'ring-amber-400'); setTimeout(() => el.classList.remove('ring-2', 'ring-amber-400'), 1200); } });
-            setTimeout(() => { mixFlashIds = []; drawMixTimeline(); }, 1200);
-            showToast("Clip split into two parts. Each part can now be moved and edited separately.", "success");
+        function edUpdatePlayhead() {
+            const ph = document.getElementById('ed-playhead');
+            if (ph) ph.style.left = (ED_LABEL_W + edPlayhead * edPPS - 1) + 'px';
+            const t = document.getElementById('ed-time');
+            if (t) t.textContent = edPlayhead.toFixed(2) + 's';
         }
 
-        function updateMixTotal() {
-            const total = mixClips.reduce((mx, c) => Math.max(mx, c.off + mixDur(c)), 0);
-            const el = document.getElementById('mix-total');
+        function edInfo() {
+            const el = document.getElementById('ed-info');
             if (!el) return;
-            el.textContent = mixClips.length ? `Total length ${total.toFixed(1)}s of ${MIX_MAX_SEC}s` + (total > MIX_MAX_SEC ? ' (the end will be cut off)' : '') : 'No clips yet.';
-            el.className = 'text-xs ' + (total > MIX_MAX_SEC ? 'text-amber-400' : 'text-slate-400');
-            drawMixTimeline();
+            const total = edEnd() / edSpeed;
+            el.textContent = edClips.length ? `Length ${total.toFixed(1)}s of ${ED_MAX_SEC}s` + (total > ED_MAX_SEC ? ' (the end is cut off)' : '') : '';
+            el.className = 'text-xs ' + (total > ED_MAX_SEC ? 'text-amber-400' : 'text-slate-400');
         }
 
-        function mixRender() {
-            const SR = getRecCtx().sampleRate, MAX = MIX_MAX_SEC * SR;
-            let out = new Float32Array(MAX), end = 0;
-            mixClips.forEach(c => {
+        function edInspector() {
+            const box = document.getElementById('ed-inspector');
+            if (!box) return;
+            const c = edClips.find(x => x.id === edSel);
+            if (!c) { box.innerHTML = '<p class="text-xs text-slate-400">Tap a clip to edit it. Drag a clip to move it (drag up or down to change track), drag its edges to trim it, tap the ruler to place the playhead, then press Split.</p>'; return; }
+            const sl = (key, label, min, max, step) => `<div><div class="flex justify-between text-[10px] text-slate-400"><span>${label}</span><span id="ed-v-${key}" class="text-emerald-400 font-mono">${edFmt(key, c[key])}</span></div><input type="range" min="${min}" max="${max}" step="${step}" value="${c[key]}" oninput="edSet('${key}',this.value)" class="w-full accent-emerald-500"></div>`;
+            box.innerHTML = `<div class="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2">
+                <div class="col-span-2"><div class="text-[10px] text-slate-400 mb-1">Clip name</div><input value="${esc(c.name)}" oninput="edSet('name',this.value)" class="w-full bg-slate-950 text-xs text-slate-100 px-2.5 py-1.5 rounded-lg border border-slate-800 focus:outline-none focus:border-emerald-500"></div>
+                <div class="col-span-2"><div class="text-[10px] text-slate-400 mb-1">Color</div><div class="flex gap-1.5">${ED_COLORS.map(col => `<button onclick="edSet('color','${col}')" class="w-6 h-6 rounded-full border-2 ${col === c.color ? 'border-white' : 'border-transparent'}" style="background:${col}"></button>`).join('')}</div></div>
+                ${sl('speed', 'Clip speed', 0.5, 2, 0.05)}${sl('pitch', 'Pitch', -12, 12, 1)}${sl('vol', 'Volume', 0, 1.5, 0.05)}${sl('loops', 'Repeat (loop)', 1, 8, 1)}
+                ${sl('fadeIn', 'Fade in', 0, 3, 0.1)}${sl('fadeOut', 'Fade out', 0, 3, 0.1)}
+            </div>`;
+        }
+
+        function edSet(key, val) {
+            const c = edClips.find(x => x.id === edSel);
+            if (!c) return;
+            c[key] = (key === 'name' || key === 'color') ? val : +val;
+            edDirty = true;
+            if (key === 'color') edInspector();
+            else if (key !== 'name') { const lab = document.getElementById('ed-v-' + key); if (lab) lab.textContent = edFmt(key, c[key]); }
+            const el = document.querySelector(`.ed-clip[data-id="${c.id}"]`);
+            if (el) edPlaceClip(c, el, true);
+            edInfo();
+        }
+
+        // ----- clip tools -----
+        const edSelected = () => edClips.find(x => x.id === edSel);
+        function edSplit() {
+            const c = edSelected();
+            if (!c) { showToast("Tap a clip first, then place the playhead where you want to cut.", "info"); return; }
+            if (c.loops > 1) { showToast("Set Repeat back to ×1 before splitting this clip.", "info"); return; }
+            if (edClips.length >= ED_MAX_CLIPS) { showToast("The editor can hold up to " + ED_MAX_CLIPS + " clips.", "info"); return; }
+            const rel = edPlayhead * edSpeed - c.off;
+            if (rel <= 0.05 || rel >= edDur1(c) - 0.05) { showToast("Tap the ruler to put the playhead inside the selected clip first.", "info"); return; }
+            const m = c.tIn + rel * c.speed;
+            const b = { ...c, id: edNextId++, name: c.name + ' (2)', tIn: m, tOut: c.tOut, off: c.off + rel, fadeIn: 0 };
+            c.tOut = m; c.fadeOut = 0;
+            edClips.push(b); edDirty = true; edFlash = [c.id, b.id];
+            editorRender();
+            setTimeout(() => { edFlash = []; edRefreshSelection(); }, 1200);
+            showToast("Clip split in two. Each part can be moved, edited or deleted on its own.", "success");
+        }
+        function edCopy() { const c = edSelected(); if (!c) { showToast("Tap a clip to copy it.", "info"); return; } edClipboard = { ...c }; showToast("Copied. Move the playhead and press Paste.", "success"); }
+        function edPaste() {
+            if (!edClipboard) { showToast("Nothing copied yet.", "info"); return; }
+            const src = edClipboard, off = edPlayhead * edSpeed;
+            const c = editorAddClip({ name: src.name, data: src.data, sr: src.sr, off, color: src.color, row: edFindRow(off, edDur(src), src.row) });
+            if (!c) return;
+            Object.assign(c, { tIn: src.tIn, tOut: src.tOut, fadeIn: src.fadeIn, fadeOut: src.fadeOut, speed: src.speed, pitch: src.pitch, vol: src.vol, loops: src.loops, peaks: src.peaks });
+            editorRender();
+        }
+        function edDuplicate() {
+            const src = edSelected();
+            if (!src) { showToast("Tap a clip to duplicate it.", "info"); return; }
+            const off = src.off + edDur(src);
+            const c = editorAddClip({ name: src.name, data: src.data, sr: src.sr, off, color: src.color, row: edFindRow(off, edDur(src), src.row) });
+            if (!c) return;
+            Object.assign(c, { tIn: src.tIn, tOut: src.tOut, fadeIn: src.fadeIn, fadeOut: src.fadeOut, speed: src.speed, pitch: src.pitch, vol: src.vol, loops: src.loops, peaks: src.peaks });
+            editorRender();
+        }
+        function edDelete() {
+            if (edSel === null) { showToast("Tap a clip to delete it.", "info"); return; }
+            edClips = edClips.filter(c => c.id !== edSel); edSel = null; edDirty = true; editorRender();
+        }
+        function edAddTrack() { if (edRows >= ED_MAX_ROWS) { showToast("Up to " + ED_MAX_ROWS + " tracks.", "info"); return; } edRows++; editorRender(); }
+        function edSpeedSet(v) {
+            edSpeed = +v; edDirty = true;
+            document.getElementById('ed-speed-val').textContent = edSpeed.toFixed(2) + 'x';
+            if (edSource) edStopSource();
+            editorRender();
+        }
+
+        // ----- rendering the sound -----
+        function edRenderMix() {
+            const SR = getRecCtx().sampleRate, MAXPRE = Math.floor(ED_MAX_SEC * edSpeed * SR);
+            let out = new Float32Array(MAXPRE), end = 0;
+            edClips.forEach(c => {
                 const seg = c.data.slice(Math.floor(c.tIn * c.sr), Math.floor(c.tOut * c.sr));
                 const r = recRender(seg, c.sr, { pitch: c.pitch, speed: c.speed, fadeIn: c.fadeIn, fadeOut: c.fadeOut });
-                const o = Math.floor(c.off * SR);
-                for (let i = 0; i < r.length && o + i < MAX; i++) out[o + i] += r[i] * c.vol;
-                end = Math.max(end, Math.min(MAX, o + r.length));
+                for (let l = 0; l < c.loops; l++) {
+                    const o = Math.floor(c.off * SR) + l * r.length;
+                    for (let i = 0; i < r.length && o + i < MAXPRE; i++) out[o + i] += r[i] * c.vol;
+                    end = Math.max(end, Math.min(MAXPRE, o + r.length));
+                }
             });
             if (end < SR * 0.05) return null;
             out = out.slice(0, end);
             let peak = 0; for (let i = 0; i < out.length; i++) peak = Math.max(peak, Math.abs(out[i]));
             if (peak > 1) for (let i = 0; i < out.length; i++) out[i] /= peak;
-            return { data: out, sr: SR };
+            if (edSpeed !== 1) out = recResample(out, edSpeed);
+            return { data: out.slice(0, ED_MAX_SEC * SR), sr: SR };
+        }
+        function edMix() { if (edDirty || !edCache) { edCache = edRenderMix(); edDirty = false; } return edCache; }
+
+        // ----- playback -----
+        function edSetPlayUI(playing) { const b = document.getElementById('ed-play-btn'); if (b) b.innerHTML = playing ? '<i class="fa-solid fa-pause"></i>' : '<i class="fa-solid fa-play"></i>'; }
+        function edStopSource() { try { if (edSource) { edSource.onended = null; edSource.stop(); } } catch (e) {} edSource = null; cancelAnimationFrame(edRaf); edSetPlayUI(false); }
+        function edPlay() {
+            const m = edMix();
+            if (!m) { showToast("Add a clip first.", "info"); return; }
+            edStopSource();
+            const ctx = getRecCtx(); ctx.resume();
+            const buf = ctx.createBuffer(1, m.data.length, m.sr); buf.copyToChannel(m.data, 0);
+            const len = m.data.length / m.sr;
+            if (edPlayhead >= len - 0.02) edPlayhead = 0;
+            const src = ctx.createBufferSource(); src.buffer = buf; src.connect(ctx.destination); src.loop = edLoop;
+            src.start(0, edPlayhead);
+            edSource = src; edPlayT0 = ctx.currentTime; edPlayFrom = edPlayhead; edPlayLen = len;
+            edSetPlayUI(true);
+            const tick = () => {
+                if (edSource !== src) return;
+                let t = ctx.currentTime - edPlayT0 + edPlayFrom;
+                if (edLoop) t = t % edPlayLen;
+                else if (t >= edPlayLen) { edSource = null; edPlayhead = 0; edUpdatePlayhead(); edSetPlayUI(false); return; }
+                edPlayhead = t; edUpdatePlayhead(); edRaf = requestAnimationFrame(tick);
+            };
+            tick();
+        }
+        function edPlayPause() { if (edSource) edStopSource(); else edPlay(); }
+        function edStop() { edStopSource(); edPlayhead = 0; edUpdatePlayhead(); }
+        function edToggleLoop() {
+            edLoop = !edLoop;
+            document.getElementById('ed-loop-btn').classList.toggle('ring-2', edLoop);
+            document.getElementById('ed-loop-btn').classList.toggle('ring-emerald-500', edLoop);
+            if (edSource) { edSource.loop = edLoop; }
         }
 
-        function mixStop() { try { if (mixSource) mixSource.stop(); } catch (e) {} mixSource = null; mixPlayhead = null; drawMixTimeline(); }
-        function mixPlay() {
-            mixStop();
-            const m = mixRender();
-            if (!m) { showToast("Add a clip first.", "info"); return; }
-            const ctx = getRecCtx(); ctx.resume();
-            const buf = ctx.createBuffer(1, m.data.length, m.sr);
-            buf.copyToChannel(m.data, 0);
-            const src = ctx.createBufferSource(); src.buffer = buf; src.connect(ctx.destination); src.start();
-            mixSource = src;
-            const t0 = ctx.currentTime, len = m.data.length / m.sr;
-            const tick = () => {
-                if (mixSource !== src) return;
-                const t = ctx.currentTime - t0;
-                if (t >= len) { mixPlayhead = null; mixSource = null; drawMixTimeline(); return; }
-                mixPlayhead = t; drawMixTimeline(); requestAnimationFrame(tick);
-            };
-            requestAnimationFrame(tick);
-        }
-        function mixDownload() {
-            const m = mixRender();
+        // ----- save / publish -----
+        function edDownload() {
+            const m = edMix();
             if (!m) { showToast("Add a clip first.", "info"); return; }
             const url = URL.createObjectURL(recEncodeWav(m.data, m.sr));
             const a = document.createElement('a');
@@ -2818,13 +2952,27 @@
             setTimeout(() => URL.revokeObjectURL(url), 10000);
             showToast("Your sound is downloading.", "success");
         }
-        function mixToPublish() {
-            const m = mixRender();
+        function edToPublish() {
+            const m = edMix();
             if (!m) { showToast("Add a clip first.", "info"); return; }
+            edStopSource();
             processAudioFile(new File([recEncodeWav(m.data, m.sr)], 'creation_' + Date.now() + '.wav', { type: 'audio/wav' }));
             if (!currentUser) showToast("Sign in to publish. Your sound will be ready on the Publish page.", "info");
             switchTab('upload');
         }
+
+        // keyboard shortcuts (when the editor is open and you're not typing)
+        document.addEventListener('keydown', e => {
+            if (!edVisible() || /^(INPUT|TEXTAREA|SELECT)$/.test((e.target.tagName || ''))) return;
+            const mod = e.ctrlKey || e.metaKey;
+            if (e.code === 'Space') { e.preventDefault(); edPlayPause(); }
+            else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); edDelete(); }
+            else if (mod && e.key.toLowerCase() === 'c') { e.preventDefault(); edCopy(); }
+            else if (mod && e.key.toLowerCase() === 'v') { e.preventDefault(); edPaste(); }
+            else if (mod && e.key.toLowerCase() === 'd') { e.preventDefault(); edDuplicate(); }
+            else if (!mod && e.key.toLowerCase() === 's') edSplit();
+        });
+        window.addEventListener('resize', () => { if (edVisible()) editorRender(); });
 
         // ===== RECORD FROM MICROPHONE =====
         const REC_MAX = 60;
@@ -2958,11 +3106,9 @@
         // Option 2: move the recording into the editor as a clip
         function recSendToEditor() {
             if (!recData) return;
-            if (mixClips.length >= MIX_MAX_CLIPS) { showToast("The editor already has " + MIX_MAX_CLIPS + " clips. Remove one first.", "info"); switchTab('create'); return; }
             stopRecPlayback();
-            const dur = recData.length / recSR;
-            mixClips.push({ id: mixNextId++, name: 'Recording ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), data: recData, sr: recSR, dur, off: 0, tIn: 0, tOut: dur, split: dur / 2, fadeIn: 0, fadeOut: 0, speed: 1, pitch: 0, vol: 1 });
-            renderMixList();
+            const c = editorAddClip({ name: 'Recording ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), data: recData, sr: recSR });
+            if (!c) return;
             switchTab('create');
             showToast("Your recording is in the editor. Edit it, then download or publish it.", "success");
         }
@@ -3865,7 +4011,7 @@
         }
 
         // Renders a synth preset to a WAV file (same sound as playSynthSFX) for downloading
-        async function renderSynthToWav(config) {
+        async function renderSynthToWav(config, rawOnly) {
             const p = (typeof config === 'string') ? JSON.parse(config) : config;
             const sampleRate = 44100;
             const total = p.attack + p.decay;
@@ -3905,6 +4051,7 @@
 
             const rendered = await ctx.startRendering();
             const samples = rendered.getChannelData(0);
+            if (rawOnly) return samples;
 
             // Encode as 16-bit mono PCM WAV
             const buf = new ArrayBuffer(44 + samples.length * 2);
