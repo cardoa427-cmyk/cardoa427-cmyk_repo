@@ -143,6 +143,11 @@
             -webkit-text-fill-color: transparent;
         }
 
+        .cloud-shape {
+            fill: rgba(255, 255, 255, 0.45);
+            filter: drop-shadow(0 10px 15px rgba(168, 85, 247, 0.08));
+        }
+
         #skyCanvas {
             position: fixed;
             top: 0;
@@ -156,14 +161,18 @@
 </head>
 <body class="h-full bg-gradient-to-br from-purple-100 via-pink-100 to-indigo-100 text-slate-800 font-sans selection:bg-purple-300 selection:text-purple-900 overflow-x-hidden relative">
 
+    <!-- Sky Animation Canvas -->
     <canvas id="skyCanvas"></canvas>
 
+    <!-- Animated Background Blobs -->
     <div class="fixed top-[-100px] left-[-100px] w-[450px] h-[450px] bg-purple-300/50 rounded-full blur-3xl pointer-events-none animate-pulse-glow z-0"></div>
     <div class="fixed bottom-[-100px] right-[-100px] w-[550px] h-[550px] bg-pink-300/40 rounded-full blur-3xl pointer-events-none animate-pulse-glow z-0" style="animation-delay: 2s;"></div>
     <div class="fixed top-[40%] right-[15%] w-[350px] h-[350px] bg-indigo-300/30 rounded-full blur-3xl pointer-events-none animate-pulse-glow z-0" style="animation-delay: 1s;"></div>
 
+    <!-- MAIN CONTAINER -->
     <div class="relative z-10 flex flex-col min-h-screen">
 
+        <!-- HEADER BAR -->
         <header class="sticky top-0 z-40 glass-panel border-b border-white/60 px-4 sm:px-8 py-3.5 transition-all shadow-sm">
             <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
                 
@@ -174,7 +183,7 @@
                     <div>
                         <div class="flex items-center gap-2">
                             <h1 class="font-display font-bold text-xl sm:text-2xl text-dreamy-gradient tracking-tight">adri-cardo-repo</h1>
-                            <span class="px-2 py-0.5 text-[10px] font-semibold bg-purple-200/80 text-purple-700 rounded-full border border-purple-300/50">v2.6 root</span>
+                            <span class="px-2 py-0.5 text-[10px] font-semibold bg-purple-200/80 text-purple-700 rounded-full border border-purple-300/50">v2.7 root</span>
                         </div>
                         <p class="text-xs text-purple-600/90 font-medium flex items-center gap-1">
                             <span>✧ cloud project vault & directory launcher</span>
@@ -201,9 +210,11 @@
             </div>
         </header>
 
+        <!-- MAIN CONTENT AREA -->
         <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-8 py-8 space-y-6">
             <section>
                 <div id="projectsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Dynamic project cards rendered here -->
                 </div>
 
                 <div id="emptyState" class="hidden flex-col items-center justify-center py-16 text-center glass-panel rounded-3xl p-8 space-y-4">
@@ -218,6 +229,7 @@
             </section>
         </main>
 
+        <!-- FOOTER -->
         <footer class="mt-auto glass-panel border-t border-white/60 py-6 px-4 sm:px-8 text-center text-xs text-purple-700/80">
             <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div class="flex items-center gap-2">
@@ -257,11 +269,11 @@
                 <input type="hidden" id="projectId">
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Project Title *</label>
-                    <input type="text" id="inputTitle" required placeholder="e.g. grove studio" class="w-full px-4 py-2.5 rounded-xl glass-input text-xs text-slate-800">
+                    <input type="text" id="inputTitle" required placeholder="e.g. grovestudio or audiogrove" class="w-full px-4 py-2.5 rounded-xl glass-input text-xs text-slate-800">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">File Path / URL *</label>
-                    <input type="text" id="inputUrl" required placeholder="e.g. ./grove-studio.html" class="w-full px-4 py-2.5 rounded-xl glass-input text-xs text-slate-800">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Folder Path / URL *</label>
+                    <input type="text" id="inputUrl" required placeholder="e.g. ./grovestudio/ or ./audiogrove/" class="w-full px-4 py-2.5 rounded-xl glass-input text-xs text-slate-800">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Description</label>
@@ -270,7 +282,7 @@
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Icon / Emoji</label>
-                        <input type="text" id="inputIcon" placeholder="e.g. 🎹 or fa-music" class="w-full px-4 py-2.5 rounded-xl glass-input text-xs text-slate-800">
+                        <input type="text" id="inputIcon" placeholder="e.g. 🎛️ or fa-music" class="w-full px-4 py-2.5 rounded-xl glass-input text-xs text-slate-800">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Status Badge</label>
@@ -342,9 +354,9 @@
             <button onclick="closeModal('quickHelpModal')" class="absolute top-5 right-5 text-purple-400 hover:text-purple-700"><i class="fa-solid fa-xmark text-lg"></i></button>
             <h3 class="font-display font-bold text-lg text-slate-800">GitHub Pages Integration Guide</h3>
             <div class="space-y-2 text-xs text-slate-600">
-                <p>1. Save this file as <code>index.html</code> in your main repository root.</p>
-                <p>2. Save Grove Studio as <code>grove-studio.html</code> in the repository root.</p>
-                <p>3. Clicking <strong>Launch</strong> opens <code>./grove-studio.html</code> directly!</p>
+                <p>1. Save this file as <code>index.html</code> in the repo root.</p>
+                <p>2. Keep your sub-apps in subfolders like <code>./grovestudio/</code> and <code>./audiogrove/</code>.</p>
+                <p>3. Clicking <strong>Launch</strong> on any project card opens its respective app smoothly!</p>
             </div>
             <button onclick="closeModal('quickHelpModal')" class="w-full py-2.5 rounded-xl bg-purple-600 text-white text-xs font-semibold">Got it!</button>
         </div>
@@ -357,20 +369,10 @@
     </div>
 
     <script>
+        // DEFAULT PROJECT LIST INCLUDING GROVESTUDIO & AUDIOGROVE
         const DEFAULT_PROJECTS = [
             {
-                id: 'grove-studio-1',
-                title: 'Grove Studio',
-                url: './grove-studio.html',
-                description: 'Digital audio workstation & synth sequencer supporting audio bounce, multi-track mixing, and custom effects.',
-                icon: '🎹',
-                status: 'Live',
-                githubUrl: 'https://github.com/cardoa427-cmyk/cardoa427-cmyk_repo/blob/main/grove-studio.html',
-                starred: true,
-                createdAt: '2026-10-08T10:00:00Z'
-            },
-            {
-                id: 'doom-2',
+                id: 'doom-1',
                 title: 'doom',
                 url: './doom/',
                 description: 'Classic retro action game port optimized for web browser play.',
@@ -381,7 +383,7 @@
                 createdAt: '2026-09-18T10:00:00Z'
             },
             {
-                id: 'spotfinder-3',
+                id: 'spotfinder-2',
                 title: 'spotfinder',
                 url: './spotfinder/',
                 description: 'Interactive map and local spot discovery utility for finding cool locations.',
@@ -390,6 +392,28 @@
                 githubUrl: 'https://github.com/cardoa427-cmyk/cardoa427-cmyk_repo/tree/main/spotfinder',
                 starred: true,
                 createdAt: '2026-09-19T14:30:00Z'
+            },
+            {
+                id: 'audiogrove-3',
+                title: 'audiogrove',
+                url: './audiogrove/',
+                description: 'Royalty-free community sound effects library, interactive SFX soundboard & 8-bit synth generator.',
+                icon: '🎵',
+                status: 'Live',
+                githubUrl: 'https://github.com/cardoa427-cmyk/cardoa427-cmyk_repo/tree/main/audiogrove',
+                starred: true,
+                createdAt: '2026-10-08T10:00:00Z'
+            },
+            {
+                id: 'grovestudio-4',
+                title: 'grovestudio',
+                url: './grovestudio/',
+                description: 'In-browser digital audio workstation (DAW) with MIDI & audio multitrack sequencing, synth engines, effects, and WAV exporting.',
+                icon: '🎛️',
+                status: 'Live',
+                githubUrl: 'https://github.com/cardoa427-cmyk/cardoa427-cmyk_repo/tree/main/grovestudio',
+                starred: true,
+                createdAt: '2026-11-08T10:00:00Z'
             }
         ];
 
@@ -410,13 +434,13 @@
             if (savedProjects) {
                 try {
                     projects = JSON.parse(savedProjects);
-                    const hasGrove = projects.some(p => p.id === 'grove-studio-1' || p.title.toLowerCase().includes('grove'));
-                    if (!hasGrove) {
-                        projects.unshift(DEFAULT_PROJECTS[0]);
-                    } else {
-                        // Ensure URL points to grove-studio.html
-                        const gIdx = projects.findIndex(p => p.title.toLowerCase().includes('grove'));
-                        if (gIdx >= 0) projects[gIdx].url = './grove-studio.html';
+                    // Ensure audiogrove exists in returning visitors local state
+                    if (!projects.some(p => p.id === 'audiogrove-3' || p.title === 'audiogrove')) {
+                        projects.push(DEFAULT_PROJECTS[2]);
+                    }
+                    // Ensure grovestudio exists in returning visitors local state
+                    if (!projects.some(p => p.id === 'grovestudio-4' || p.title === 'grovestudio')) {
+                        projects.push(DEFAULT_PROJECTS[3]);
                     }
                     localStorage.setItem('adri_repo_projects', JSON.stringify(projects));
                 } catch (e) {
@@ -537,6 +561,13 @@
             saveLocalData();
             closeModal('projectModal');
             showToast('Project saved!');
+        }
+
+        function saveGithubConfig() {
+            githubConfig.username = document.getElementById('cfgUsername').value.trim();
+            githubConfig.repo = document.getElementById('cfgRepo').value.trim();
+            showToast('GitHub configuration updated!');
+            closeModal('githubModal');
         }
 
         function toggleModal(modalId) {
