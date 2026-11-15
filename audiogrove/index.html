@@ -950,6 +950,20 @@
                 <div id="admin-ann-list" class="space-y-2 mt-3"></div>
             </div>
             <div>
+                <h4 class="text-sm font-bold text-slate-200 mb-2">Manage users</h4>
+                <input id="admin-user-search" type="text" autocomplete="off" oninput="adminUserSuggest()" placeholder="Find any user: start typing a username" class="w-full bg-slate-950 text-sm text-slate-100 px-3.5 py-2 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500">
+                <div id="admin-user-suggest" class="hidden mt-1 bg-slate-950 border border-slate-800 rounded-xl overflow-hidden"></div>
+                <div id="admin-user-card" class="mt-2"></div>
+            </div>
+            <div>
+                <h4 class="text-sm font-bold text-slate-200 mb-2">Manage posts</h4>
+                <div class="flex gap-2 mb-2">
+                    <input id="admin-post-search" type="text" placeholder="Search all posts by title (public and private)" onkeydown="if(event.key==='Enter') adminLoadPosts()" class="flex-1 bg-slate-950 text-sm text-slate-100 px-3.5 py-2 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500">
+                    <button onclick="adminLoadPosts()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 rounded-xl text-sm">Search</button>
+                </div>
+                <div id="admin-post-list" class="space-y-2"></div>
+            </div>
+            <div>
                 <h4 class="text-sm font-bold text-slate-200 mb-2">Decisions &amp; moderation log</h4>
                 <div id="admin-log-filters" class="flex flex-wrap gap-1.5 mb-2"></div>
                 <div id="admin-log-list" class="space-y-1.5 text-xs"></div>
@@ -978,6 +992,28 @@
         <h1 class="text-2xl font-bold text-slate-100 mb-2">Under construction</h1>
         <p id="maintenance-msg" class="text-sm text-slate-400 max-w-sm"></p>
         <button onclick="openModal('auth-modal')" class="mt-16 text-[10px] text-slate-700 hover:text-slate-500">staff</button>
+    </div>
+
+    <!-- MODAL: ADMIN EDITS ANY POST -->
+    <div id="admin-edit-modal" class="hidden fixed inset-0 z-[55] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-3">
+            <h3 class="text-lg font-bold text-slate-100">Edit post (admin)</h3>
+            <input type="hidden" id="admin-edit-id">
+            <div><div class="text-[11px] text-slate-400 mb-1">Title</div><input id="admin-edit-title" maxlength="80" class="w-full bg-slate-950 text-sm text-slate-100 px-3.5 py-2 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500"></div>
+            <div><div class="text-[11px] text-slate-400 mb-1">Description &amp; hashtags</div><textarea id="admin-edit-desc" rows="3" class="w-full bg-slate-950 text-sm text-slate-100 px-3.5 py-2 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500"></textarea></div>
+            <div class="grid grid-cols-2 gap-3">
+                <div><div class="text-[11px] text-slate-400 mb-1">Category</div>
+                    <select id="admin-edit-cat" class="w-full bg-slate-950 text-sm text-slate-100 px-3 py-2 rounded-xl border border-slate-800">
+                        <option value="8-Bit & Gaming">8-Bit & Gaming</option><option value="Sci-Fi & Cyber">Sci-Fi & Cyber</option><option value="Foley & Impact">Foley & Impact</option><option value="Interface & Clicks">Interface & Clicks</option>
+                    </select></div>
+                <div><div class="text-[11px] text-slate-400 mb-1">Visibility</div>
+                    <select id="admin-edit-vis" class="w-full bg-slate-950 text-sm text-slate-100 px-3 py-2 rounded-xl border border-slate-800"><option value="public">Public</option><option value="private">Private</option></select></div>
+            </div>
+            <div class="flex gap-2 pt-1">
+                <button onclick="closeModal('admin-edit-modal')" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 py-2.5 rounded-xl text-sm">Cancel</button>
+                <button onclick="adminSavePost()" class="flex-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-2.5 rounded-xl text-sm">Save changes</button>
+            </div>
+        </div>
     </div>
 
     <!-- MODAL: MESSAGES FROM MODERATORS -->
@@ -3344,6 +3380,7 @@
                                 <button onclick="requestDownload('${s.id}')" class="h-11 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-semibold flex items-center gap-2"><i class="fa-solid fa-download"></i>Download</button>
                                 ${own ? `<button onclick="openEditModal('${s.id}')" class="h-11 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-semibold flex items-center gap-2"><i class="fa-solid fa-pen-to-square"></i>Edit</button>` : `<button onclick="openReportModal('${s.id}')" class="h-11 px-4 rounded-xl bg-slate-800 hover:bg-amber-500/20 text-slate-300 hover:text-amber-400 text-sm font-semibold flex items-center gap-2"><i class="fa-solid fa-flag"></i>Report</button>`}
                                 ${staff && !own ? `<button onclick="staffRemoveCaption('${s.id}')" class="h-11 px-4 rounded-xl bg-slate-800 hover:bg-emerald-500/20 text-slate-300 hover:text-emerald-400 text-sm font-semibold flex items-center gap-2"><i class="fa-solid fa-eraser"></i>Remove caption</button>` : ''}
+                                ${isAdminRole ? `<button onclick="adminEditPost('${s.id}')" class="h-11 px-4 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-sm font-semibold flex items-center gap-2"><i class="fa-solid fa-user-gear"></i>Admin: edit</button><button onclick="adminDeletePost('${s.id}')" class="h-11 px-4 rounded-xl bg-red-500/15 hover:bg-red-500/25 text-red-300 text-sm font-semibold flex items-center gap-2"><i class="fa-solid fa-trash"></i>Admin: delete</button>` : ''}
                                 <p class="w-full text-[11px] text-slate-500">The sound plays in the player at the bottom of the page.</p>
                             </div>
                             <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5">
@@ -3683,6 +3720,7 @@
             renderDecisions(adminLogFilter);
             loadAdminStats();
             refreshAdminSite();
+            adminLoadPosts();
         }
 
         // ===== PRIVACY POLICY =====
@@ -3722,7 +3760,7 @@
             <p>The microphone is only used while you press Record. A recording, and anything you do in the editor, stays on your device until you choose to publish it.</p>
 
             ${h('5. Moderation')}
-            <p>To keep the community safe, moderators and administrators can hide posts, remove captions, replace an inappropriate username with a random one (which then cannot be changed), send warnings, and suspend or ban accounts.</p>
+            <p>To keep the community safe, moderators and administrators can hide posts, remove captions, replace an inappropriate username with a random one (which then cannot be changed), send warnings, and suspend or ban accounts. Administrators can also edit or delete any post and its audio file, change any username, and permanently delete an account that breaks the rules.</p>
 
             ${h('6. Your choices')}
             ${ul([
@@ -3937,9 +3975,168 @@
             showToast(turnOn ? "Site is shut down for visitors." : "Site reopened.", "success");
         }
 
+        // ===== ADMIN: FULL CONTROL OF USERS AND POSTS =====
+        const likeEsc = t => t.replace(/[%_\\]/g, m => '\\' + m);
+        let adminSuggestTimer = null;
+
+        function adminUserSuggest() {
+            clearTimeout(adminSuggestTimer);
+            const box = document.getElementById('admin-user-suggest');
+            const n = document.getElementById('admin-user-search').value.trim().replace(/^@/, '');
+            if (!n) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+            adminSuggestTimer = setTimeout(async () => {
+                const { data } = await supabaseClient.from('profiles').select('id,username').ilike('username', '%' + likeEsc(n) + '%').order('username').limit(8);
+                box.innerHTML = (data && data.length) ? data.map(u => `<button onclick="adminPickUser('${u.id}')" class="w-full text-left px-3.5 py-2 text-sm text-emerald-400 hover:bg-slate-800">${esc(u.username)}</button>`).join('') : '<p class="px-3.5 py-2 text-xs text-slate-500">No matching usernames</p>';
+                box.classList.remove('hidden');
+            }, 200);
+        }
+        function adminPickUser(id) {
+            const box = document.getElementById('admin-user-suggest');
+            box.classList.add('hidden'); box.innerHTML = '';
+            adminUserCard(id);
+        }
+
+        async function adminUserCard(uid) {
+            if (!isAdminRole) return;
+            const card = document.getElementById('admin-user-card');
+            const [p, snd, st] = await Promise.all([
+                supabaseClient.from('profiles').select('id,username,created_at,username_locked').eq('id', uid).maybeSingle(),
+                supabaseClient.from('sounds').select('id,likes,is_private').eq('user_id', uid),
+                supabaseClient.from('user_status').select('status,until').eq('user_id', uid).maybeSingle()
+            ]);
+            if (!p.data) { card.innerHTML = '<p class="text-xs text-red-400">User not found.</p>'; return; }
+            const posts = snd.data || [], nm = esc(p.data.username).replace(/'/g, '');
+            const btn = (cls, fn, label) => `<button onclick="${fn}" class="px-3 py-1.5 rounded-lg text-xs ${cls}">${label}</button>`;
+            card.innerHTML = `<div class="bg-slate-950 border border-indigo-500/30 rounded-xl p-3.5 space-y-2">
+                <div class="flex justify-between"><b class="text-emerald-400">${esc(p.data.username)}</b>${p.data.username_locked ? '<span class="text-[10px] text-amber-400">username locked</span>' : ''}</div>
+                <div class="text-xs text-slate-400">Joined ${new Date(p.data.created_at).toLocaleDateString()} · ${posts.length} posts (${posts.filter(x => x.is_private).length} private) · ${posts.reduce((a, x) => a + (x.likes || 0), 0)} likes · Status: <b class="text-slate-200">${st.data ? st.data.status.replace('_', '-') : 'none'}</b></div>
+                <div class="flex flex-wrap gap-2">
+                    ${btn('bg-slate-800 text-slate-200', `adminSetUsername('${uid}')`, 'Set username')}
+                    ${p.data.username_locked ? btn('bg-slate-800 text-slate-200', `adminUnlockUsername('${uid}','${nm}')`, 'Unlock username') : ''}
+                    ${btn('bg-slate-800 text-slate-200', `adminLoadPosts('${uid}')`, 'Show their posts')}
+                    ${btn('bg-emerald-500/15 text-emerald-300', `closeModal('admin-panel-modal'); openStaffPanel().then(() => viewStaffUser('${uid}'))`, 'Warn / ban / suspend…')}
+                    ${btn('bg-slate-800 text-slate-200', `closeModal('admin-panel-modal'); openUserProfile('${uid}')`, 'Open profile page')}
+                    ${btn('bg-red-500/20 text-red-300', `adminDeleteUser('${uid}','${nm}')`, 'Delete account')}
+                </div></div>`;
+        }
+
+        async function adminSetUsername(uid) {
+            const n = prompt('New username for this user (3-24 letters, numbers, dots, dashes or underscores):');
+            if (!n) return;
+            const lock = confirm('Lock it so the user can never change it?\n\nOK = lock it, Cancel = leave it changeable.');
+            const { error } = await supabaseClient.rpc('admin_set_username', { target: uid, new_name: n, lock_it: lock });
+            if (error) { showToast(error.message, "error"); return; }
+            showToast("Username changed.", "success");
+            adminUserCard(uid); renderSoundboard(); refreshAdminLog();
+        }
+        async function adminUnlockUsername(uid, name) {
+            const { error } = await supabaseClient.rpc('admin_set_username', { target: uid, new_name: name, lock_it: false });
+            if (error) { showToast(error.message, "error"); return; }
+            showToast("Username unlocked. The user can change it again.", "success");
+            adminUserCard(uid); refreshAdminLog();
+        }
+
+        async function adminDeleteUser(uid, name) {
+            if (!isAdminRole) return;
+            const typed = prompt('This PERMANENTLY deletes the account, all its posts and audio files. It cannot be undone.\n\nType the username to confirm: ' + name);
+            if (typed === null) return;
+            if (typed.trim().replace(/^@/, '').toLowerCase() !== String(name).replace(/^@/, '').toLowerCase()) { showToast("That didn't match the username. Nothing was deleted.", "error"); return; }
+            try {
+                const { data: rows } = await supabaseClient.from('sounds').select('file_path').eq('user_id', uid);
+                const paths = (rows || []).map(r => r.file_path).filter(Boolean);
+                try { const { data: folder } = await supabaseClient.storage.from('user-files').list(uid); (folder || []).forEach(f => { const fp = uid + '/' + f.name; if (!paths.includes(fp)) paths.push(fp); }); } catch (e) {}
+                if (paths.length) await supabaseClient.storage.from('user-files').remove(paths);
+                const { error } = await supabaseClient.rpc('admin_delete_user', { target: uid });
+                if (error) throw error;
+                activeSoundsList = activeSoundsList.filter(x => x.user_id !== uid);
+                document.getElementById('admin-user-card').innerHTML = '';
+                showToast("Account deleted.", "success");
+                renderSoundboard(); loadAdminStats(); refreshAdminLog(); adminLoadPosts();
+            } catch (err) { console.error(err); showToast(err.message || "Could not delete the account", "error"); }
+        }
+
+        async function adminLoadPosts(userId) {
+            if (!isAdminRole) return;
+            const list = document.getElementById('admin-post-list');
+            const term = document.getElementById('admin-post-search').value.trim();
+            let q = supabaseClient.from('sounds').select('id,title,username,user_id,category,is_private,likes,downloads,created_at').order('created_at', { ascending: false }).limit(25);
+            if (typeof userId === 'string' && userId.length > 10) q = q.eq('user_id', userId);
+            else if (term) q = q.ilike('title', '%' + likeEsc(term) + '%');
+            const { data, error } = await q;
+            if (error) { list.innerHTML = '<p class="text-xs text-red-400">Could not load posts.</p>'; return; }
+            const ids = (data || []).map(x => x.id);
+            const { data: hid } = ids.length ? await supabaseClient.from('hidden_sounds').select('sound_id').in('sound_id', ids) : { data: [] };
+            const hidden = new Set((hid || []).map(h => h.sound_id));
+            list.innerHTML = (data || []).length ? data.map(x => {
+                const isHid = hidden.has(x.id), b = (cls, fn, label) => `<button onclick="${fn}" class="px-2.5 py-1 rounded-lg text-[11px] ${cls}">${label}</button>`;
+                return `<div class="bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 space-y-1.5">
+                    <div class="flex justify-between gap-2"><b class="text-sm text-slate-100 break-words">${esc(x.title)}</b><span class="text-[10px] shrink-0 ${x.is_private ? 'text-purple-300' : 'text-emerald-400'}">${x.is_private ? 'Private' : 'Public'}${isHid ? ' · hidden' : ''}</span></div>
+                    <div class="text-[11px] text-slate-400">${esc(x.username || 'unknown')} · ${esc(x.category)} · ${x.likes || 0} likes · ${x.downloads || 0} downloads · ${new Date(x.created_at).toLocaleDateString()}</div>
+                    <div class="flex flex-wrap gap-1.5">
+                        ${b('bg-slate-800 text-slate-200', `closeModal('admin-panel-modal'); openPostPage('${x.id}')`, 'Open')}
+                        ${b('bg-indigo-600/20 text-indigo-300', `adminEditPost('${x.id}')`, 'Edit')}
+                        ${b('bg-amber-500/20 text-amber-300', `adminToggleHide('${x.id}', ${isHid})`, isHid ? 'Unhide' : 'Hide')}
+                        ${b('bg-red-500/20 text-red-300', `adminDeletePost('${x.id}')`, 'Delete')}
+                    </div></div>`;
+            }).join('') : '<p class="text-xs text-slate-500">No posts found.</p>';
+        }
+
+        async function adminEditPost(id) {
+            if (!isAdminRole) return;
+            const { data: x, error } = await supabaseClient.from('sounds').select('id,title,description,category,is_private').eq('id', id).maybeSingle();
+            if (error || !x) { showToast("Post not found.", "error"); return; }
+            document.getElementById('admin-edit-id').value = x.id;
+            document.getElementById('admin-edit-title').value = x.title || '';
+            document.getElementById('admin-edit-desc').value = x.description || '';
+            document.getElementById('admin-edit-cat').value = x.category;
+            document.getElementById('admin-edit-vis').value = x.is_private ? 'private' : 'public';
+            openModal('admin-edit-modal');
+        }
+        async function adminSavePost() {
+            const id = document.getElementById('admin-edit-id').value, title = document.getElementById('admin-edit-title').value.trim();
+            if (!title) { showToast("A post needs a title.", "error"); return; }
+            const upd = { title, description: document.getElementById('admin-edit-desc').value.trim(), category: document.getElementById('admin-edit-cat').value, is_private: document.getElementById('admin-edit-vis').value === 'private' };
+            const { error } = await supabaseClient.from('sounds').update(upd).eq('id', id);
+            if (error) { showToast(error.message, "error"); return; }
+            await logStaffAction('admin edited post', null, id, title);
+            closeModal('admin-edit-modal');
+            showToast("Post updated.", "success");
+            renderSoundboard(); adminLoadPosts(); refreshAdminLog();
+        }
+
+        async function adminToggleHide(id, isHidden) {
+            if (!isAdminRole) return;
+            const { error } = isHidden ? await supabaseClient.from('hidden_sounds').delete().eq('sound_id', id)
+                                       : await supabaseClient.from('hidden_sounds').upsert({ sound_id: id, hidden_by: currentUser.id, reason: 'Hidden by an admin' });
+            if (error) { showToast(error.message, "error"); return; }
+            await logStaffAction(isHidden ? 'admin unhid post' : 'admin hid post', null, id, null);
+            showToast(isHidden ? "Post is visible again." : "Post hidden from the public.", "success");
+            adminLoadPosts(); refreshAdminLog();
+        }
+
+        async function adminDeletePost(id) {
+            if (!isAdminRole) return;
+            const { data: x } = await supabaseClient.from('sounds').select('title,file_path,user_id').eq('id', id).maybeSingle();
+            if (!x) { showToast("Post not found.", "error"); return; }
+            if (!confirm('Permanently delete "' + x.title + '" and its audio file? This cannot be undone.')) return;
+            const { error } = await supabaseClient.from('sounds').delete().eq('id', id);
+            if (error) { showToast(error.message, "error"); return; }
+            if (x.file_path) await supabaseClient.storage.from('user-files').remove([x.file_path]).catch(() => {});
+            await logStaffAction('admin deleted post', x.user_id, null, x.title);
+            activeSoundsList = activeSoundsList.filter(s => s.id !== id);
+            if (postPageId === id) closePostPage();
+            showToast("Post deleted.", "success");
+            renderSoundboard(); adminLoadPosts(); loadAdminStats(); refreshAdminLog();
+        }
+
+        async function refreshAdminLog() {
+            const { data } = await supabaseClient.from('mod_log').select('*').order('created_at', { ascending: false }).limit(200);
+            adminLogCache = data || []; renderDecisions(adminLogFilter);
+        }
+
         // ----- decisions organised by outcome, with revert (admins only) -----
         let adminLogCache = [], adminLogFilter = 'all';
-        const DECISION_CATS = [['all', 'All'], ['banned', 'Banned'], ['shadow', 'Shadow-banned'], ['suspended', 'Suspended'], ['hidden', 'Post hidden'], ['removed', 'Post removed'], ['dismissed', 'Dismissed'], ['warn', 'Warnings & messages'], ['renamed', 'Usernames randomized'], ['caption', 'Captions removed'], ['other', 'Other']];
+        const DECISION_CATS = [['all', 'All'], ['banned', 'Banned'], ['shadow', 'Shadow-banned'], ['suspended', 'Suspended'], ['hidden', 'Post hidden'], ['removed', 'Post removed'], ['dismissed', 'Dismissed'], ['warn', 'Warnings & messages'], ['renamed', 'Usernames randomized'], ['caption', 'Captions removed'], ['admin', 'Admin actions'], ['other', 'Other']];
         function catOf(a) {
             if (a === 'banned') return 'banned';
             if (a === 'shadow-banned') return 'shadow';
@@ -3950,6 +4147,7 @@
             if (a === 'warned user' || a === 'messaged user') return 'warn';
             if (a === 'randomized username') return 'renamed';
             if (a === 'caption removed') return 'caption';
+            if (a.startsWith('admin ')) return 'admin';
             return 'other';
         }
         function canRevert(l) {
