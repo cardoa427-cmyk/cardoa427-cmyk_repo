@@ -596,6 +596,7 @@
                     <h3 class="text-sm font-bold text-slate-200">Your data &amp; privacy</h3>
                     <p class="text-xs text-slate-500 leading-relaxed">Audio Grove records when you created your account, your username, your posts (public and private) and when you made them, the likes and downloads your posts receive, and which posts you like or download. Only moderators and administrators can see this, to keep the community safe. Deleting your account erases it.</p>
                     <p class="text-xs text-slate-400">Get a copy of everything Audio Grove stores about you as a file.</p>
+                    <button onclick="openPrivacyPolicy()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium text-xs px-4 py-2.5 rounded-xl mr-2"><i class="fa-solid fa-shield-halved mr-2"></i>Read the Privacy Policy</button>
                     <button onclick="downloadMyData()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium text-xs px-4 py-2.5 rounded-xl"><i class="fa-solid fa-file-arrow-down mr-2"></i>Download my data</button>
                 </div>
 
@@ -952,6 +953,21 @@
                 <h4 class="text-sm font-bold text-slate-200 mb-2">Decisions &amp; moderation log</h4>
                 <div id="admin-log-filters" class="flex flex-wrap gap-1.5 mb-2"></div>
                 <div id="admin-log-list" class="space-y-1.5 text-xs"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PRIVACY POLICY (must be accepted before the app can be used) -->
+    <div id="privacy-modal" class="hidden fixed inset-0 z-[100] bg-slate-950 flex items-center justify-center p-3">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl flex flex-col shadow-2xl" style="max-height: 94vh;">
+            <div class="p-5 border-b border-slate-800">
+                <h2 class="text-xl font-bold text-slate-100"><i class="fa-solid fa-shield-halved text-emerald-400 mr-2"></i>Privacy Policy</h2>
+                <p id="privacy-sub" class="text-xs text-slate-400 mt-1"></p>
+            </div>
+            <div id="privacy-scroll" onscroll="privacyScrolled()" class="flex-1 overflow-y-auto p-5 text-sm text-slate-300 leading-relaxed space-y-3" style="min-height: 180px;"></div>
+            <div class="p-4 border-t border-slate-800 space-y-2">
+                <p id="privacy-note" class="text-[11px] text-amber-400 hidden"></p>
+                <div id="privacy-actions" class="flex gap-2"></div>
             </div>
         </div>
     </div>
@@ -2075,6 +2091,7 @@
 
         function updateUserUI() {
             loadStaffRole();
+            checkPrivacy();
             checkMyAccountState();
             loadBlocks();
             const authSection = document.getElementById('user-auth-section');
@@ -3667,6 +3684,150 @@
             loadAdminStats();
             refreshAdminSite();
         }
+
+        // ===== PRIVACY POLICY =====
+        const PRIVACY_VERSION = 1, PRIVACY_KEY = 'ag_privacy_accepted_v' + PRIVACY_VERSION;
+        let privacySyncedFor = null, privacyCheckedFor = undefined, privacyGateOn = false;
+
+        const PRIVACY_HTML = (() => {
+            const h = t => `<h3 class="text-sm font-bold text-slate-100 pt-2">${t}</h3>`;
+            const ul = items => `<ul class="list-disc pl-5 space-y-1">${items.map(i => `<li>${i}</li>`).join('')}</ul>`;
+            return `
+            <p><b class="text-slate-100">The short version:</b> Audio Grove is a community site for sharing sound effects. We only store what is needed to run it. This page tells you exactly what we keep, who can see it, and what you can do about it.</p>
+
+            ${h('1. What we store')}
+            ${ul([
+                '<b>Your account:</b> your email address and a scrambled (hashed) password. If you sign in with GitHub, we receive the basic details GitHub shares, such as your email and GitHub username. Accounts are handled by a service called Supabase.',
+                '<b>Your profile:</b> your username and the date you joined.',
+                '<b>Your posts:</b> the title, description and hashtags, category, colour, whether it is public or private, the audio file (or the settings of a synth sound), when you posted it, and how many likes, downloads and plays it has.',
+                '<b>Your activity:</b> which posts you like, which posts you download while signed in, who you block, reports you send, and warnings or messages moderators send you.',
+                '<b>Safety records:</b> moderators and administrators keep a record of moderation actions, such as hiding a post, removing a caption, changing a username, warnings, suspensions and bans.',
+                '<b>On your own device:</b> your light or dark mode choice, which posts you liked on that device, announcements you closed, and the fact that you accepted this policy.',
+                '<b>While the site is open:</b> an anonymous count of open pages. It has no name or account attached.'
+            ])}
+
+            ${h('2. Who can see what')}
+            ${ul([
+                '<b>Everyone</b> (even without an account): your username, your public posts with their title, description, category, likes and play counts, and the date you joined.',
+                '<b>Only you:</b> your email address, your list of blocked users, and any recording or edit you have not published. Unpublished recordings and edits stay on your device.',
+                '<b>Moderators and administrators</b> (in the moderator tools): usernames, when accounts were created, how many posts each person has (public and private), all posts including private ones, likes and downloads each person has given and received, reports, and warnings or messages sent through the site.',
+                '<b>Administrators only:</b> the full moderation log. The site owner can also see account email addresses in the Supabase dashboard.',
+                '<b>Nobody, including the site owner:</b> your password. It is stored scrambled and cannot be read back.'
+            ])}
+
+            ${h('3. Private posts')}
+            <p>A private post is hidden from other users, but moderators and administrators can open it if they need to for safety. Audio files are stored at a long, hard-to-guess web address, but anyone who is given that exact link could play the file. Do not upload anything you need to keep secret.</p>
+
+            ${h('4. Microphone and editing')}
+            <p>The microphone is only used while you press Record. A recording, and anything you do in the editor, stays on your device until you choose to publish it.</p>
+
+            ${h('5. Moderation')}
+            <p>To keep the community safe, moderators and administrators can hide posts, remove captions, replace an inappropriate username with a random one (which then cannot be changed), send warnings, and suspend or ban accounts.</p>
+
+            ${h('6. Your choices')}
+            ${ul([
+                '<b>Download my data</b> in Settings gives you a file with your account details, profile, posts, likes, downloads and block list.',
+                '<b>Delete my account</b> in Settings erases your account, username, posts and audio files. Your reports are removed. Downloads you made stay only as anonymous counts. Moderation records are kept, but details that identify you are erased.',
+                'You can make posts private, block other users, and report posts or users.'
+            ])}
+
+            ${h('7. Other services')}
+            <p>Supabase stores accounts, data and files. GitHub provides sign-in and hosts this website. Fonts, icons and styling are loaded from other servers, which can see your IP address when your browser loads them. We do not sell your data or show ads.</p>
+
+            ${h('8. Keep yourself safe')}
+            <p>Do not put personal details, such as your full name, address, phone number or school, in usernames, titles, descriptions or audio. Anything public can be played and downloaded by anyone, and once someone saves a file we cannot take it back from them.</p>
+
+            ${h('9. Changes')}
+            <p>If this policy changes in an important way, you will be asked to accept it again.</p>`;
+        })();
+
+        const privacyAcceptedLocally = () => { try { return localStorage.getItem(PRIVACY_KEY) === '1'; } catch (e) { return false; } };
+
+        function setAppInert(on) {
+            Array.from(document.body.children).forEach(el => {
+                if (el.id === 'privacy-modal' || el.id === 'toast-container' || /^(SCRIPT|STYLE|LINK)$/.test(el.tagName)) return;
+                if (on) el.setAttribute('inert', ''); else el.removeAttribute('inert');
+            });
+            document.body.style.overflow = on ? 'hidden' : '';
+        }
+
+        function renderPrivacyModal(gate) {
+            const scroll = document.getElementById('privacy-scroll');
+            scroll.innerHTML = PRIVACY_HTML; scroll.scrollTop = 0;
+            document.getElementById('privacy-note').classList.add('hidden');
+            const btn = 'flex-1 font-bold py-3 rounded-xl text-sm transition-all';
+            if (gate) {
+                document.getElementById('privacy-sub').textContent = 'Please read this and accept it to use Audio Grove. You only have to do this once.';
+                document.getElementById('privacy-actions').innerHTML = `
+                    <button onclick="declinePrivacy()" class="${btn} bg-slate-800 hover:bg-slate-700 text-slate-200">I don't accept</button>
+                    <button id="privacy-accept-btn" onclick="acceptPrivacy()" disabled class="${btn} bg-emerald-500 hover:bg-emerald-400 text-slate-950 disabled:opacity-40 disabled:cursor-not-allowed">I accept</button>`;
+                setTimeout(privacyScrolled, 50);
+            } else {
+                document.getElementById('privacy-sub').textContent = 'You accepted this policy. You can read it again here any time.';
+                document.getElementById('privacy-actions').innerHTML = `<button onclick="closePrivacyPolicy()" class="${btn} bg-slate-800 hover:bg-slate-700 text-slate-200">Close</button>`;
+            }
+        }
+
+        function privacyScrolled() {
+            const el = document.getElementById('privacy-scroll'), b = document.getElementById('privacy-accept-btn');
+            if (!b) return;
+            const atEnd = el.scrollTop + el.clientHeight >= el.scrollHeight - 12;
+            b.disabled = !atEnd;
+            const note = document.getElementById('privacy-note');
+            if (!atEnd) { note.textContent = 'Scroll to the bottom to enable the "I accept" button.'; note.classList.remove('hidden'); }
+            else if (note.textContent.startsWith('Scroll')) note.classList.add('hidden');
+        }
+
+        function showPrivacyGate() {
+            if (privacyGateOn) return;
+            privacyGateOn = true;
+            renderPrivacyModal(true);
+            document.getElementById('privacy-modal').classList.remove('hidden');
+            setAppInert(true);
+        }
+        function hidePrivacyGate() {
+            if (!privacyGateOn) return;
+            privacyGateOn = false;
+            document.getElementById('privacy-modal').classList.add('hidden');
+            setAppInert(false);
+        }
+        function openPrivacyPolicy() { if (privacyGateOn) return; renderPrivacyModal(false); document.getElementById('privacy-modal').classList.remove('hidden'); }
+        function closePrivacyPolicy() { if (!privacyGateOn) document.getElementById('privacy-modal').classList.add('hidden'); }
+
+        function declinePrivacy() {
+            const note = document.getElementById('privacy-note');
+            note.textContent = "You need to accept the Privacy Policy to use Audio Grove. Nothing has been saved. You can close this page if you'd rather not continue.";
+            note.classList.remove('hidden');
+        }
+
+        async function syncPrivacyAcceptance() {
+            if (!supabaseClient || !currentUser || privacySyncedFor === currentUser.id) return;
+            privacySyncedFor = currentUser.id;
+            try { await supabaseClient.from('privacy_acceptances').upsert({ user_id: currentUser.id, version: PRIVACY_VERSION, accepted_at: new Date().toISOString() }); }
+            catch (e) { privacySyncedFor = null; console.warn("Could not save policy acceptance:", e); }
+        }
+
+        async function acceptPrivacy() {
+            try { localStorage.setItem(PRIVACY_KEY, '1'); } catch (e) {}
+            hidePrivacyGate();
+            await syncPrivacyAcceptance();
+            showToast("Thanks! You can read the Privacy Policy again any time in Settings.", "success");
+        }
+
+        async function checkPrivacy() {
+            const who = currentUser ? currentUser.id : null;
+            if (privacyCheckedFor === who && (privacyAcceptedLocally() || privacyGateOn)) return;
+            privacyCheckedFor = who;
+            if (privacyAcceptedLocally()) { hidePrivacyGate(); syncPrivacyAcceptance(); return; }
+            if (who && supabaseClient) {
+                try {
+                    const { data } = await supabaseClient.from('privacy_acceptances').select('user_id').eq('user_id', who).eq('version', PRIVACY_VERSION).maybeSingle();
+                    if (data) { try { localStorage.setItem(PRIVACY_KEY, '1'); } catch (e) {} privacySyncedFor = who; hidePrivacyGate(); return; }
+                } catch (e) { /* fall through and ask */ }
+            }
+            showPrivacyGate();
+        }
+        window.addEventListener('load', () => checkPrivacy());
 
         // ===== SITE STATE: announcements, shutdown, live users =====
         let maintenanceOn = false, maintenanceMsg = '', staffRoleReady = false, presenceChannel = null, liveUsers = 0, siteAnnouncements = [];
