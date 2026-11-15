@@ -168,13 +168,6 @@
             <div class="flex items-center gap-3">
                 <button onclick="switchTab('settings')" title="Settings" class="md:hidden w-9 h-9 rounded-xl bg-slate-800 text-slate-300 flex items-center justify-center"><i class="fa-solid fa-gear"></i></button>
                 <button onclick="openStaffPanel()" id="staff-panel-btn" class="hidden px-4 py-2 rounded-xl text-sm font-bold border border-emerald-500 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all"><i class="fa-solid fa-shield-halved mr-2"></i>Panel</button>
-                <!-- Supabase Backend Status Badge -->
-                <button onclick="openModal('supabase-modal')" id="backend-status-badge" class="px-3 py-1.5 rounded-full text-xs font-medium border flex items-center gap-2 bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20 transition-all" title="Click to configure live Supabase connection">
-                    <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-                    <span id="backend-status-text">Disconnected from Supabase</span>
-                    <i class="fa-solid fa-gear text-xs opacity-70"></i>
-                </button>
-
                 <!-- Auth / Profile Button -->
                 <div id="user-auth-section">
                     <button onclick="openModal('auth-modal')" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-4 py-2 rounded-xl text-sm transition-all shadow-lg shadow-indigo-600/20 flex items-center gap-2">
@@ -796,6 +789,10 @@
                     <div id="rule-number" class="text-slate-500"><i class="fa-solid fa-circle-dot mr-1"></i>At least 1 number</div>
                 </div>
 
+                <label id="signup-privacy-row" class="hidden flex items-start gap-2 text-xs text-slate-400 cursor-pointer">
+                    <input type="checkbox" id="signup-privacy-check" class="mt-0.5 accent-emerald-500">
+                    <span>I have read and accept the <button type="button" onclick="event.preventDefault(); openPrivacyPolicy()" class="text-emerald-400 underline">Privacy Policy</button></span>
+                </label>
                 <button type="submit" id="auth-submit-btn" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-2.5 rounded-xl text-sm transition-all">
                     Sign In
                 </button>
@@ -811,6 +808,7 @@
                 <i class="fa-brands fa-github text-lg"></i>
                 <span>Sign in with GitHub</span>
             </button>
+            <p class="text-[11px] text-slate-500 text-center">New to Audio Grove? After signing in with GitHub you'll be asked to accept the <button type="button" onclick="openPrivacyPolicy()" class="text-emerald-400 underline">Privacy Policy</button>.</p>
         </div>
     </div>
 
@@ -1436,6 +1434,8 @@
             const signupRules = document.getElementById('signup-rules');
             const forgotRow = document.getElementById('forgot-password-row');
             if (forgotRow) forgotRow.classList.toggle('hidden', mode !== 'login');
+            const privRow = document.getElementById('signup-privacy-row');
+            if (privRow) privRow.classList.toggle('hidden', mode !== 'signup');
 
             if (mode === 'login') {
                 loginBtn.className = 'flex-1 pb-3 text-sm font-bold border-b-2 border-emerald-500 text-emerald-400';
@@ -1499,6 +1499,8 @@
                         renderProfile();
                     }
                 } else {
+                    const accepted = document.getElementById('signup-privacy-check');
+                    if (!accepted || !accepted.checked) throw new Error('Please read and accept the Privacy Policy to create an account.');
                     const { data, error } = await supabaseClient.auth.signUp({
                         email,
                         password,
@@ -1508,6 +1510,7 @@
                     });
 
                     if (error) throw error;
+                    try { localStorage.setItem('ag_privacy_pending', '1'); } catch (e) {}
 
                     if (data?.session) {
                         currentUser = data.user;
@@ -3724,8 +3727,9 @@
         }
 
         // ===== PRIVACY POLICY =====
-        const PRIVACY_VERSION = 1, PRIVACY_KEY = 'ag_privacy_accepted_v' + PRIVACY_VERSION;
-        let privacySyncedFor = null, privacyCheckedFor = undefined, privacyGateOn = false;
+        const PRIVACY_VERSION = 1;
+        const privacyKey = uid => 'ag_privacy_v' + PRIVACY_VERSION + '_' + uid;
+        let privacySyncedFor = null, privacyCheckedFor = undefined, privacyGateOn = false, privacyCutoff;
 
         const PRIVACY_HTML = (() => {
             const h = t => `<h3 class="text-sm font-bold text-slate-100 pt-2">${t}</h3>`;
@@ -3779,8 +3783,6 @@
             <p>If this policy changes in an important way, you will be asked to accept it again.</p>`;
         })();
 
-        const privacyAcceptedLocally = () => { try { return localStorage.getItem(PRIVACY_KEY) === '1'; } catch (e) { return false; } };
-
         function setAppInert(on) {
             Array.from(document.body.children).forEach(el => {
                 if (el.id === 'privacy-modal' || el.id === 'toast-container' || /^(SCRIPT|STYLE|LINK)$/.test(el.tagName)) return;
@@ -3795,13 +3797,13 @@
             document.getElementById('privacy-note').classList.add('hidden');
             const btn = 'flex-1 font-bold py-3 rounded-xl text-sm transition-all';
             if (gate) {
-                document.getElementById('privacy-sub').textContent = 'Please read this and accept it to use Audio Grove. You only have to do this once.';
+                document.getElementById('privacy-sub').textContent = 'Welcome! Before you start using your new account, please read and accept this policy. You only have to do this once.';
                 document.getElementById('privacy-actions').innerHTML = `
-                    <button onclick="declinePrivacy()" class="${btn} bg-slate-800 hover:bg-slate-700 text-slate-200">I don't accept</button>
+                    <button onclick="declinePrivacy()" class="${btn} bg-slate-800 hover:bg-slate-700 text-slate-200">Decline and sign out</button>
                     <button id="privacy-accept-btn" onclick="acceptPrivacy()" disabled class="${btn} bg-emerald-500 hover:bg-emerald-400 text-slate-950 disabled:opacity-40 disabled:cursor-not-allowed">I accept</button>`;
                 setTimeout(privacyScrolled, 50);
             } else {
-                document.getElementById('privacy-sub').textContent = 'You accepted this policy. You can read it again here any time.';
+                document.getElementById('privacy-sub').textContent = 'This is how Audio Grove stores and uses your data.';
                 document.getElementById('privacy-actions').innerHTML = `<button onclick="closePrivacyPolicy()" class="${btn} bg-slate-800 hover:bg-slate-700 text-slate-200">Close</button>`;
             }
         }
@@ -3832,11 +3834,13 @@
         function openPrivacyPolicy() { if (privacyGateOn) return; renderPrivacyModal(false); document.getElementById('privacy-modal').classList.remove('hidden'); }
         function closePrivacyPolicy() { if (!privacyGateOn) document.getElementById('privacy-modal').classList.add('hidden'); }
 
-        function declinePrivacy() {
-            const note = document.getElementById('privacy-note');
-            note.textContent = "You need to accept the Privacy Policy to use Audio Grove. Nothing has been saved. You can close this page if you'd rather not continue.";
-            note.classList.remove('hidden');
+        async function declinePrivacy() {
+            hidePrivacyGate();
+            await handleSignOut(true);
+            showToast("You need to accept the Privacy Policy to use an account on Audio Grove. You've been signed out and can keep browsing as a guest.", "info");
         }
+
+        const rememberPrivacy = uid => { try { localStorage.setItem(privacyKey(uid), '1'); } catch (e) {} };
 
         async function syncPrivacyAcceptance() {
             if (!supabaseClient || !currentUser || privacySyncedFor === currentUser.id) return;
@@ -3846,26 +3850,52 @@
         }
 
         async function acceptPrivacy() {
-            try { localStorage.setItem(PRIVACY_KEY, '1'); } catch (e) {}
+            if (!currentUser) { hidePrivacyGate(); return; }
+            rememberPrivacy(currentUser.id);
             hidePrivacyGate();
             await syncPrivacyAcceptance();
             showToast("Thanks! You can read the Privacy Policy again any time in Settings.", "success");
         }
 
+        // Accounts that existed before the policy was introduced are not asked
+        async function getPrivacyCutoff() {
+            if (privacyCutoff !== undefined) return privacyCutoff;
+            privacyCutoff = null;
+            try {
+                const { data } = await supabaseClient.from('site_settings').select('value').eq('key', 'privacy_cutoff').maybeSingle();
+                if (data && data.value && data.value.at) privacyCutoff = new Date(data.value.at);
+            } catch (e) {}
+            return privacyCutoff;
+        }
+
+        // Only ever asks someone who just made a new account. Guests and people who already accepted never see it.
         async function checkPrivacy() {
             const who = currentUser ? currentUser.id : null;
-            if (privacyCheckedFor === who && (privacyAcceptedLocally() || privacyGateOn)) return;
+            if (!who || !supabaseClient) { privacyCheckedFor = who; hidePrivacyGate(); return; }
+            if (privacyCheckedFor === who) return;
             privacyCheckedFor = who;
-            if (privacyAcceptedLocally()) { hidePrivacyGate(); syncPrivacyAcceptance(); return; }
-            if (who && supabaseClient) {
-                try {
-                    const { data } = await supabaseClient.from('privacy_acceptances').select('user_id').eq('user_id', who).eq('version', PRIVACY_VERSION).maybeSingle();
-                    if (data) { try { localStorage.setItem(PRIVACY_KEY, '1'); } catch (e) {} privacySyncedFor = who; hidePrivacyGate(); return; }
-                } catch (e) { /* fall through and ask */ }
+
+            let local = false;
+            try { local = localStorage.getItem(privacyKey(who)) === '1'; } catch (e) {}
+            if (local) { hidePrivacyGate(); syncPrivacyAcceptance(); return; }
+
+            try {   // already accepted on this account (for example on another device)
+                const { data } = await supabaseClient.from('privacy_acceptances').select('user_id').eq('user_id', who).eq('version', PRIVACY_VERSION).maybeSingle();
+                if (data) { rememberPrivacy(who); privacySyncedFor = who; hidePrivacyGate(); return; }
+            } catch (e) {}
+
+            const created = new Date(currentUser.created_at || 0);
+            let pending = false;
+            try { pending = localStorage.getItem('ag_privacy_pending') === '1'; } catch (e) {}
+            if (pending && Date.now() - created.getTime() < 3 * 86400000) {   // accepted on the sign-up form (e.g. then confirmed by email)
+                try { localStorage.removeItem('ag_privacy_pending'); } catch (e) {}
+                rememberPrivacy(who); hidePrivacyGate(); await syncPrivacyAcceptance(); return;
             }
+
+            const cutoff = await getPrivacyCutoff();
+            if (!cutoff || created < cutoff) { hidePrivacyGate(); return; }
             showPrivacyGate();
         }
-        window.addEventListener('load', () => checkPrivacy());
 
         // ===== SITE STATE: announcements, shutdown, live users =====
         let maintenanceOn = false, maintenanceMsg = '', staffRoleReady = false, presenceChannel = null, liveUsers = 0, siteAnnouncements = [];
